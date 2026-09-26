@@ -1,0 +1,26 @@
+# Maintainer: ImSammyTTV <https://github.com/ImSammyTTV>
+# AUR package "achievetitle-bin". Update pkgver and run `updpkgsums` for each release.
+pkgname=achievetitle-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Show live Steam achievement progress in your Twitch stream title"
+arch=('x86_64' 'aarch64')
+url="https://github.com/ImSammyTTV/achievetitle"
+license=('MIT')
+optdepends=('xdg-utils: open the settings page automatically')
+provides=('achievetitle')
+conflicts=('achievetitle')
+source_x86_64=("achievetitle-$pkgver-amd64.tar.gz::$url/releases/download/v$pkgver/achievetitle-linux-amd64.tar.gz")
+source_aarch64=("achievetitle-$pkgver-arm64.tar.gz::$url/releases/download/v$pkgver/achievetitle-linux-arm64.tar.gz")
+sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
+
+package() {
+  local id=io.github.imsammyttv.AchieveTitle
+  install -Dm755 achievetitle "$pkgdir/usr/bin/achievetitle"
+  install -Dm644 "$id.desktop" "$pkgdir/usr/share/applications/$id.desktop"
+  install -Dm644 achievetitle.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/$id.svg"
+  install -Dm644 "$id.metainfo.xml" "$pkgdir/usr/share/metainfo/$id.metainfo.xml"
+  install -Dm644 achievetitle.service "$pkgdir/usr/lib/systemd/user/achievetitle.service"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

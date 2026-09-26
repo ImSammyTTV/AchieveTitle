@@ -36,15 +36,21 @@ func main() {
 		log.Fatal("loading config: ", err)
 	}
 	worker := newWorker(store)
-	srv := &server{store: store, worker: worker, base: fmt.Sprintf("http://localhost:%d", *port), state: randHex()}
 
 	// Loopback only: nothing on the network can reach the settings page.
 	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
 	if err != nil {
-		log.Fatalf("port %d is busy (is AchieveTitle already running?): %v", *port, err)
+		// Most likely already running (e.g. launched twice from the app menu):
+		// just show the existing settings page.
+		log.Printf("port %d is busy, AchieveTitle is probably already running: %v", *port, err)
+		if !*noBrowser {
+			openBrowser(fmt.Sprintf("http://localhost:%d", *port))
+		}
+		return
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	srv := &server{store: store, worker: worker, base: fmt.Sprintf("http://localhost:%d", *port), state: randHex(), quit: stop}
 
 	go worker.Run(ctx)
 	httpSrv := &http.Server{Handler: srv.routes(), ReadHeaderTimeout: 10 * time.Second}
@@ -71,6 +77,7 @@ type server struct {
 	worker *Worker
 	base   string
 	state  string // OAuth CSRF state
+	quit   func()
 }
 
 func (s *server) routes() http.Handler {
@@ -80,6 +87,10 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /overlay", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFileFS(w, r, static, "overlay.html")
 	})
+	mux.HandleFunc("GET /dock", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFileFS(w, r, static, "dock.html")
+	})
+	mux.HandleFunc("POST /api/enabled", s.sameOrigin(s.setEnabled))
 	mux.HandleFunc("GET /auth/callback", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFileFS(w, r, static, "callback.html")
 	})
@@ -93,6 +104,10 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("POST /api/restore", s.sameOrigin(func(w http.ResponseWriter, r *http.Request) {
 		s.worker.Restore()
 		w.WriteHeader(204)
+	}))
+	mux.HandleFunc("POST /api/quit", s.sameOrigin(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+		go s.quit()
 	}))
 	mux.HandleFunc("GET /api/twitch/login", s.twitchLogin)
 	mux.HandleFunc("POST /api/twitch/token", s.sameOrigin(s.twitchToken))
@@ -175,6 +190,25 @@ func (s *server) postConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if wasEnabled && !in.Enabled && in.RestoreOnExit {
+		go s.worker.Restore()
+	}
+	s.worker.Kick()
+	w.WriteHeader(204)
+}
+
+// setEnabled is the on/off switch used by the OBS dock.
+func (s *server) setEnabled(w http.ResponseWriter, r *http.Request) {
+	var in struct{ Enabled bool }
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 256)).Decode(&in); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	cfg := s.store.Get()
+	if err := s.store.Update(func(c *Config) { c.Enabled = in.Enabled }); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	if cfg.Enabled && !in.Enabled && cfg.RestoreOnExit {
 		go s.worker.Restore()
 	}
 	s.worker.Kick()

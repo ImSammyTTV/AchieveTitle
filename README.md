@@ -27,6 +27,27 @@ Runs on **Windows, macOS and Linux**. One small download, nothing else to instal
 
 Keep the app running while you stream.
 
+### Linux
+
+Works on every distro, including Steam Deck:
+
+```
+curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/achievetitle/main/install.sh | sh
+```
+
+Or grab a package from [Releases](../../releases): `.deb` (Ubuntu, Debian, Mint, Pop!_OS),
+`.rpm` (Fedora, openSUSE), `.pkg.tar.zst` (Arch, Manjaro, EndeavourOS, CachyOS) or `.apk` (Alpine).
+Start at login (optional): `systemctl --user enable --now achievetitle`.
+Uninstall the script version with `… | sh -s -- --uninstall`.
+
+### OBS
+
+- **Control panel inside OBS:** View → Docks → Custom Browser Docks, name `AchieveTitle`,
+  URL `http://localhost:7878/dock`. Shows your title and progress with an on/off switch.
+- **OBS script:** Tools → Scripts → `+` → choose `obs/achievetitle.lua` (included in every download).
+  It starts AchieveTitle with OBS and only updates your title while you're live.
+- If you also use OBS's own *Stream Information* panel, remember it overwrites the title when you press *Update* there.
+
 ### Placeholders
 
 | Placeholder | Example |
@@ -64,7 +85,7 @@ Builds use the official AchieveTitle Twitch app. To use your own, create a Publi
 
 ### Releasing (maintainers)
 
-Push a tag such as `v0.1.0`.
+Push a tag such as `v0.1.0`. Packaging files for the AUR and Flathub are in `packaging/`.
 GitHub Actions builds zips for Windows, macOS and Linux (x64 + ARM) and attaches them to a release.
 
 ## License

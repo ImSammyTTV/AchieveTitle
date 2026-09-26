@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AchieveTitle</title>
+<style>
+  /* Compact panel for an OBS Custom Browser Dock; colours match OBS's dark theme. */
+  body { margin:0; background:#1d1f26; color:#e6e6ea; font:13px/1.4 system-ui, sans-serif }
+  .wrap { padding:10px }
+  .title { background:#13141a; border:1px solid #3a3d4a; border-radius:4px; padding:8px; word-break:break-word; margin:6px 0 }
+  .bar { height:6px; background:#3a3d4a; border-radius:3px; overflow:hidden } .bar i { display:block; height:100%; background:#9147ff }
+  .row { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap }
+  button { flex:1; background:#3a3d4a; color:#fff; border:0; border-radius:4px; padding:6px 8px; font:inherit; cursor:pointer }
+  button.on { background:#9147ff }
+  small { color:#9a9aa8 } .err { color:#ff6b6b } a { color:#bf94ff }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="game"><small>Loading…</small></div>
+  <div class="bar"><i id="bar" style="width:0"></i></div>
+  <div class="title" id="title">—</div>
+  <div id="err" class="err"></div>
+  <div class="row">
+    <button id="toggle" onclick="toggle()">Auto-update: …</button>
+    <button onclick="post('/api/refresh',null).then(()=>setTimeout(poll,1500))">Check now</button>
+  </div>
+  <div class="row">
+    <button onclick="post('/api/restore',null)">Restore title</button>
+    <button onclick="window.open('/', '_blank')">Settings</button>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+let enabled = false;
+const post = (url, body) => fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: body && JSON.stringify(body)});
+async function toggle() { await post('/api/enabled', {enabled: !enabled}); setTimeout(poll, 800); }
+async function poll() {
+  try {
+    const s = await (await fetch('/api/status')).json();
+    enabled = s.running;
+    $('toggle').textContent = 'Auto-update: ' + (enabled ? 'ON' : 'OFF');
+    $('toggle').className = enabled ? 'on' : '';
+    $('game').innerHTML = (s.game ? `<b></b>` : '<small>Not in a Steam game</small>') + (s.total ? ` <small>${s.unlocked}/${s.total}</small>` : '');
+    if (s.game) $('game').querySelector('b').textContent = s.game;
+    $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
+    $('title').textContent = s.title || '—';
+    $('err').textContent = !s.twitch_login ? 'Twitch not connected: open Settings.' : (s.error || '');
+  } catch (e) {
+    $('err').textContent = 'AchieveTitle is not running.';
+  }
+}
+poll(); setInterval(poll, 5000);
+</script>
+</body>
+</html>

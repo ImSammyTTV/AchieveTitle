@@ -1,4 +1,5 @@
-# Push a tag like v0.1.0 to build Windows, macOS and Linux downloads.
+# Push a tag like v0.1.0 (or publish a release) to build downloads for
+# Windows, macOS and Linux, plus .deb/.rpm/.apk/Arch packages.
 name: Release
 on:
   push:
@@ -13,23 +14,11 @@ jobs:
       - uses: actions/setup-go@v5
         with: { go-version-file: go.mod }
       - run: go test ./...
+      - run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.41.1
       - name: Build
         env:
           CGO_ENABLED: "0"
-        run: |
-          mkdir dist
-          for target in windows/amd64 windows/arm64 darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
-            os=${target%/*}; arch=${target#*/}
-            name=AchieveTitle-${GITHUB_REF_NAME}-${os}-${arch}
-            ext=""; [ "$os" = windows ] && ext=.exe
-            mkdir -p "build/$name"
-            GOOS=$os GOARCH=$arch go build -trimpath \
-              -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" \
-              -o "build/$name/AchieveTitle$ext" .
-            cp README.md LICENSE "build/$name/"
-            (cd build && zip -qr "../dist/$name.zip" "$name")
-          done
+        run: packaging/build-release.sh "$GITHUB_REF_NAME"
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.zip
-          generate_release_notes: true
+          files: dist/*
