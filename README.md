@@ -2,7 +2,7 @@
 
 Show live **Steam achievement progress** in your **Twitch stream title** — automatically.
 
-> `Chill stream [38/50 Achievements] Last: Dragon Slayer`
+> `Chill stream [38/50 Achievements] 🏆 Dragon Slayer`
 
 Runs on **Windows, macOS and Linux**. One small download, nothing else to install.
 

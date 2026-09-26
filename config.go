@@ -28,7 +28,7 @@ type Config struct {
 func defaultConfig() Config {
 	return Config{
 		CustomTitle:     "Chill stream",
-		Template:        "{custom} [{unlocked}/{total} Achievements] Last: {latest}",
+		Template:        "{custom} [{unlocked}/{total} Achievements] 🏆 {latest}",
 		FallbackTmpl:    "{custom}",
 		IntervalSeconds: 60,
 		RestoreOnExit:   true,

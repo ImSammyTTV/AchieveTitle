@@ -10,7 +10,7 @@ func TestRenderTitle(t *testing.T) {
 	cfg := defaultConfig()
 	p := &Progress{Unlocked: 38, Total: 50, Latest: &Achievement{Name: "Dragon Slayer", Percent: 4.2}}
 	got := renderTitle(cfg.Template, buildVars(cfg, "Skyrim", p))
-	want := "Chill stream [38/50 Achievements] Last: Dragon Slayer"
+	want := "Chill stream [38/50 Achievements] 🏆 Dragon Slayer"
 	if got != want {
 		t.Fatalf("got %q want %q", got, want)
 	}
