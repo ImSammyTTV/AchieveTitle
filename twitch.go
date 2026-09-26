@@ -10,10 +10,11 @@ import (
 	"time"
 )
 
-// DefaultTwitchClientID is the public client ID of the AchieveTitle Twitch app.
-// Set at build time: -ldflags "-X main.DefaultTwitchClientID=xxxx".
-// Users can also paste their own in the settings page.
-var DefaultTwitchClientID = ""
+// DefaultTwitchClientID is the public client ID of the official AchieveTitle
+// Twitch app (a public client, so this is not a secret). Forks can override it
+// with -ldflags "-X main.DefaultTwitchClientID=xxxx", and users can paste their
+// own in the settings page.
+var DefaultTwitchClientID = "e1n36uf3stt4tb0chevm8zbt6x0ix3"
 
 const twitchScope = "channel:manage:broadcast"
 

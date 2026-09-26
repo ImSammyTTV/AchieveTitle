@@ -16,7 +16,6 @@ jobs:
       - name: Build
         env:
           CGO_ENABLED: "0"
-          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
         run: |
           mkdir dist
           for target in windows/amd64 windows/arm64 darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
@@ -25,7 +24,7 @@ jobs:
             ext=""; [ "$os" = windows ] && ext=.exe
             mkdir -p "build/$name"
             GOOS=$os GOARCH=$arch go build -trimpath \
-              -ldflags "-s -w -X main.version=${GITHUB_REF_NAME} -X main.DefaultTwitchClientID=${TWITCH_CLIENT_ID}" \
+              -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" \
               -o "build/$name/AchieveTitle$ext" .
             cp README.md LICENSE "build/$name/"
             (cd build && zip -qr "../dist/$name.zip" "$name")

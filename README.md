@@ -55,15 +55,16 @@ Settings are saved in your user config folder (`%AppData%\AchieveTitle`, `~/Libr
 Requires Go 1.22+.
 
 ```
-go build -ldflags "-X main.DefaultTwitchClientID=YOUR_CLIENT_ID" .
+go build .
 ```
 
-Without a built-in client ID, the settings page asks for one. Create a Twitch app at
-<https://dev.twitch.tv/console> with OAuth redirect URL `http://localhost:7878/auth/callback`.
+Builds use the official AchieveTitle Twitch app. To use your own, create a Public Twitch app at
+<https://dev.twitch.tv/console> with OAuth redirect URL `http://localhost:7878/auth/callback`, then build with
+`-ldflags "-X main.DefaultTwitchClientID=YOUR_CLIENT_ID"` or paste the ID into the settings page.
 
 ### Releasing (maintainers)
 
-Add the Twitch app's Client ID as repository secret `TWITCH_CLIENT_ID`, then push a tag such as `v0.1.0`.
+Push a tag such as `v0.1.0`.
 GitHub Actions builds zips for Windows, macOS and Linux (x64 + ARM) and attaches them to a release.
 
 ## License
