@@ -36,6 +36,7 @@
     <div id="status">Loading…</div>
     <div class="bar"><i id="bar" style="width:0"></i></div>
     <div class="preview" id="preview">—</div>
+    <small id="chars"></small>
     <div class="row" style="margin-top:12px">
       <button class="secondary" onclick="post('/api/refresh').then(()=>setTimeout(poll,1500))">Check now</button>
       <button class="secondary" onclick="post('/api/restore')">Restore original title</button>
@@ -131,7 +132,8 @@ async function poll() {
   if (s.error) h += `<br><span class="err">${esc(s.error)}</span>`;
   $('status').innerHTML = h;
   $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
-  $('preview').textContent = s.title ? s.title + `  (${[...s.title].length}/140)` : '—';
+  $('preview').textContent = s.title || '—';
+  $('chars').textContent = s.title ? `Title length: ${[...s.title].length} / 140 characters (Twitch's limit)` : '';
 }
 const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
