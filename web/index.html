@@ -24,6 +24,8 @@
   .bar { height:10px; background:#26262c; border-radius:5px; overflow:hidden; margin:8px 0 } .bar > i { display:block; height:100%; background:var(--accent) }
   .toggle { display:flex; gap:8px; align-items:center; font-weight:600; margin-top:12px }
   small { color:var(--muted) }
+  .count { display:inline-block; margin-top:8px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:#0e0e10; color:var(--muted); font-size:13px }
+  .count.full { color:var(--err); border-color:var(--err) }
 </style>
 </head>
 <body>
@@ -35,8 +37,9 @@
     <h2>Status</h2>
     <div id="status">Loading…</div>
     <div class="bar"><i id="bar" style="width:0"></i></div>
+    <div class="hint" style="margin:10px 0 4px">Current Twitch title</div>
     <div class="preview" id="preview">—</div>
-    <small id="chars"></small>
+    <div class="count" id="chars" hidden></div>
     <div class="row" style="margin-top:12px">
       <button class="secondary" onclick="post('/api/refresh').then(()=>setTimeout(poll,1500))">Check now</button>
       <button class="secondary" onclick="post('/api/restore')">Restore original title</button>
@@ -133,7 +136,11 @@ async function poll() {
   $('status').innerHTML = h;
   $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
   $('preview').textContent = s.title || '—';
-  $('chars').textContent = s.title ? `Title length: ${[...s.title].length} / 140 characters (Twitch's limit)` : '';
+  const n = s.title ? [...s.title].length : 0;
+  $('chars').hidden = !n;
+  $('chars').textContent = `Length: ${n} / 140 characters`;
+  $('chars').className = 'count' + (n >= 140 ? ' full' : '');
+  $('chars').title = "Twitch titles can be at most 140 characters. Longer titles are shortened automatically.";
 }
 const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
