@@ -10,6 +10,7 @@ Runs on **Windows, macOS and Linux**. One small download, nothing else to instal
 
 - Updates your Twitch title as you unlock achievements (only when something changes)
 - Detects the Steam game you're playing; uses a fallback title for games without achievements
+- Sets your Twitch **category** to that game, and can manage your stream **tags**
 - Title templates with placeholders, auto-shortened to fit Twitch's 140-character limit
 - Optional **OBS overlay**: progress bar + "Achievement unlocked" popup with rarity
 - Restores your original title when you stop or close the app

@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf16"
 	"unicode/utf8"
 )
 
-// Twitch rejects titles longer than 140 characters.
+// Twitch rejects titles longer than 140 characters, counted in UTF-16 units
+// (so most emoji count as 2).
 const maxTitleLen = 140
+
+func titleLen(s string) int { return len(utf16.Encode([]rune(s))) }
 
 var placeholderRe = regexp.MustCompile(`\{(\w+)\}`)
 
@@ -57,14 +61,15 @@ func renderTitle(tmpl string, vars map[string]string) string {
 	}
 	out := fill(vars)
 	for _, k := range []string{"next", "latest", "game"} {
-		for utf8.RuneCountInString(out) > maxTitleLen && utf8.RuneCountInString(vars[k]) > 8 {
+		for titleLen(out) > maxTitleLen && utf8.RuneCountInString(vars[k]) > 8 {
 			r := []rune(strings.TrimSuffix(vars[k], "…"))
 			vars[k] = string(r[:len(r)-1]) + "…"
 			out = fill(vars)
 		}
 	}
-	if r := []rune(out); len(r) > maxTitleLen {
-		out = string(r[:maxTitleLen-1]) + "…"
+	for titleLen(out) > maxTitleLen {
+		r := []rune(strings.TrimSuffix(out, "…"))
+		out = string(r[:len(r)-1]) + "…"
 	}
 	return out
 }

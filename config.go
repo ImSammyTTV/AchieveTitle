@@ -19,6 +19,10 @@ type Config struct {
 	Enabled         bool   `json:"enabled"`
 	RestoreOnExit   bool   `json:"restore_on_exit"`
 
+	SetCategory bool     `json:"set_category"` // switch Twitch category to the Steam game
+	ManageTags  bool     `json:"manage_tags"`
+	Tags        []string `json:"tags"`
+
 	TwitchClientID string `json:"twitch_client_id,omitempty"`
 	TwitchToken    string `json:"twitch_token,omitempty"`
 	TwitchUserID   string `json:"twitch_user_id,omitempty"`
@@ -32,6 +36,7 @@ func defaultConfig() Config {
 		FallbackTmpl:    "{custom}",
 		IntervalSeconds: 60,
 		RestoreOnExit:   true,
+		SetCategory:     true,
 	}
 }
 

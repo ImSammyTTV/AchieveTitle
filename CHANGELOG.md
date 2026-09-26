@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.0
+- Sets your Twitch category to the Steam game you're playing (on by default)
+- Optional: manage your stream tags from AchieveTitle
+- Restore also puts back your original category and tags
+- Title length is now counted the way Twitch counts it (emoji count as 2)
+- New default title: `[45/179 Achievements] 🏆 Hoarder`
+- Settings page: current title and its length shown in separate boxes
+
 ## v0.2.0
 - Linux: one-line installer for any distro (incl. Steam Deck), .deb, .rpm, Arch and Alpine packages,
   app-menu entry with icon, optional systemd user service

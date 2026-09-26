@@ -148,6 +148,9 @@ type publicConfig struct {
 	IntervalSeconds int      `json:"interval_seconds"`
 	Enabled         bool     `json:"enabled"`
 	RestoreOnExit   bool     `json:"restore_on_exit"`
+	SetCategory     bool     `json:"set_category"`
+	ManageTags      bool     `json:"manage_tags"`
+	Tags            []string `json:"tags"`
 	TwitchClientID  string   `json:"twitch_client_id"`
 	HasBuiltinID    bool     `json:"has_builtin_client_id"`
 	TwitchLogin     string   `json:"twitch_login"`
@@ -162,6 +165,7 @@ func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
 		SteamID: c.SteamID, HasSteamKey: c.SteamAPIKey != "", CustomTitle: c.CustomTitle,
 		Template: c.Template, FallbackTmpl: c.FallbackTmpl, IntervalSeconds: c.IntervalSeconds,
 		Enabled: c.Enabled, RestoreOnExit: c.RestoreOnExit, TwitchClientID: c.TwitchClientID,
+		SetCategory: c.SetCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags),
 		HasBuiltinID: DefaultTwitchClientID != "", TwitchLogin: c.TwitchLogin,
 		Vars: TemplateVars, Version: version, RedirectURI: s.base + "/auth/callback",
 	})
@@ -184,6 +188,7 @@ func (s *server) postConfig(w http.ResponseWriter, r *http.Request) {
 		c.SteamID, c.CustomTitle, c.Template, c.FallbackTmpl = in.SteamID, in.CustomTitle, in.Template, in.FallbackTmpl
 		c.IntervalSeconds, c.Enabled, c.RestoreOnExit = in.IntervalSeconds, in.Enabled, in.RestoreOnExit
 		c.TwitchClientID = in.TwitchClientID
+		c.SetCategory, c.ManageTags, c.Tags = in.SetCategory, in.ManageTags, CleanTags(in.Tags)
 	})
 	if err != nil {
 		http.Error(w, err.Error(), 500)

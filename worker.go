@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 )
@@ -20,6 +22,8 @@ type Status struct {
 	Recent       []Achievement `json:"recent"`
 	Title        string        `json:"title"`
 	OriginalTitl string        `json:"original_title"`
+	Category     string        `json:"category"`
+	Tags         []string      `json:"tags"`
 	LastCheck    time.Time     `json:"last_check"`
 	LastUpdate   time.Time     `json:"last_update"`
 	Error        string        `json:"error"`
@@ -35,9 +39,9 @@ type Worker struct {
 	runMu    sync.Mutex // serialises tick and Restore
 	mu       sync.RWMutex
 	status   Status
-	steamID  string // resolved SteamID64
-	resolved string // the input it was resolved from
-	original string // title before we first changed it
+	steamID  string   // resolved SteamID64
+	resolved string   // the input it was resolved from
+	original *Channel // channel info before we first changed it
 }
 
 func newWorker(s *Store) *Worker {
@@ -146,44 +150,92 @@ func (w *Worker) tick(ctx context.Context) {
 		w.setErr(nil)
 		return
 	}
-	current, err := w.twitch.GetTitle(ctx, cfg)
+	ch, err := w.twitch.GetChannel(ctx, cfg)
 	if err != nil {
 		w.setErr(err)
 		return
 	}
-	if w.original == "" {
-		w.original = current
+	if w.original == nil {
+		orig := ch
+		w.original = &orig
 		w.mu.Lock()
-		w.status.OriginalTitl = current
+		w.status.OriginalTitl = ch.Title
 		w.mu.Unlock()
 	}
-	if current != title {
-		if err := w.twitch.SetTitle(ctx, cfg, title); err != nil {
+
+	patch := map[string]any{}
+	if ch.Title != title {
+		patch["title"] = title
+	}
+	var catErr error
+	if cfg.SetCategory && game != "" {
+		id, name, err := w.twitch.FindCategory(ctx, cfg, game)
+		switch {
+		case err != nil:
+			catErr = err
+		case id == "":
+			catErr = fmt.Errorf("no Twitch category found for %q, category left unchanged", game)
+		case id != ch.GameID:
+			patch["game_id"] = id
+			ch.GameName = name
+		}
+	}
+	if cfg.ManageTags {
+		if tags := CleanTags(cfg.Tags); !sameTags(tags, ch.Tags) {
+			patch["tags"] = tags
+			ch.Tags = tags
+		}
+	}
+	if len(patch) > 0 {
+		if err := w.twitch.UpdateChannel(ctx, cfg, patch); err != nil {
 			w.setErr(err)
 			return
 		}
-		log.Printf("title updated: %s", title)
+		log.Printf("twitch channel updated: %v", patch)
 		w.mu.Lock()
 		w.status.LastUpdate = time.Now()
 		w.mu.Unlock()
 	}
-	w.setErr(nil)
+	w.mu.Lock()
+	w.status.Category, w.status.Tags = ch.GameName, ch.Tags
+	w.mu.Unlock()
+	w.setErr(catErr)
 }
 
-// Restore puts the stream title back to what it was before AchieveTitle started.
+func sameTags(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !strings.EqualFold(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// Restore puts the stream title back to what it was before AchieveTitle
+// started, plus the category and tags if AchieveTitle manages those.
 func (w *Worker) Restore() {
 	w.runMu.Lock()
 	defer w.runMu.Unlock()
 	cfg := w.store.Get()
-	if w.original == "" || cfg.TwitchToken == "" {
+	if w.original == nil || cfg.TwitchToken == "" {
 		return
+	}
+	patch := map[string]any{"title": w.original.Title}
+	if cfg.SetCategory && w.original.GameID != "" {
+		patch["game_id"] = w.original.GameID
+	}
+	if cfg.ManageTags {
+		patch["tags"] = w.original.Tags
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := w.twitch.SetTitle(ctx, cfg, w.original); err != nil {
-		log.Println("could not restore title:", err)
+	if err := w.twitch.UpdateChannel(ctx, cfg, patch); err != nil {
+		log.Println("could not restore channel:", err)
 		return
 	}
-	log.Printf("title restored: %s", w.original)
-	w.original = ""
+	log.Printf("title restored: %s", w.original.Title)
+	w.original = nil
 }

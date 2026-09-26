@@ -24,6 +24,7 @@
   .bar { height:10px; background:#26262c; border-radius:5px; overflow:hidden; margin:8px 0 } .bar > i { display:block; height:100%; background:var(--accent) }
   .toggle { display:flex; gap:8px; align-items:center; font-weight:600; margin-top:12px }
   small { color:var(--muted) }
+  a { color:#bf94ff }
   .count { display:inline-block; margin-top:8px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:#0e0e10; color:var(--muted); font-size:13px }
   .count.full { color:var(--err); border-color:var(--err) }
 </style>
@@ -74,10 +75,21 @@
     <label>Fallback template <span class="hint">— no game running or no achievements</span></label>
     <input type="text" id="fallback_template">
     <p class="hint chips">Placeholders (click to add): <span id="vars"></span></p>
+    <label class="toggle"><input type="checkbox" id="set_category"> Set my Twitch category to the Steam game I'm playing</label>
+    <p class="hint" style="margin:2px 0 0 24px">When you're not in a Steam game, your category is left as it is.</p>
+
+    <label class="toggle"><input type="checkbox" id="manage_tags"> Set my stream tags</label>
+    <div id="tagsBox" style="margin-left:24px">
+      <input type="text" id="tags" placeholder="chillstream, English, AchievementHunting">
+      <p class="hint">Separate with commas. Up to 10 tags, each up to 25 letters or numbers (no spaces or symbols).
+        <a href="#" id="copyTags" hidden>Use my current Twitch tags</a></p>
+      <div id="tagPreview" class="chips"></div>
+    </div>
+
     <label>Check every (seconds)</label>
     <input type="number" id="interval_seconds" min="30" step="10">
     <label class="toggle"><input type="checkbox" id="enabled"> Update my Twitch title automatically</label>
-    <label class="toggle"><input type="checkbox" id="restore_on_exit"> Restore my original title when I stop or close the app</label>
+    <label class="toggle"><input type="checkbox" id="restore_on_exit"> Restore my original title (and category/tags) when I stop or close the app</label>
     <div class="row" style="margin-top:16px"><button onclick="save()">Save</button><span id="saved"></span></div>
   </section>
 
@@ -90,7 +102,8 @@
 <script>
 const $ = id => document.getElementById(id);
 const fields = ['steam_id','custom_title','template','fallback_template','interval_seconds','twitch_client_id'];
-const checks = ['enabled','restore_on_exit'];
+const checks = ['enabled','restore_on_exit','set_category','manage_tags'];
+let currentTags = [];
 let lastFocus = 'template';
 
 function post(url, body) {
@@ -102,6 +115,8 @@ async function load() {
   const c = await (await fetch('/api/config')).json();
   fields.forEach(f => $(f).value = c[f] ?? '');
   checks.forEach(f => $(f).checked = !!c[f]);
+  $('tags').value = (c.tags || []).join(', ');
+  showTags();
   $('steam_api_key').placeholder = c.has_steam_key ? '•••••••• saved (leave blank to keep)' : '';
   $('redir').textContent = c.redirect_uri;
   $('ver').textContent = c.version;
@@ -122,6 +137,7 @@ async function save() {
   fields.forEach(f => body[f] = $(f).value.trim());
   body.interval_seconds = parseInt(body.interval_seconds) || 60;
   checks.forEach(f => body[f] = $(f).checked);
+  body.tags = cleanTags($('tags').value);
   try { await post('/api/config', body); $('saved').innerHTML = '<span class="ok">Saved ✓</span>'; $('steam_api_key').value=''; load(); setTimeout(poll, 2000); }
   catch (e) { $('saved').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
 }
@@ -131,17 +147,29 @@ async function poll() {
   let h = s.game ? `Playing <b>${esc(s.game)}</b>` : 'Not in a Steam game';
   if (s.total) h += ` — ${s.unlocked}/${s.total} achievements`;
   if (s.latest) h += `<br><small>Latest: ${esc(s.latest.name)}</small>`;
+  if (s.category) h += `<br><small>Twitch category: ${esc(s.category)}</small>`;
+  currentTags = s.tags || [];
+  $('copyTags').hidden = !currentTags.length;
   h += `<br><small>${s.running ? 'Auto-update ON' : 'Auto-update OFF'}${s.last_check && !s.last_check.startsWith('0001') ? ' · checked ' + new Date(s.last_check).toLocaleTimeString() : ''}</small>`;
   if (s.error) h += `<br><span class="err">${esc(s.error)}</span>`;
   $('status').innerHTML = h;
   $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
   $('preview').textContent = s.title || '—';
-  const n = s.title ? [...s.title].length : 0;
+  const n = s.title ? s.title.length : 0; // UTF-16 units, the way Twitch counts (🏆 = 2)
   $('chars').hidden = !n;
   $('chars').textContent = `Length: ${n} / 140 characters`;
   $('chars').className = 'count' + (n >= 140 ? ' full' : '');
   $('chars').title = "Twitch titles can be at most 140 characters. Longer titles are shortened automatically.";
 }
+// Mirrors Twitch's rules (and CleanTags on the server) so the preview matches what gets saved.
+const cleanTags = v => [...new Set(v.split(',').map(t => t.replace(/[^\p{L}\p{N}]/gu, '').slice(0, 25)).filter(Boolean))].slice(0, 10);
+function showTags() {
+  $('tagsBox').style.opacity = $('manage_tags').checked ? 1 : .5;
+  $('tagPreview').innerHTML = cleanTags($('tags').value).map(t => `<code>${esc(t)}</code>`).join('');
+}
+$('tags').addEventListener('input', showTags);
+$('manage_tags').addEventListener('change', showTags);
+$('copyTags').onclick = e => { e.preventDefault(); $('tags').value = currentTags.join(', '); showTags(); };
 const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 async function quitApp() {

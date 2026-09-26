@@ -3,7 +3,6 @@ package main
 import (
 	"strings"
 	"testing"
-	"unicode/utf8"
 )
 
 func TestRenderTitle(t *testing.T) {
@@ -21,7 +20,7 @@ func TestRenderTitleFitsTwitchLimit(t *testing.T) {
 	cfg.CustomTitle = strings.Repeat("x", 90)
 	p := &Progress{Unlocked: 1, Total: 2, Latest: &Achievement{Name: strings.Repeat("Very Long Achievement ", 5)}}
 	got := renderTitle(cfg.Template, buildVars(cfg, "", p))
-	if n := utf8.RuneCountInString(got); n > maxTitleLen {
+	if n := titleLen(got); n > maxTitleLen {
 		t.Fatalf("title is %d chars", n)
 	}
 	if !strings.Contains(got, "[1/2 Achievements]") || !strings.Contains(got, "…") {
@@ -33,5 +32,25 @@ func TestFallbackWithoutProgress(t *testing.T) {
 	cfg := defaultConfig()
 	if got := renderTitle(cfg.FallbackTmpl, buildVars(cfg, "", nil)); got != "Chill stream" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestTitleLenCountsEmojiLikeTwitch(t *testing.T) {
+	if n := titleLen("Potato potata [45/179 Achievements] 🏆 Hoarder"); n != 46 {
+		t.Fatalf("got %d, Twitch shows 46", n)
+	}
+}
+
+func TestCleanTags(t *testing.T) {
+	got := CleanTags([]string{"chill stream", "Achievement-Hunting", "chillstream", "", "abcdefghijklmnopqrstuvwxyz0"})
+	want := []string{"chillstream", "AchievementHunting", "abcdefghijklmnopqrstuvwxy"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("got %v", got)
+	}
+}
+
+func TestNormalizeName(t *testing.T) {
+	if normalizeName("Brotato™") != normalizeName("brotato") {
+		t.Fatal("trademark sign should be ignored")
 	}
 }

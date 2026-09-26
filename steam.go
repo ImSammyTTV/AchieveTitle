@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const steamAPI = "https://api.steampowered.com"
+var steamAPI = "https://api.steampowered.com"
 
 var steamID64Re = regexp.MustCompile(`^\d{17}$`)
 
