@@ -3,14 +3,21 @@
 set -eu
 TAG="$1"; VERSION="${TAG#v}"
 LDFLAGS="-s -w -X main.version=$TAG"
-rm -rf build dist && mkdir -p build dist
+rm -rf build && mkdir -p build dist   # dist/ may already hold the macOS zips
 
-for target in windows/amd64 windows/arm64 darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
+# Windows: app icon + version info, and no console window (-H windowsgui).
+go-winres simply --icon assets/icon-1024.png --manifest gui --product-name AchieveTitle \
+  --file-description AchieveTitle --product-version "$VERSION" --file-version "$VERSION" --arch amd64,arm64
+trap 'rm -f rsrc_windows_*.syso' EXIT
+
+# macOS is built separately on a Mac (packaging/build-mac.sh) for the menu bar icon.
+for target in windows/amd64 windows/arm64 linux/amd64 linux/arm64; do
   os=${target%/*}; arch=${target#*/}
   name="AchieveTitle-$TAG-$os-$arch"
-  ext=""; [ "$os" = windows ] && ext=.exe
+  ext=""; flags="$LDFLAGS"
+  [ "$os" = windows ] && ext=.exe && flags="$LDFLAGS -H windowsgui"
   mkdir -p "build/$name"
-  GOOS=$os GOARCH=$arch go build -trimpath -ldflags "$LDFLAGS" -o "build/$name/AchieveTitle$ext" .
+  GOOS=$os GOARCH=$arch go build -trimpath -ldflags "$flags" -o "build/$name/AchieveTitle$ext" .
   cp README.md LICENSE "build/$name/"
   cp -r obs "build/$name/"
   (cd build && zip -qr "../dist/$name.zip" "$name")
@@ -28,5 +35,5 @@ for target in windows/amd64 windows/arm64 darwin/amd64 darwin/arm64 linux/amd64 
     done
   fi
 done
-(cd dist && sha256sum * > SHA256SUMS.txt)
+(cd dist && rm -f SHA256SUMS.txt && sha256sum * > SHA256SUMS.txt)
 ls -1 dist

@@ -2,3 +2,5 @@ AchieveTitle
 AchieveTitle.exe
 /dist/
 /build/
+/build-mac/
+rsrc_windows_*.syso

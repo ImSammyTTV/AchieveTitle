@@ -22,6 +22,7 @@
   <div class="bar"><i id="bar" style="width:0"></i></div>
   <div class="title" id="title">—</div>
   <div id="err" class="err"></div>
+  <div id="upd" hidden style="margin-top:6px"><a href="/" target="_blank">Update available: open Settings</a></div>
   <div class="row">
     <button id="toggle" onclick="toggle()">Auto-update: …</button>
     <button onclick="post('/api/refresh',null).then(()=>setTimeout(poll,1500))">Check now</button>
@@ -51,7 +52,8 @@ async function poll() {
     $('err').textContent = 'AchieveTitle is not running.';
   }
 }
-poll(); setInterval(poll, 5000);
+async function upd() { try { $('upd').hidden = !(await (await fetch('/api/update')).json()).available; } catch (e) {} }
+poll(); upd(); setInterval(poll, 5000); setInterval(upd, 10 * 60 * 1000);
 </script>
 </body>
 </html>

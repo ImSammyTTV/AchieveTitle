@@ -14,19 +14,21 @@ Runs on **Windows, macOS and Linux**. One small download, nothing else to instal
 - Title templates with placeholders, auto-shortened to fit Twitch's 140-character limit
 - Optional **OBS overlay**: progress bar + "Achievement unlocked" popup with rarity
 - Restores your original title when you stop or close the app
+- Runs quietly in your system tray / menu bar, and updates itself with one click
 - Everything stays on your PC — settings page runs locally at `http://localhost:7878`
 
 ## Setup
 
 1. Download the zip for your system from [Releases](../../releases) and unzip it.
-2. Run **AchieveTitle** (on macOS: right-click → Open the first time). Your browser opens the settings page.
+2. Run **AchieveTitle** (on macOS: move **AchieveTitle.app** to Applications, then right-click → Open the first time).
+   Your browser opens the settings page, and a 🏆 icon appears in your system tray / menu bar.
 3. **Connect Twitch.**
 4. Paste your **Steam Web API key** (get one at <https://steamcommunity.com/dev/apikey>) and your **Steam ID**
    (SteamID64, custom URL name, or profile link).
 5. Make your Steam profile and **Game details** public: Steam → Profile → Edit Profile → Privacy Settings.
 6. Write your title template, tick **Update my Twitch title automatically**, and Save.
 
-Keep the app running while you stream.
+Keep the app running while you stream. Use the tray icon to reopen settings or quit.
 
 ### Linux
 
@@ -67,8 +69,10 @@ Add a **Browser Source** with URL `http://localhost:7878/overlay` (600 × 160).
 ## Command-line options
 
 ```
-AchieveTitle -port 7878 -no-browser
+AchieveTitle -port 7878 -no-browser -no-tray
 ```
+
+The log is saved as `achievetitle.log` next to the settings file.
 
 Settings are saved in your user config folder (`%AppData%\AchieveTitle`, `~/Library/Application Support/AchieveTitle`, or `~/.config/AchieveTitle`).
 

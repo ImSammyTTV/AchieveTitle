@@ -5,7 +5,7 @@ Description=AchieveTitle - Steam achievements in your Twitch title
 After=network-online.target
 
 [Service]
-ExecStart=/usr/bin/achievetitle -no-browser
+ExecStart=/usr/bin/achievetitle -no-browser -no-tray
 Restart=on-failure
 
 [Install]

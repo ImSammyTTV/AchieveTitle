@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net"
@@ -16,7 +17,9 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -29,47 +32,114 @@ var version = "dev"
 func main() {
 	port := flag.Int("port", 7878, "port for the local settings page")
 	noBrowser := flag.Bool("no-browser", false, "don't open the settings page on start")
+	noTray := flag.Bool("no-tray", false, "don't show a tray / menu bar icon")
+	restarted := flag.Bool("restarted", false, "internal: started by an update")
 	flag.Parse()
+	setupLogging()
 
-	store, err := loadStore()
-	if err != nil {
-		log.Fatal("loading config: ", err)
-	}
-	worker := newWorker(store)
-
-	// Loopback only: nothing on the network can reach the settings page.
-	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
-	if err != nil {
+	a, ok := startApp(*port, *restarted)
+	if !ok {
 		// Most likely already running (e.g. launched twice from the app menu):
 		// just show the existing settings page.
-		log.Printf("port %d is busy, AchieveTitle is probably already running: %v", *port, err)
 		if !*noBrowser {
 			openBrowser(fmt.Sprintf("http://localhost:%d", *port))
 		}
 		return
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-	srv := &server{store: store, worker: worker, base: fmt.Sprintf("http://localhost:%d", *port), state: randHex(), quit: stop}
+	if !*noBrowser && !*restarted {
+		openBrowser(a.srv.base)
+	}
+	if !*noTray && trayAvailable() {
+		runTray(a)
+	} else {
+		a.wait()
+	}
+}
 
-	go worker.Run(ctx)
-	httpSrv := &http.Server{Handler: srv.routes(), ReadHeaderTimeout: 10 * time.Second}
-	go httpSrv.Serve(ln)
+// setupLogging writes the log to a file next to the settings, because the
+// Windows and macOS builds have no console window to show it in.
+func setupLogging() {
+	p, err := configPath()
+	if err != nil {
+		return
+	}
+	logPath := filepath.Join(filepath.Dir(p), "achievetitle.log")
+	os.MkdirAll(filepath.Dir(logPath), 0o700)
+	if fi, err := os.Stat(logPath); err == nil && fi.Size() > 1<<20 {
+		os.Rename(logPath, logPath+".old") // keep it small
+	}
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		return
+	}
+	// File first: in GUI builds stderr may not exist, and MultiWriter stops at the first error.
+	log.SetOutput(io.MultiWriter(f, os.Stderr))
+}
 
-	log.Printf("AchieveTitle %s running. Settings: %s  |  OBS overlay: %s/overlay", version, srv.base, srv.base)
-	log.Println("Press Ctrl+C to stop.")
-	if !*noBrowser {
-		openBrowser(srv.base)
+type app struct {
+	store   *Store
+	worker  *Worker
+	updater *Updater
+	srv     *server
+	http    *http.Server
+	ctx     context.Context
+	stop    context.CancelFunc
+	port    int
+}
+
+func startApp(port int, restarted bool) (*app, bool) {
+	store, err := loadStore()
+	if err != nil {
+		log.Fatal("loading config: ", err)
 	}
 
-	<-ctx.Done()
+	// Loopback only: nothing on the network can reach the settings page.
+	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	for i := 0; err != nil && restarted && i < 20; i++ {
+		// After an update the old copy may still be releasing the port.
+		time.Sleep(250 * time.Millisecond)
+		ln, err = net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	}
+	if err != nil {
+		log.Printf("port %d is busy, AchieveTitle is probably already running: %v", port, err)
+		return nil, false
+	}
+
+	a := &app{store: store, worker: newWorker(store), updater: newUpdater(), port: port}
+	a.ctx, a.stop = signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	a.srv = &server{store: store, worker: a.worker, updater: a.updater, base: fmt.Sprintf("http://localhost:%d", port), state: randHex(), quit: a.stop}
+
+	go a.worker.Run(a.ctx)
+	go a.updater.Run(a.ctx, func() bool { return store.Get().CheckUpdates })
+	a.http = &http.Server{Handler: a.srv.routes(), ReadHeaderTimeout: 10 * time.Second}
+	go a.http.Serve(ln)
+
+	log.Printf("AchieveTitle %s running. Settings: %s  |  OBS overlay: %s/overlay", version, a.srv.base, a.srv.base)
+	return a, true
+}
+
+// wait blocks until the app is asked to stop, then shuts down cleanly
+// (and restarts into the new version after an update).
+func (a *app) wait() {
+	<-a.ctx.Done()
+	restart := a.srv.restarting.Load()
 	log.Println("shutting down…")
-	if store.Get().RestoreOnExit {
-		worker.Restore()
+	// Don't flip the title back and forth while an update restarts the app.
+	if a.store.Get().RestoreOnExit && !restart {
+		a.worker.Restore()
 	}
 	sctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	httpSrv.Shutdown(sctx)
+	a.http.Shutdown(sctx)
+
+	if restart {
+		cmd := exec.Command(a.updater.exe, "-port", fmt.Sprint(a.port), "-no-browser", "-restarted")
+		if err := cmd.Start(); err != nil {
+			log.Println("could not restart after update, please start AchieveTitle again:", err)
+			return
+		}
+		log.Println("restarting with the new version…")
+	}
 }
 
 type server struct {
@@ -78,6 +148,9 @@ type server struct {
 	base   string
 	state  string // OAuth CSRF state
 	quit   func()
+
+	updater    *Updater
+	restarting atomic.Bool
 }
 
 func (s *server) routes() http.Handler {
@@ -109,6 +182,14 @@ func (s *server) routes() http.Handler {
 		w.WriteHeader(204)
 		go s.quit()
 	}))
+	mux.HandleFunc("GET /api/update", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, s.updater.Info())
+	})
+	mux.HandleFunc("POST /api/update/check", s.sameOrigin(func(w http.ResponseWriter, r *http.Request) {
+		s.updater.Check(r.Context())
+		writeJSON(w, s.updater.Info())
+	}))
+	mux.HandleFunc("POST /api/update/install", s.sameOrigin(s.installUpdate))
 	mux.HandleFunc("GET /api/twitch/login", s.twitchLogin)
 	mux.HandleFunc("POST /api/twitch/token", s.sameOrigin(s.twitchToken))
 	mux.HandleFunc("POST /api/twitch/logout", s.sameOrigin(s.twitchLogout))
@@ -151,6 +232,7 @@ type publicConfig struct {
 	SetCategory     bool     `json:"set_category"`
 	ManageTags      bool     `json:"manage_tags"`
 	Tags            []string `json:"tags"`
+	CheckUpdates    bool     `json:"check_updates"`
 	TwitchClientID  string   `json:"twitch_client_id"`
 	HasBuiltinID    bool     `json:"has_builtin_client_id"`
 	TwitchLogin     string   `json:"twitch_login"`
@@ -165,7 +247,7 @@ func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
 		SteamID: c.SteamID, HasSteamKey: c.SteamAPIKey != "", CustomTitle: c.CustomTitle,
 		Template: c.Template, FallbackTmpl: c.FallbackTmpl, IntervalSeconds: c.IntervalSeconds,
 		Enabled: c.Enabled, RestoreOnExit: c.RestoreOnExit, TwitchClientID: c.TwitchClientID,
-		SetCategory: c.SetCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags),
+		SetCategory: c.SetCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags), CheckUpdates: c.CheckUpdates,
 		HasBuiltinID: DefaultTwitchClientID != "", TwitchLogin: c.TwitchLogin,
 		Vars: TemplateVars, Version: version, RedirectURI: s.base + "/auth/callback",
 	})
@@ -189,6 +271,7 @@ func (s *server) postConfig(w http.ResponseWriter, r *http.Request) {
 		c.IntervalSeconds, c.Enabled, c.RestoreOnExit = in.IntervalSeconds, in.Enabled, in.RestoreOnExit
 		c.TwitchClientID = in.TwitchClientID
 		c.SetCategory, c.ManageTags, c.Tags = in.SetCategory, in.ManageTags, CleanTags(in.Tags)
+		c.CheckUpdates = in.CheckUpdates
 	})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -208,16 +291,24 @@ func (s *server) setEnabled(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	cfg := s.store.Get()
-	if err := s.store.Update(func(c *Config) { c.Enabled = in.Enabled }); err != nil {
+	if err := s.setEnabledTo(in.Enabled); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	if cfg.Enabled && !in.Enabled && cfg.RestoreOnExit {
+	w.WriteHeader(204)
+}
+
+// setEnabledTo turns automatic updates on or off (dock, tray and OBS script).
+func (s *server) setEnabledTo(on bool) error {
+	was := s.store.Get()
+	if err := s.store.Update(func(c *Config) { c.Enabled = on }); err != nil {
+		return err
+	}
+	if was.Enabled && !on && was.RestoreOnExit {
 		go s.worker.Restore()
 	}
 	s.worker.Kick()
-	w.WriteHeader(204)
+	return nil
 }
 
 func (s *server) twitchLogin(w http.ResponseWriter, r *http.Request) {
@@ -253,6 +344,21 @@ func (s *server) twitchLogout(w http.ResponseWriter, r *http.Request) {
 	s.worker.Restore()
 	s.store.Update(func(c *Config) { c.TwitchToken, c.TwitchUserID, c.TwitchLogin, c.Enabled = "", "", "", false })
 	w.WriteHeader(204)
+}
+
+func (s *server) installUpdate(w http.ResponseWriter, r *http.Request) {
+	if err := s.updater.Install(r.Context()); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	log.Println("update installed")
+	w.WriteHeader(204)
+	// Restart into the new version once this response has gone out.
+	s.restarting.Store(true)
+	go func() {
+		time.Sleep(300 * time.Millisecond)
+		s.quit()
+	}()
 }
 
 func randHex() string {

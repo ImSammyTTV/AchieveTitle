@@ -34,6 +34,15 @@
   <h1>AchieveTitle</h1>
   <p class="sub">Live Steam achievement progress in your Twitch stream title. <small id="ver"></small></p>
 
+  <section id="update" hidden style="border-color:var(--accent)">
+    <h2 id="updTitle"></h2>
+    <p class="hint" id="updText"></p>
+    <div class="row">
+      <button id="updBtn" onclick="installUpdate()">Update now</button>
+      <a class="btn" style="background:#3a3a3d" id="updLink" target="_blank" rel="noopener">What's new</a>
+    </div>
+  </section>
+
   <section>
     <h2>Status</h2>
     <div id="status">Loading…</div>
@@ -90,6 +99,7 @@
     <input type="number" id="interval_seconds" min="30" step="10">
     <label class="toggle"><input type="checkbox" id="enabled"> Update my Twitch title automatically</label>
     <label class="toggle"><input type="checkbox" id="restore_on_exit"> Restore my original title (and category/tags) when I stop or close the app</label>
+    <label class="toggle"><input type="checkbox" id="check_updates"> Tell me when a new version is available</label>
     <div class="row" style="margin-top:16px"><button onclick="save()">Save</button><span id="saved"></span></div>
   </section>
 
@@ -102,7 +112,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const fields = ['steam_id','custom_title','template','fallback_template','interval_seconds','twitch_client_id'];
-const checks = ['enabled','restore_on_exit','set_category','manage_tags'];
+const checks = ['enabled','restore_on_exit','set_category','manage_tags','check_updates'];
 let currentTags = [];
 let lastFocus = 'template';
 
@@ -177,7 +187,36 @@ async function quitApp() {
   await post('/api/quit').catch(() => {});
   document.querySelector('main').innerHTML = '<h1>AchieveTitle has stopped.</h1><p class="sub">You can close this tab.</p>';
 }
-load(); poll(); setInterval(poll, 5000);
+async function checkUpdate() {
+  const u = await (await fetch('/api/update')).json();
+  $('update').hidden = !u.available;
+  if (!u.available) return;
+  $('updTitle').textContent = `AchieveTitle ${u.latest} is available`;
+  $('updLink').href = u.page_url;
+  $('updBtn').hidden = !u.can_install;
+  $('updText').textContent = u.can_install
+    ? `You have ${u.current}. Updating keeps all your settings and restarts AchieveTitle.`
+    : `You have ${u.current}. Automatic update isn't possible here (${u.cant_install}).`;
+  if (!u.can_install) $('updLink').textContent = 'Download';
+  if (u.error) $('updText').innerHTML += `<br><span class="err">${esc(u.error)}</span>`;
+}
+
+async function installUpdate() {
+  const from = (await (await fetch('/api/config')).json()).version;
+  $('updBtn').disabled = true;
+  $('updText').textContent = 'Downloading and checking the update…';
+  try { await post('/api/update/install'); }
+  catch (e) { $('updText').innerHTML = `<span class="err">${esc(e.message)}</span>`; $('updBtn').disabled = false; return; }
+  $('updText').textContent = 'Restarting AchieveTitle…';
+  // Wait for the new version to come back up, then reload the page.
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    try { const c = await (await fetch('/api/config')).json(); if (c.version !== from) { location.reload(); return; } } catch (e) {}
+  }
+  $('updText').textContent = "AchieveTitle didn't come back up by itself. Please start it again.";
+}
+
+load(); poll(); checkUpdate(); setInterval(poll, 5000); setInterval(checkUpdate, 10 * 60 * 1000);
 </script>
 </body>
 </html>

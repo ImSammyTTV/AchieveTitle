@@ -23,6 +23,12 @@ type Config struct {
 	ManageTags  bool     `json:"manage_tags"`
 	Tags        []string `json:"tags"`
 
+	CheckUpdates bool `json:"check_updates"`
+
+	// Channel info from before AchieveTitle changed it, kept on disk so it can
+	// still be restored after a crash or an update restart.
+	OriginalChannel *Channel `json:"original_channel,omitempty"`
+
 	TwitchClientID string `json:"twitch_client_id,omitempty"`
 	TwitchToken    string `json:"twitch_token,omitempty"`
 	TwitchUserID   string `json:"twitch_user_id,omitempty"`
@@ -37,6 +43,7 @@ func defaultConfig() Config {
 		IntervalSeconds: 60,
 		RestoreOnExit:   true,
 		SetCategory:     true,
+		CheckUpdates:    true,
 	}
 }
 

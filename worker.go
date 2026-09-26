@@ -45,7 +45,12 @@ type Worker struct {
 }
 
 func newWorker(s *Store) *Worker {
-	return &Worker{store: s, steam: newSteam(), twitch: newTwitch(), kick: make(chan struct{}, 1)}
+	w := &Worker{store: s, steam: newSteam(), twitch: newTwitch(), kick: make(chan struct{}, 1)}
+	w.original = s.Get().OriginalChannel // survives restarts
+	if w.original != nil {
+		w.status.OriginalTitl = w.original.Title
+	}
+	return w
 }
 
 func (w *Worker) Status() Status {
@@ -158,6 +163,7 @@ func (w *Worker) tick(ctx context.Context) {
 	if w.original == nil {
 		orig := ch
 		w.original = &orig
+		w.store.Update(func(c *Config) { c.OriginalChannel = &orig })
 		w.mu.Lock()
 		w.status.OriginalTitl = ch.Title
 		w.mu.Unlock()
@@ -238,4 +244,5 @@ func (w *Worker) Restore() {
 	}
 	log.Printf("title restored: %s", w.original.Title)
 	w.original = nil
+	w.store.Update(func(c *Config) { c.OriginalChannel = nil })
 }

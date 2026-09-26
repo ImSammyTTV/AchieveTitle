@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.0
+- Runs as a proper app: no command window on Windows, a real AchieveTitle.app on macOS
+- Tray / menu bar icon with Open settings, auto-update on/off, current title and Quit
+- App icon on Windows and macOS
+- Built-in updates: AchieveTitle tells you when a new version is out and installs it
+  with one click (checksum-verified, keeps your settings, restarts by itself)
+- Original title/category/tags are remembered across restarts and crashes
+- Log file next to your settings (achievetitle.log) for troubleshooting
+
 ## v0.3.0
 - Sets your Twitch category to the Steam game you're playing (on by default)
 - Optional: manage your stream tags from AchieveTitle

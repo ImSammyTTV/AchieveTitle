@@ -1,4 +1,4 @@
-# Push a tag like v0.1.0 (or publish a release) to build downloads for
+# Push a tag like v0.4.0 (or publish a release) to build downloads for
 # Windows, macOS and Linux, plus .deb/.rpm/.apk/Arch packages.
 name: Release
 on:
@@ -7,14 +7,30 @@ on:
 permissions:
   contents: write
 jobs:
+  mac:
+    # The menu bar icon needs cgo, so macOS builds on a Mac.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - run: packaging/build-mac.sh "$GITHUB_REF_NAME"
+      - uses: actions/upload-artifact@v4
+        with: { name: mac, path: dist/*.zip }
+
   build:
+    needs: mac
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version-file: go.mod }
       - run: go test ./...
-      - run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.41.1
+      - run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.41.1
+          go install github.com/tc-hib/go-winres@v0.3.3
+      - uses: actions/download-artifact@v4
+        with: { name: mac, path: dist }
       - name: Build
         env:
           CGO_ENABLED: "0"
