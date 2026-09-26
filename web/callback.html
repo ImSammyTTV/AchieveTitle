@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Connecting Twitch…</title>
+<style>body{background:#0e0e10;color:#efeff1;font:16px system-ui,sans-serif;display:grid;place-items:center;height:100vh;margin:0}</style>
+</head>
+<body>
+<p id="msg">Connecting Twitch…</p>
+<script>
+// Twitch returns the token in the URL fragment, which never reaches a server
+// on its own; hand it to the local app, then clear it from the address bar.
+const p = new URLSearchParams(location.hash.slice(1));
+history.replaceState(null, '', '/auth/callback');
+const msg = document.getElementById('msg');
+if (!p.get('access_token')) {
+  msg.textContent = 'Twitch login was cancelled. You can close this tab.';
+} else {
+  fetch('/api/twitch/token', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({token: p.get('access_token'), state: p.get('state')})})
+    .then(async r => { if (!r.ok) throw new Error(await r.text()); location.href = '/'; })
+    .catch(e => msg.textContent = 'Could not connect: ' + e.message);
+}
+</script>
+</body>
+</html>

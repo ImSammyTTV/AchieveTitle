@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AchieveTitle</title>
+<style>
+  :root { --bg:#0e0e10; --panel:#18181b; --line:#2f2f35; --text:#efeff1; --muted:#adadb8; --accent:#9147ff; --ok:#00c46a; --err:#ff5c5c; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, sans-serif }
+  main { max-width:760px; margin:0 auto; padding:24px 16px 64px }
+  h1 { margin:0 0 4px; font-size:24px } h2 { font-size:16px; margin:0 0 12px }
+  .sub { color:var(--muted); margin:0 0 20px }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:16px }
+  label { display:block; font-weight:600; margin:12px 0 4px } label:first-of-type { margin-top:0 }
+  .hint { color:var(--muted); font-size:13px; font-weight:400 }
+  input[type=text], input[type=password], input[type=number] { width:100%; padding:9px 10px; border-radius:6px; border:1px solid var(--line); background:#0e0e10; color:var(--text); font:inherit }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+  button, .btn { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:9px 14px; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block }
+  button.secondary { background:#3a3a3d }
+  .preview { font-size:18px; padding:12px; background:#0e0e10; border-radius:6px; border:1px solid var(--line); word-break:break-word }
+  .chips code { background:#26262c; padding:2px 6px; border-radius:4px; margin:2px; display:inline-block; cursor:pointer }
+  .ok { color:var(--ok) } .err { color:var(--err) }
+  .bar { height:10px; background:#26262c; border-radius:5px; overflow:hidden; margin:8px 0 } .bar > i { display:block; height:100%; background:var(--accent) }
+  .toggle { display:flex; gap:8px; align-items:center; font-weight:600; margin-top:12px }
+  small { color:var(--muted) }
+</style>
+</head>
+<body>
+<main>
+  <h1>AchieveTitle</h1>
+  <p class="sub">Live Steam achievement progress in your Twitch stream title. <small id="ver"></small></p>
+
+  <section>
+    <h2>Status</h2>
+    <div id="status">Loading…</div>
+    <div class="bar"><i id="bar" style="width:0"></i></div>
+    <div class="preview" id="preview">—</div>
+    <div class="row" style="margin-top:12px">
+      <button class="secondary" onclick="post('/api/refresh').then(()=>setTimeout(poll,1500))">Check now</button>
+      <button class="secondary" onclick="post('/api/restore')">Restore original title</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>1. Twitch</h2>
+    <div id="twitch"></div>
+    <div id="clientIdBox">
+      <label>Twitch Client ID <span class="hint">— create one at dev.twitch.tv/console (OAuth redirect: <code id="redir"></code>)</span></label>
+      <input type="text" id="twitch_client_id" autocomplete="off">
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Steam</h2>
+    <label>Steam Web API key <span class="hint">— get one at steamcommunity.com/dev/apikey</span></label>
+    <input type="password" id="steam_api_key" autocomplete="off">
+    <label>Steam ID <span class="hint">— SteamID64, custom URL name, or your profile link</span></label>
+    <input type="text" id="steam_id">
+    <p class="hint">Your Steam profile and <b>Game details</b> must be set to Public (Steam → Profile → Edit Profile → Privacy Settings).</p>
+  </section>
+
+  <section>
+    <h2>3. Title</h2>
+    <label>Custom text <span class="hint">— used as <code>{custom}</code></span></label>
+    <input type="text" id="custom_title" maxlength="140">
+    <label>Title template <span class="hint">— when the game has achievements</span></label>
+    <input type="text" id="template">
+    <label>Fallback template <span class="hint">— no game running or no achievements</span></label>
+    <input type="text" id="fallback_template">
+    <p class="hint chips">Placeholders (click to add): <span id="vars"></span></p>
+    <label>Check every (seconds)</label>
+    <input type="number" id="interval_seconds" min="30" step="10">
+    <label class="toggle"><input type="checkbox" id="enabled"> Update my Twitch title automatically</label>
+    <label class="toggle"><input type="checkbox" id="restore_on_exit"> Restore my original title when I stop or close the app</label>
+    <div class="row" style="margin-top:16px"><button onclick="save()">Save</button><span id="saved"></span></div>
+  </section>
+
+  <section>
+    <h2>OBS overlay (optional)</h2>
+    <p class="hint">Add a <b>Browser Source</b> in OBS with this URL (width 600, height 160). It shows a progress bar and pops up when you unlock something.</p>
+    <div class="preview"><code id="overlayUrl"></code></div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const fields = ['steam_id','custom_title','template','fallback_template','interval_seconds','twitch_client_id'];
+const checks = ['enabled','restore_on_exit'];
+let lastFocus = 'template';
+
+function post(url, body) {
+  return fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : undefined})
+    .then(async r => { if (!r.ok) throw new Error(await r.text()); return r; });
+}
+
+async function load() {
+  const c = await (await fetch('/api/config')).json();
+  fields.forEach(f => $(f).value = c[f] ?? '');
+  checks.forEach(f => $(f).checked = !!c[f]);
+  $('steam_api_key').placeholder = c.has_steam_key ? '•••••••• saved (leave blank to keep)' : '';
+  $('redir').textContent = c.redirect_uri;
+  $('ver').textContent = c.version;
+  $('clientIdBox').style.display = c.has_builtin_client_id && !c.twitch_client_id ? 'none' : '';
+  $('overlayUrl').textContent = location.origin + '/overlay';
+  $('twitch').innerHTML = c.twitch_login
+    ? `<span class="ok">Connected as <b>${esc(c.twitch_login)}</b></span> <button class="secondary" onclick="post('/api/twitch/logout').then(load)">Disconnect</button>`
+    : `<a class="btn" href="/api/twitch/login" onclick="return saveFirst(event)">Connect Twitch</a>`;
+  $('vars').innerHTML = c.vars.map(v => `<code data-v="${v}">{${v}}</code>`).join('');
+  document.querySelectorAll('[data-v]').forEach(el => el.onclick = () => { const i = $(lastFocus); i.value += '{' + el.dataset.v + '}'; i.focus(); });
+}
+['template','fallback_template'].forEach(f => $(f).addEventListener('focus', () => lastFocus = f));
+
+async function saveFirst(e) { e.preventDefault(); await save(); location.href = '/api/twitch/login'; }
+
+async function save() {
+  const body = {steam_api_key: $('steam_api_key').value.trim()};
+  fields.forEach(f => body[f] = $(f).value.trim());
+  body.interval_seconds = parseInt(body.interval_seconds) || 60;
+  checks.forEach(f => body[f] = $(f).checked);
+  try { await post('/api/config', body); $('saved').innerHTML = '<span class="ok">Saved ✓</span>'; $('steam_api_key').value=''; load(); setTimeout(poll, 2000); }
+  catch (e) { $('saved').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
+
+async function poll() {
+  const s = await (await fetch('/api/status')).json();
+  let h = s.game ? `Playing <b>${esc(s.game)}</b>` : 'Not in a Steam game';
+  if (s.total) h += ` — ${s.unlocked}/${s.total} achievements`;
+  if (s.latest) h += `<br><small>Latest: ${esc(s.latest.name)}</small>`;
+  h += `<br><small>${s.running ? 'Auto-update ON' : 'Auto-update OFF'}${s.last_check && !s.last_check.startsWith('0001') ? ' · checked ' + new Date(s.last_check).toLocaleTimeString() : ''}</small>`;
+  if (s.error) h += `<br><span class="err">${esc(s.error)}</span>`;
+  $('status').innerHTML = h;
+  $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
+  $('preview').textContent = s.title ? s.title + `  (${[...s.title].length}/140)` : '—';
+}
+const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+load(); poll(); setInterval(poll, 5000);
+</script>
+</body>
+</html>

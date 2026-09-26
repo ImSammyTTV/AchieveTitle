@@ -1,0 +1,36 @@
+# Push a tag like v0.1.0 to build Windows, macOS and Linux downloads.
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - run: go test ./...
+      - name: Build
+        env:
+          CGO_ENABLED: "0"
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+        run: |
+          mkdir dist
+          for target in windows/amd64 windows/arm64 darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
+            os=${target%/*}; arch=${target#*/}
+            name=AchieveTitle-${GITHUB_REF_NAME}-${os}-${arch}
+            ext=""; [ "$os" = windows ] && ext=.exe
+            mkdir -p "build/$name"
+            GOOS=$os GOARCH=$arch go build -trimpath \
+              -ldflags "-s -w -X main.version=${GITHUB_REF_NAME} -X main.DefaultTwitchClientID=${TWITCH_CLIENT_ID}" \
+              -o "build/$name/AchieveTitle$ext" .
+            cp README.md LICENSE "build/$name/"
+            (cd build && zip -qr "../dist/$name.zip" "$name")
+          done
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
