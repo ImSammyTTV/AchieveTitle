@@ -633,7 +633,7 @@ func openBrowser(u string) {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", u)
+		cmd = hideWindow(exec.Command("rundll32", "url.dll,FileProtocolHandler", u))
 	case "darwin":
 		cmd = exec.Command("open", u)
 	default:

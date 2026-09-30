@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.13
+- Fixed (Windows): a command prompt window flashed up after saving settings or opening the OBS tab
+
 ## v0.7.12
 - 💫 Animated progress bars: choose **Still**, **Shimmer** (a light sweeps along it, the new default) or **Flowing** colours in the OBS tab. Applies to the overlay, the settings page and the OBS panel
 

@@ -35,7 +35,7 @@ var obsRunning = func() bool {
 	var out []byte
 	switch runtime.GOOS {
 	case "windows":
-		out, _ = exec.Command("tasklist", "/FO", "CSV", "/NH").Output()
+		out, _ = hideWindow(exec.Command("tasklist", "/FO", "CSV", "/NH")).Output()
 		s := strings.ToLower(string(out))
 		return strings.Contains(s, `"obs64.exe"`) || strings.Contains(s, `"obs32.exe"`)
 	case "darwin":
