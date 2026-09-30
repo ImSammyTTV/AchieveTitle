@@ -18,6 +18,7 @@
   <a href="https://github.com/ImSammyTTV/achievetitle/releases/latest"><b>⬇️ Download</b></a> ·
   <a href="#-quick-start"><b>🚀 Quick start</b></a> ·
   <a href="#-obs"><b>🎥 OBS</b></a> ·
+  <a href="#-mac"><b>🍎 Mac</b></a> ·
   <a href="#-linux"><b>🐧 Linux</b></a> ·
   <a href="#-help"><b>❓ Help</b></a>
 </p>
@@ -93,8 +94,7 @@ are always kept.
    | System | Download |
    |---|---|
    | 🪟 **Windows** | `AchieveTitle-…-windows-amd64.zip` |
-   | 🍎 **Mac (Apple Silicon)** | `AchieveTitle-…-darwin-arm64.zip` |
-   | 🍎 **Mac (Intel)** | `AchieveTitle-…-darwin-amd64.zip` |
+   | 🍎 **Mac** | use the [one-line installer](#-mac) (recommended) or `AchieveTitle-…-darwin-arm64.zip` (Apple Silicon) / `darwin-amd64.zip` (Intel) |
    | 🐧 **Linux** | see [Linux](#-linux) below |
 
 2. **Unzip and run AchieveTitle.** The settings page opens in your browser and a 🏆 appears in your tray / menu bar.
@@ -105,7 +105,7 @@ are always kept.
 
 > [!TIP]
 > **Windows** may say *"Windows protected your PC"*: click **More info → Run anyway**.
-> **Mac:** move **AchieveTitle.app** to Applications, then right-click it → **Open** the first time.
+> **Mac:** use the [one-line installer](#-mac) to skip macOS's security prompts entirely.
 
 ---
 
@@ -152,6 +152,32 @@ bar and an *"Achievement unlocked"* popup.
 > [!WARNING]
 > OBS's own *Stream Information* panel also sets your title. If you press *Update* there, it overwrites
 > AchieveTitle's title until the next change.
+
+---
+
+## 🍎 Mac
+
+Open **Terminal** (press ⌘ Space, type *Terminal*, press Enter), paste this and press Enter:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/achievetitle/main/install-mac.sh | sh
+```
+
+It picks the right version for your Mac, checks the download against the release's checksum, installs
+**AchieveTitle.app** into Applications and opens it. There are no *"can't be opened"* warnings, because Terminal downloads
+aren't quarantined the way browser downloads are.
+
+<details>
+<summary>Installing from the zip instead</summary>
+
+AchieveTitle isn't signed by Apple yet, so macOS blocks it the first time:
+
+1. Unzip, move **AchieveTitle.app** to Applications and double-click it. macOS says it can't be opened: click **Done**.
+2. Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to AchieveTitle.
+3. Confirm with your password. From then on it opens normally.
+</details>
+
+Uninstall: `curl -fsSL …/install-mac.sh | sh -s -- --uninstall` (your settings are kept).
 
 ---
 
