@@ -60,7 +60,7 @@ async function tick() {
   lastSig = sig;
   const known = seen || new Set(recent.map(a => a.api_name));
   list.innerHTML = recent.map(a => {
-    const pct = a.global_percent ? (a.global_percent < 10 ? a.global_percent.toFixed(1) : Math.round(a.global_percent)) + '% of players' : '';
+    const pct = a.global_percent ? (a.global_percent < 10 ? a.global_percent.toFixed(1) : Math.round(a.global_percent)) + '%' : '';
     const when = a.unlock_time ? new Date(a.unlock_time * 1000).toLocaleDateString(undefined, {day:'numeric', month:'short'}) : '';
     const icon = a.icon ? `<img class="icon" src="${esc(a.icon)}" alt="">` : '<div class="icon">🏆</div>';
     return `<li class="${known.has(a.api_name) ? '' : 'new'}">${icon}<div class="name">${esc(a.name)}</div>` +

@@ -133,8 +133,8 @@ func TestChatCommandsAndAnnouncements(t *testing.T) {
 	eventsubURL = "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
 
 	cfg := defaultConfig()
-	cfg.TwitchToken, cfg.TwitchUserID, cfg.TwitchLogin = "chan-token", "100", "imsammy"
-	cfg.BotToken, cfg.BotUserID, cfg.BotLogin = "bot-token", "200", "sammybot"
+	cfg.TwitchToken, cfg.TwitchUserID, cfg.TwitchLogin = "chan-token", "100", "streamer"
+	cfg.BotToken, cfg.BotUserID, cfg.BotLogin = "bot-token", "200", "examplebot"
 	cfg.Chat.Enabled = true
 	store := &Store{path: t.TempDir() + "/c.json", cfg: cfg}
 	w := newWorker(store)
@@ -147,7 +147,7 @@ func TestChatCommandsAndAnnouncements(t *testing.T) {
 	defer cancel()
 	go chat.Run(ctx)
 	<-f.connected
-	waitFor(t, "connected status", func() bool { return chat.Status() == "connected as sammybot" })
+	waitFor(t, "connected status", func() bool { return chat.Status() == "connected as examplebot" })
 
 	if len(f.subs) != 1 || f.subs[0]["condition"].(map[string]any)["user_id"] != "200" {
 		t.Fatalf("bad subscription: %v", f.subs)
@@ -156,13 +156,13 @@ func TestChatCommandsAndAnnouncements(t *testing.T) {
 	f.say(t, "300", "viewer1", "!achievements please")
 	waitFor(t, "reply", func() bool { return len(f.messages()) == 1 })
 	m := f.messages()[0]
-	if m["message"] != "🏆 imsammy has 45/179 achievements in Brotato (25%). Latest: Hoarder" ||
+	if m["message"] != "🏆 streamer has 45/179 achievements in Brotato (25%). Latest: Hoarder" ||
 		m["sender_id"] != "200" || m["broadcaster_id"] != "100" || m["reply_parent_message_id"] != "m-!achievements please" {
 		t.Fatalf("reply: %v", m)
 	}
 
 	f.say(t, "301", "viewer2", "!achievements")          // on cooldown: ignored
-	f.say(t, "200", "sammybot", "!progress")             // the bot itself: ignored
+	f.say(t, "200", "examplebot", "!progress")             // the bot itself: ignored
 	f.say(t, "302", "mod", "!ACHIEVEMENTS", "moderator") // mods skip the cooldown
 	waitFor(t, "mod reply", func() bool { return len(f.messages()) == 2 })
 	time.Sleep(100 * time.Millisecond)
@@ -172,7 +172,7 @@ func TestChatCommandsAndAnnouncements(t *testing.T) {
 
 	chat.Announce([]Achievement{{Name: "Speedrunner", Achieved: true, Percent: 0.8}})
 	msgs := f.messages()
-	if last := msgs[len(msgs)-1]; last["message"] != "🎉 imsammy just unlocked Speedrunner (only 0.8% of players have it)!" || last["reply_parent_message_id"] != "" {
+	if last := msgs[len(msgs)-1]; last["message"] != "🎉 streamer just unlocked Speedrunner (only 0.8% of players have it)!" || last["reply_parent_message_id"] != "" {
 		t.Fatalf("announcement: %v", last)
 	}
 

@@ -203,15 +203,17 @@ Close OBS, open AchieveTitle's **OBS** tab and click **Set up OBS for me**. It a
 (starts AchieveTitle with OBS and only updates your title while you're live) and the **control panel** under
 *View → Docks*. Your OBS settings are backed up first, as `.achievetitle-backup` files next to the originals.
 
-<img src="assets/screenshot-dock-v2.png" alt="AchieveTitle control panel inside OBS" width="280" align="right">
-
 ### Control panel
 Change the things you touch mid-stream without leaving OBS: switch title updates, chat commands and category on
 or off, edit your custom text and template, pick a bar style, choose what you're chasing, see recent unlocks,
 and send a test popup. Changes apply instantly.
 
+<p align="center">
+  <img src="assets/screenshot-dock-v2.png" alt="AchieveTitle control panel inside OBS" width="300">
+</p>
+
 ### Overlay
-<p>
+<p align="center">
   <img src="assets/screenshot-overlay.png" alt="The overlay: game art, progress and the achievement being chased" width="420"><br>
   <img src="assets/screenshot-popup.png" alt="The achievement unlocked popup with the achievement's art" width="420">
 </p>
@@ -229,7 +231,9 @@ The **OBS** tab has a live preview, a **Test popup** button and these steps:
 Add `?count=3` for fewer rows (up to 6), `?heading=0` to hide the heading or `?hideidle=1` to hide it outside a Steam game
 (join several with `&`).
 
-<br clear="right">
+<p align="center">
+  <img src="assets/screenshot-recent.png" alt="The recent unlocks overlay: achievement art, name, rarity and date" width="420">
+</p>
 
 <details>
 <summary>Setting up the script and control panel by hand instead</summary>
