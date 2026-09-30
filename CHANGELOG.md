@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.6
+- The drifting achievement icons now fill the whole window evenly (they were bunched on the left), and fade in and out at the top and bottom
+
 ## v0.7.5
 - The drifting background now uses the art of every achievement in your game, shuffled, not just your last few unlocks
 

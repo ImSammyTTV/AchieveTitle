@@ -22,9 +22,11 @@
   html { background:var(--bg) }
 
   /* Drifting achievement icons behind everything, tilted and faded out */
-  .drift { position:fixed; inset:-30% -30%; z-index:0; pointer-events:none; overflow:hidden; transform:rotate(-16deg);
-           opacity:.09; display:flex; flex-direction:column; justify-content:center; gap:34px;
-           -webkit-mask-image:radial-gradient(closest-side, #000 35%, transparent 100%); mask-image:radial-gradient(closest-side, #000 35%, transparent 100%) }
+  .drift { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; opacity:.09;
+           -webkit-mask-image:linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+           mask-image:linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent) }
+  .drift-in { position:absolute; left:50%; top:50%; width:max(180vw, 180vh); height:max(180vw, 180vh);
+              transform:translate(-50%, -50%) rotate(-16deg); display:flex; flex-direction:column; justify-content:center; gap:34px }
   .drift-row { display:flex; gap:34px; width:max-content; animation:drift var(--t, 90s) linear infinite }
   .drift-row:nth-child(even) { animation-direction:reverse }
   .drift-row > * { width:56px; height:56px; border-radius:12px; flex:none; object-fit:cover; display:grid; place-items:center;
@@ -1010,11 +1012,11 @@ function drawDrift(icons) {
   if (key === driftKey) return;
   driftKey = key;
   const tile = i => icons.length ? `<img src="${esc(icons[i % icons.length])}" alt="">` : '<div>🏆</div>';
-  $('drift').innerHTML = Array.from({length: 7}, (_, r) => {
+  $('drift').innerHTML = '<div class="drift-in">' + Array.from({length: 20}, (_, r) => {
     // Each row is its tiles twice over, so sliding by half loops seamlessly.
-    const tiles = Array.from({length: 16}, (_, i) => tile(i + r * 16)).join('');
-    return `<div class="drift-row" style="--t:${80 + r * 13}s">${tiles}${tiles}</div>`;
-  }).join('');
+    const tiles = Array.from({length: 40}, (_, i) => tile(i + r * 17)).join('');
+    return `<div class="drift-row" style="--t:${160 + r % 4 * 25}s">${tiles}${tiles}</div>`;
+  }).join('') + '</div>';
 }
 drawDrift([]);
 // Fetch every achievement's art for the current game (once per game), shuffled.
