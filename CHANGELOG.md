@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.7.2
+- Recent unlocks overlay shows rarity as just "4.2%", so long achievement names fit
+- README: tidier OBS section with the recent unlocks overlay pictured, and proper OBS, Apple and Linux logos
+
 ## v0.7.1
 - 🕒 New **Recent unlocks** OBS overlay: your latest achievements with their art, rarity and date, as its own Browser source (`/overlay/recent`). New unlocks slide in with a gold flash. Copy the link from the OBS tab
 
