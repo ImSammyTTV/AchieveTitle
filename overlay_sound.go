@@ -16,10 +16,11 @@ type OverlayConfig struct {
 	Volume      int    `json:"volume"`       // 0-100
 	CustomSound string `json:"custom_sound"` // original name of the uploaded file
 	SoundVer    int    `json:"sound_ver"`    // bumped on upload so the overlay reloads it
+	BarAnim     string `json:"bar_anim"`     // progress bar: "none", "shimmer" or "flow"
 }
 
 func defaultOverlay() OverlayConfig {
-	return OverlayConfig{Animation: "confetti", Sound: "chime", Volume: 70}
+	return OverlayConfig{Animation: "confetti", Sound: "chime", Volume: 70, BarAnim: "shimmer"}
 }
 
 func (o OverlayConfig) clean() OverlayConfig {
@@ -36,6 +37,11 @@ func (o OverlayConfig) clean() OverlayConfig {
 		}
 	default:
 		o.Sound = "chime"
+	}
+	switch o.BarAnim {
+	case "none", "shimmer", "flow":
+	default:
+		o.BarAnim = "shimmer"
 	}
 	o.Volume = min(max(o.Volume, 0), 100)
 	return o

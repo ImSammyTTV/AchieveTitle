@@ -582,7 +582,9 @@ func (s *server) twitchToken(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) twitchLogout(w http.ResponseWriter, r *http.Request) {
 	s.worker.Restore()
-	s.store.Update(func(c *Config) { c.TwitchToken, c.TwitchUserID, c.TwitchLogin, c.TwitchAvatar, c.Enabled = "", "", "", "", false })
+	s.store.Update(func(c *Config) {
+		c.TwitchToken, c.TwitchUserID, c.TwitchLogin, c.TwitchAvatar, c.Enabled = "", "", "", "", false
+	})
 	w.WriteHeader(204)
 }
 

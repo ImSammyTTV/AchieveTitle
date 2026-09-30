@@ -47,6 +47,16 @@
   @keyframes glow { 0%,100% { box-shadow:0 12px 34px rgba(145,71,255,.55) } 50% { box-shadow:0 0 38px 8px rgba(255,214,90,.85) } }
   @keyframes barpulse { 0%,100% { box-shadow:none } 50% { box-shadow:0 0 14px 3px rgba(255,226,122,.8) } }
   @keyframes pop { 0% { transform:scale(.4) rotate(-20deg) } 60% { transform:scale(1.2) rotate(8deg) } 100% { transform:none } }
+
+  /* Optional progress bar animation: a light sweeping along it, or its colours flowing */
+  .bar > i, .bar i { position:relative; overflow:hidden }
+  body.bar-shimmer .bar i::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+                                   transform:translateX(-100%); animation:barshim 2.6s ease-in-out infinite }
+  body.bar-flow .bar i { background:linear-gradient(90deg, var(--ba1), var(--ba2), var(--ba3), var(--ba2), var(--ba1)) !important; background-size:200% 100% !important; animation:barflow 3s linear infinite }
+  @keyframes barshim { to { transform:translateX(100%) } }
+  @keyframes barflow { to { background-position:-200% 0 } }
+  @media (prefers-reduced-motion: reduce) { body.bar-shimmer .bar i::after, body.bar-flow .bar i { animation:none } }
+  body { --ba1:#9147ff; --ba2:#bf94ff; --ba3:#ffe27a }
 </style>
 </head>
 <body>
@@ -71,6 +81,9 @@
 </div>
 <script src="/sounds.js"></script>
 <script>
+// Progress bar animation (none, shimmer or flow), from the overlay settings.
+function setBarAnim(v) { document.body.classList.toggle('bar-shimmer', v === 'shimmer'); document.body.classList.toggle('bar-flow', v === 'flow'); }
+
 // ?hideidle=1 hides the card when you're not in a Steam game with achievements.
 const hideIdle = new URLSearchParams(location.search).get('hideidle') === '1';
 const $ = id => document.getElementById(id);
@@ -80,7 +93,7 @@ let seen = null, appId = null, testSeq = null;
 // preview: it shows the animation but leaves the sound to the page itself.
 const preview = new URLSearchParams(location.search).get('preview') === '1';
 let fxCfg = {animation:'confetti', sound:'chime', volume:70, sound_ver:0};
-async function loadCfg() { try { const c = await (await fetch('/api/config')).json(); if (c.overlay) fxCfg = c.overlay; } catch (e) {} }
+async function loadCfg() { try { const c = await (await fetch('/api/config')).json(); if (c.overlay) { fxCfg = c.overlay; setBarAnim(fxCfg.bar_anim); } } catch (e) {} }
 
 function popup(name, pct, icon) {
   const t = $('toast');

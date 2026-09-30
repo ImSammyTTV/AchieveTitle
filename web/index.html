@@ -110,6 +110,8 @@
   .seg { display:flex; flex-wrap:wrap; gap:6px }
   .seg button { background:var(--field); border:1px solid var(--line2); padding:7px 11px; font-weight:600; font-size:13px }
   .seg button.sel { border-color:var(--accent); background:rgba(145,71,255,.22) }
+  #ovAnim button, #ovBar button, #ovSound button { padding:5px 9px; font-size:12.5px }
+  #ovAnim, #ovBar, #ovSound { gap:5px }
   .stage { position:relative; aspect-ratio:616/176; border-radius:10px; overflow:hidden; border:1px solid var(--line2);
            background:linear-gradient(120deg,#2b6a3f,#8a7a2a 35%,#6d2f8f 70%,#1d3d7a) }
   .stage iframe { position:absolute; left:0; top:0; width:600px; height:160px; border:0; transform-origin:0 0; background:transparent }
@@ -234,6 +236,16 @@
     .status .actions { grid-template-columns:1fr }
     .update { flex-wrap:wrap } .update .row { margin-left:0 }
   }
+
+  /* Optional progress bar animation: a light sweeping along it, or its colours flowing */
+  .bar > i, .bar i { position:relative; overflow:hidden }
+  body.bar-shimmer .bar i::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+                                   transform:translateX(-100%); animation:barshim 2.6s ease-in-out infinite }
+  body.bar-flow .bar i { background:linear-gradient(90deg, var(--ba1), var(--ba2), var(--ba3), var(--ba2), var(--ba1)) !important; background-size:200% 100% !important; animation:barflow 3s linear infinite }
+  @keyframes barshim { to { transform:translateX(100%) } }
+  @keyframes barflow { to { background-position:-200% 0 } }
+  @media (prefers-reduced-motion: reduce) { body.bar-shimmer .bar i::after, body.bar-flow .bar i { animation:none } }
+  body { --ba1:#9147ff; --ba2:#bf94ff; --ba3:#ffe27a }
 </style>
 </head>
 <body>
@@ -493,6 +505,10 @@
               <div class="seg" id="ovAnim">
                 <button type="button" data-v="confetti">🎊 Confetti</button><button type="button" data-v="glow">✨ Glow</button><button type="button" data-v="simple">▫️ Simple</button>
               </div>
+              <label>Progress bar</label>
+              <div class="seg" id="ovBar">
+                <button type="button" data-v="none">▬ Still</button><button type="button" data-v="shimmer">💫 Shimmer</button><button type="button" data-v="flow">🌊 Flowing</button>
+              </div>
               <label>Sound</label>
               <div class="seg" id="ovSound">
                 <button type="button" data-v="none">🔇 None</button><button type="button" data-v="chime">🔔 Chime</button><button type="button" data-v="fanfare">🎺 Fanfare</button><button type="button" data-v="custom">🎵 My own</button>
@@ -576,6 +592,9 @@
 </div>
 <script src="/sounds.js"></script>
 <script>
+// Progress bar animation (none, shimmer or flow), from the overlay settings.
+function setBarAnim(v) { document.body.classList.toggle('bar-shimmer', v === 'shimmer'); document.body.classList.toggle('bar-flow', v === 'flow'); }
+
 const $ = id => document.getElementById(id);
 const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fields = ['steam_id','custom_title','template','fallback_template','interval_seconds','twitch_client_id'];
@@ -830,6 +849,8 @@ let overlayCfg = {animation:'confetti', sound:'chime', volume:70, custom_sound:'
 function showOverlayCfg() {
   document.querySelectorAll('#ovAnim button').forEach(b => b.classList.toggle('sel', b.dataset.v === overlayCfg.animation));
   document.querySelectorAll('#ovSound button').forEach(b => b.classList.toggle('sel', b.dataset.v === overlayCfg.sound));
+  document.querySelectorAll('#ovBar button').forEach(b => b.classList.toggle('sel', b.dataset.v === (overlayCfg.bar_anim || 'shimmer')));
+  setBarAnim(overlayCfg.bar_anim);
   $('customSoundRow').hidden = overlayCfg.sound !== 'custom';
   $('soundName').textContent = overlayCfg.custom_sound ? '🎵 ' + overlayCfg.custom_sound : 'MP3, WAV, OGG or M4A, up to 3 MB';
   $('ovVolume').value = overlayCfg.volume; $('ovVolumeVal').textContent = overlayCfg.volume + '%';
@@ -837,6 +858,7 @@ function showOverlayCfg() {
 // These apply straight away, so "Test popup" always shows the current choice.
 const saveOverlay = () => post('/api/quick', {overlay: overlayCfg}).catch(() => {});
 document.querySelectorAll('#ovAnim button').forEach(b => b.onclick = () => { overlayCfg.animation = b.dataset.v; showOverlayCfg(); saveOverlay(); });
+document.querySelectorAll('#ovBar button').forEach(b => b.onclick = () => { overlayCfg.bar_anim = b.dataset.v; showOverlayCfg(); saveOverlay(); });
 document.querySelectorAll('#ovSound button').forEach(b => b.onclick = () => {
   overlayCfg.sound = b.dataset.v; showOverlayCfg();
   if (b.dataset.v === 'custom' && !overlayCfg.custom_sound) $('soundFile').click();

@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.12
+- 💫 Animated progress bars: choose **Still**, **Shimmer** (a light sweeps along it, the new default) or **Flowing** colours in the OBS tab. Applies to the overlay, the settings page and the OBS panel
+
 ## v0.7.11
 - 🌈 **Multi-colour progress bars**: new 🟥🟧🟨🟩🟦🟪 rainbow and ❤️🧡💛💚💙💜 hearts styles, or type several characters into *Filled* and the bar uses them in turn (also in the OBS panel)
 - Twitch, Steam and chat bot icons on the status badges at the top

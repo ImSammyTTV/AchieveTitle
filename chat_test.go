@@ -162,7 +162,7 @@ func TestChatCommandsAndAnnouncements(t *testing.T) {
 	}
 
 	f.say(t, "301", "viewer2", "!achievements")          // on cooldown: ignored
-	f.say(t, "200", "examplebot", "!progress")             // the bot itself: ignored
+	f.say(t, "200", "examplebot", "!progress")           // the bot itself: ignored
 	f.say(t, "302", "mod", "!ACHIEVEMENTS", "moderator") // mods skip the cooldown
 	waitFor(t, "mod reply", func() bool { return len(f.messages()) == 2 })
 	time.Sleep(100 * time.Millisecond)

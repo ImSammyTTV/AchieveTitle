@@ -54,6 +54,16 @@
   button.act { background:#3a3d4a; color:#fff; border:0; border-radius:6px; padding:7px 8px; font:inherit; font-weight:600; cursor:pointer }
   button.act:hover { filter:brightness(1.15) }
   .err { color:var(--err); font-size:12px } a { color:var(--accent2) }
+
+  /* Optional progress bar animation: a light sweeping along it, or its colours flowing */
+  .bar > i, .bar i { position:relative; overflow:hidden }
+  body.bar-shimmer .bar i::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+                                   transform:translateX(-100%); animation:barshim 2.6s ease-in-out infinite }
+  body.bar-flow .bar i { background:linear-gradient(90deg, var(--ba1), var(--ba2), var(--ba3), var(--ba2), var(--ba1)) !important; background-size:200% 100% !important; animation:barflow 3s linear infinite }
+  @keyframes barshim { to { transform:translateX(100%) } }
+  @keyframes barflow { to { background-position:-200% 0 } }
+  @media (prefers-reduced-motion: reduce) { body.bar-shimmer .bar i::after, body.bar-flow .bar i { animation:none } }
+  body { --ba1:#9147ff; --ba2:#bf94ff; --ba3:#ffe27a }
 </style>
 </head>
 <body>
@@ -113,6 +123,9 @@
 </div>
 
 <script>
+// Progress bar animation (none, shimmer or flow), from the overlay settings.
+function setBarAnim(v) { document.body.classList.toggle('bar-shimmer', v === 'shimmer'); document.body.classList.toggle('bar-flow', v === 'flow'); }
+
 const $ = id => document.getElementById(id);
 const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const post = (url, body) => fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: body && JSON.stringify(body)})
@@ -174,6 +187,7 @@ async function loadSettings() {
     $('chat_enabled').checked = !!(c.chat && c.chat.enabled);
     $('set_category').checked = !!c.set_category;
     if (c.bar) bar = c.bar;
+    if (c.overlay) setBarAnim(c.overlay.bar_anim);
     showBars();
   } catch (e) {}
 }
