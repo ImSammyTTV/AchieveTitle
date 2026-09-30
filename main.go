@@ -163,8 +163,9 @@ type server struct {
 	chat       *Chat
 	quit       func()
 
-	updater    *Updater
-	restarting atomic.Bool
+	updater     *Updater
+	restarting  atomic.Bool
+	overlayTest atomic.Int64
 }
 
 func (s *server) routes() http.Handler {
@@ -208,6 +209,10 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/twitch/login", s.twitchLogin)
 	mux.HandleFunc("POST /api/twitch/token", s.sameOrigin(s.twitchToken))
 	mux.HandleFunc("POST /api/twitch/logout", s.sameOrigin(s.twitchLogout))
+	mux.HandleFunc("POST /api/overlay/test", s.sameOrigin(func(w http.ResponseWriter, r *http.Request) {
+		s.overlayTest.Add(1)
+		w.WriteHeader(204)
+	}))
 	mux.HandleFunc("GET /api/obs", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, s.obsStatus()) })
 	mux.HandleFunc("POST /api/obs/setup", s.sameOrigin(func(w http.ResponseWriter, r *http.Request) {
 		if err := s.setupOBS(); err != nil {
@@ -249,6 +254,7 @@ func writeJSON(w http.ResponseWriter, v any) {
 func (s *server) getStatus(w http.ResponseWriter, r *http.Request) {
 	st := s.worker.Status()
 	st.Chat = s.chat.Status()
+	st.OverlayTest = s.overlayTest.Load()
 	writeJSON(w, st)
 }
 

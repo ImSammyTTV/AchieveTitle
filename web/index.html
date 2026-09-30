@@ -17,7 +17,9 @@
   body { margin:0; color:var(--text); font:14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
          background: radial-gradient(1200px 500px at 10% -10%, #3a1a78 0%, transparent 60%),
                      radial-gradient(900px 500px at 110% 120%, #2a1459 0%, transparent 55%), var(--bg); }
-  .app { height:100vh; display:flex; flex-direction:column; max-width:1280px; margin:0 auto; padding:14px 20px 18px; gap:12px }
+  /* The whole layout scales with the window (--z, set by fit() below) so it fills big screens
+     and still fits on one screen without scrolling. */
+  .app { zoom:var(--z, 1); height:calc(100vh / var(--z, 1)); display:flex; flex-direction:column; max-width:1760px; margin:0 auto; padding:14px 22px 18px; gap:12px }
 
   /* Header */
   header { display:flex; align-items:center; gap:14px; flex-wrap:wrap }
@@ -39,7 +41,7 @@
   .update .row { margin-left:auto }
 
   /* Layout */
-  .main { flex:1; display:grid; grid-template-columns:380px 1fr; gap:16px; min-height:0 }
+  .main { flex:1; display:grid; grid-template-columns:minmax(370px, 31%) 1fr; gap:16px; min-height:0 }
   .card { background:linear-gradient(180deg, var(--panel2), var(--panel)); border:1px solid var(--line); border-radius:16px; min-height:0 }
 
   /* Status card */
@@ -394,8 +396,10 @@
             </div>
             <div class="box">
               <h3>✨ Overlay</h3>
-              <p class="hint" style="margin:0">Add a <b>Browser Source</b> (600 × 160) for a progress bar and an "Achievement unlocked" popup.</p>
+              <p class="hint" style="margin:0">Add a <b>Browser Source</b> with this URL, width <b>600</b>, height <b>160</b>. Shows your game, progress and an "Achievement unlocked" popup.</p>
               <div class="copy"><code id="overlayUrl"></code><button class="ghost" onclick="copy('overlayUrl', this)">Copy</button></div>
+              <label class="check"><input type="checkbox" id="overlayHideIdle"> Hide it when I'm not in a Steam game</label>
+              <div class="row" style="margin-top:8px"><button class="ghost" onclick="testOverlay(this)">🏆 Test popup</button><span class="hint">plays the unlock animation in OBS</span></div>
             </div>
           </div>
         </div>
@@ -472,7 +476,7 @@ async function load() {
   $('redir').textContent = c.redirect_uri;
   $('ver').textContent = c.version;
   $('clientIdBox').style.display = c.has_builtin_client_id && !c.twitch_client_id ? 'none' : '';
-  $('overlayUrl').textContent = location.origin + '/overlay';
+  showOverlayUrl();
   $('dockUrl').textContent = location.origin + '/dock';
   $('twitch').innerHTML = c.twitch_login
     ? `<div class="row"><span class="ok">✔ Connected as <b>${esc(c.twitch_login)}</b></span>
@@ -529,13 +533,16 @@ async function poll() {
   $('enabled').checked = s.running;
   $('checked').textContent = s.last_check && !s.last_check.startsWith('0001') ? 'Last checked ' + new Date(s.last_check).toLocaleTimeString() : 'Not checked yet';
   $('status').innerHTML = s.error ? `<span class="err">⚠ ${esc(s.error)}</span>` : '';
-  const recent = (s.recent || []).slice(0, 3);
+  const recent = (s.recent || []).slice(0, 6);
   $('recentBox').hidden = !recent.length;
   $('recent').innerHTML = recent.map(a => {
     const pct = a.global_percent ? (a.global_percent < 10 ? a.global_percent.toFixed(1) : Math.round(a.global_percent)) + '% of players' : '';
     const when = a.unlock_time ? new Date(a.unlock_time * 1000).toLocaleDateString(undefined, {day:'numeric', month:'short'}) : '';
     return `<li>🏆 <b title="${esc(a.name)}">${esc(a.name)}</b><span class="${a.global_percent && a.global_percent < 5 ? 'rare' : ''}">${pct}</span><span>${when}</span></li>`;
   }).join('');
+  // Show as many recent unlocks as fit without making the status card scroll.
+  const card = document.querySelector('.status'), list = $('recent');
+  while (list.children.length > 1 && card.scrollHeight > card.clientHeight + 1) list.lastElementChild.remove();
   currentTags = s.tags || [];
   $('copyTags').hidden = !currentTags.length;
   showChatStatus(s.chat);
@@ -665,6 +672,18 @@ async function steamCheck() {
 async function steamSignIn(e) { e.preventDefault(); await save(); location.href = '/api/steam/login'; }
 if (location.hash === '#steam-linked') { showTab('connect'); history.replaceState(null, '', '/'); }
 
+// Overlay URL (the "hide when idle" choice is part of the URL OBS loads) and test popup
+function showOverlayUrl() { $('overlayUrl').textContent = location.origin + '/overlay' + ($('overlayHideIdle').checked ? '?hideidle=1' : ''); }
+try { $('overlayHideIdle').checked = localStorage.getItem('overlayHideIdle') === '1'; } catch (e) {}
+$('overlayHideIdle').addEventListener('change', () => {
+  try { localStorage.setItem('overlayHideIdle', $('overlayHideIdle').checked ? '1' : '0'); } catch (e) {}
+  showOverlayUrl();
+});
+async function testOverlay(btn) {
+  await post('/api/overlay/test').catch(() => {});
+  btn.textContent = '🏆 Sent!'; setTimeout(() => btn.textContent = '🏆 Test popup', 2000);
+}
+
 // One-click OBS setup
 async function obsStatus() {
   let st;
@@ -731,6 +750,15 @@ async function installUpdate() {
   }
   $('updText').textContent = "AchieveTitle didn't come back up by itself. Please start it again.";
 }
+
+// Scale the layout to the window: bigger on large screens, never smaller than designed,
+// and never so big that it no longer fits without scrolling.
+function fit() {
+  const w = innerWidth, h = innerHeight;
+  const z = w > 980 ? Math.max(1, Math.min(w / 1400, h / 860, 1.6)) : 1;
+  document.documentElement.style.setProperty('--z', z.toFixed(3));
+}
+fit(); addEventListener('resize', fit);
 
 load(); poll(); checkUpdate(); setInterval(poll, 5000); setInterval(checkUpdate, 10 * 60 * 1000);
 </script>

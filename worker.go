@@ -32,6 +32,7 @@ type Status struct {
 	Error        string        `json:"error"`
 	TwitchLogin  string        `json:"twitch_login"`
 	Chat         string        `json:"chat"`
+	OverlayTest  int64         `json:"overlay_test"` // bumped by the "Test popup" button
 }
 
 type Worker struct {
@@ -165,7 +166,7 @@ func (w *Worker) tick(ctx context.Context) {
 		w.status.Unlocked, w.status.Total = prog.Unlocked, prog.Total
 		w.status.Latest, w.status.Next = prog.Latest, prog.RarestLocked
 		for _, a := range prog.Achievements {
-			if a.Achieved && len(w.status.Recent) < 5 {
+			if a.Achieved && len(w.status.Recent) < 6 {
 				w.status.Recent = append(w.status.Recent, a)
 			}
 		}

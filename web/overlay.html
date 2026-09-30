@@ -4,46 +4,101 @@
 <meta charset="utf-8">
 <title>AchieveTitle overlay</title>
 <style>
-  body { margin:0; background:transparent; color:#fff; font:600 18px/1.3 system-ui, sans-serif; text-shadow:0 1px 3px #000 }
-  #box { padding:12px 16px; width:560px }
-  .bar { height:14px; background:rgba(255,255,255,.2); border-radius:7px; overflow:hidden; margin-top:6px }
-  .bar i { display:block; height:100%; background:linear-gradient(90deg,#9147ff,#bf94ff); transition:width 1s }
-  #toast { margin-top:10px; padding:10px 14px; background:rgba(20,20,24,.9); border-left:4px solid #ffd54a; border-radius:6px;
-           opacity:0; transform:translateY(10px); transition:all .4s }
-  #toast.show { opacity:1; transform:none }
-  small { opacity:.8; font-weight:400 }
+  /* OBS Browser Source: 600 × 160, transparent background. */
+  [hidden] { display:none !important }
+  html, body { margin:0; background:transparent; overflow:hidden }
+  body { font:600 16px/1.3 "Segoe UI", system-ui, -apple-system, sans-serif; color:#fff; width:600px; height:160px; position:relative }
+  .card { position:absolute; left:8px; top:8px; right:8px; display:flex; gap:14px; align-items:center; padding:12px 14px;
+          border-radius:16px; background:linear-gradient(135deg, rgba(29,20,48,.92), rgba(16,12,26,.92));
+          border:1px solid rgba(191,148,255,.35); box-shadow:0 10px 30px rgba(0,0,0,.45); transition:opacity .4s, transform .4s }
+  .card.hide { opacity:0; transform:translateY(8px) }
+  .art { width:60px; height:80px; border-radius:9px; object-fit:cover; flex:none; background:#26222f; box-shadow:0 4px 12px rgba(0,0,0,.4) }
+  .art-empty { display:grid; place-items:center; font-size:30px }
+  .info { flex:1; min-width:0 }
+  .game { font-size:19px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .row { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-top:2px }
+  .count { font-size:15px; color:#e3d7ff } .count b { font-size:20px; color:#fff }
+  .latest { font-size:13px; color:#b9b1cc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55% }
+  .bar { height:10px; margin-top:8px; background:rgba(255,255,255,.12); border-radius:999px; overflow:hidden }
+  .bar i { display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,#9147ff,#bf94ff 70%,#ffe27a); transition:width 1.2s ease }
+  .idle .game { font-size:16px; color:#d7cfe8 } .idle .count { font-size:13px; color:#a9a3bb }
+
+  /* Unlock popup, slides over the card */
+  .toast { position:absolute; left:8px; right:8px; top:8px; display:flex; gap:14px; align-items:center; padding:12px 16px; min-height:104px;
+           border-radius:16px; background:linear-gradient(120deg, #6a2ee8, #9147ff 55%, #c38bff); box-shadow:0 12px 34px rgba(145,71,255,.55);
+           border:1px solid rgba(255,226,122,.7); opacity:0; transform:translateY(-14px) scale(.97); transition:all .45s cubic-bezier(.2,.9,.3,1.2) }
+  .toast.show { opacity:1; transform:none }
+  .toast .trophy { font-size:44px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.35)); animation:none }
+  .toast.show .trophy { animation:pop .7s ease }
+  .toast .kicker { font-size:12px; letter-spacing:1.2px; text-transform:uppercase; color:#ffe27a; font-weight:800 }
+  .toast .name { font-size:21px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .toast .rare { font-size:13.5px; color:#f3ecff; font-weight:600 }
+  @keyframes pop { 0% { transform:scale(.4) rotate(-20deg) } 60% { transform:scale(1.2) rotate(8deg) } 100% { transform:none } }
 </style>
 </head>
 <body>
-<div id="box" hidden>
-  <div id="line"></div>
-  <div class="bar"><i id="bar" style="width:0"></i></div>
-  <div id="toast"></div>
+<div class="card hide" id="card">
+  <img class="art" id="art" alt="" hidden>
+  <div class="art art-empty" id="artEmpty">🏆</div>
+  <div class="info">
+    <div class="game" id="game">AchieveTitle</div>
+    <div class="row"><div class="count" id="count"></div><div class="latest" id="latest"></div></div>
+    <div class="bar" id="barWrap"><i id="bar"></i></div>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <div class="trophy">🏆</div>
+  <div style="min-width:0">
+    <div class="kicker">Achievement unlocked</div>
+    <div class="name" id="tName"></div>
+    <div class="rare" id="tRare"></div>
+  </div>
 </div>
 <script>
-const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let seen = null, appId = null;
-async function tick() {
-  try {
-    const s = await (await fetch('/api/status')).json();
-    const box = document.getElementById('box');
-    box.hidden = !s.total;
-    if (!s.total) return;
-    document.getElementById('line').innerHTML = `${esc(s.game)} <small>${s.unlocked}/${s.total} achievements</small>`;
-    document.getElementById('bar').style.width = (100 * s.unlocked / s.total) + '%';
-    const key = s.latest ? s.latest.api_name + s.latest.unlock_time : '';
-    // Only celebrate unlocks that happen while the overlay is open, not on first load or game switch.
-    if (seen !== null && appId === s.app_id && key && key !== seen) {
-      const t = document.getElementById('toast');
-      const r = s.latest.global_percent ? ` <small>(${s.latest.global_percent.toFixed(1)}% of players)</small>` : '';
-      t.innerHTML = `🏆 Achievement unlocked: ${esc(s.latest.name)}${r}`;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 8000);
-    }
-    seen = key; appId = s.app_id;
-  } catch (e) {}
+// ?hideidle=1 hides the card when you're not in a Steam game with achievements.
+const hideIdle = new URLSearchParams(location.search).get('hideidle') === '1';
+const $ = id => document.getElementById(id);
+let seen = null, appId = null, testSeq = null;
+
+function popup(name, pct) {
+  $('tName').textContent = name;
+  $('tRare').textContent = pct ? `Only ${pct < 10 ? pct.toFixed(1) : Math.round(pct)}% of players have this` : '';
+  $('toast').classList.add('show');
+  clearTimeout(popup.t);
+  popup.t = setTimeout(() => $('toast').classList.remove('show'), 7000);
 }
-tick(); setInterval(tick, 5000);
+
+async function tick() {
+  let s;
+  try { s = await (await fetch('/api/status')).json(); } catch (e) { return; }
+  const playing = !!s.total;
+  $('card').classList.toggle('idle', !playing);
+  $('card').classList.toggle('hide', !playing && hideIdle);
+  $('art').hidden = !s.category_art; $('artEmpty').hidden = !!s.category_art;
+  if (s.category_art && $('art').src !== s.category_art) $('art').src = s.category_art;
+  if (playing) {
+    $('game').textContent = s.game;
+    $('count').innerHTML = `<b>${s.unlocked}</b> / ${s.total} achievements · ${Math.floor(100 * s.unlocked / s.total)}%`;
+    $('latest').textContent = s.latest ? '🏆 ' + s.latest.name : '';
+    $('bar').style.width = (100 * s.unlocked / s.total) + '%';
+    $('barWrap').hidden = false;
+  } else {
+    $('game').textContent = 'Waiting for a Steam game…';
+    $('count').textContent = 'Achievement progress appears here when you play';
+    $('latest').textContent = '';
+    $('barWrap').hidden = true;
+  }
+
+  // Celebrate unlocks that happen while the overlay is open (not on first load or a game switch).
+  const key = s.latest ? s.latest.api_name + s.latest.unlock_time : '';
+  if (seen !== null && appId === s.app_id && key && key !== seen) popup(s.latest.name, s.latest.global_percent);
+  seen = key; appId = s.app_id;
+
+  // "Test popup" button in the settings page.
+  if (testSeq !== null && s.overlay_test !== testSeq) popup(s.latest ? s.latest.name : 'Dragon Slayer', s.latest ? s.latest.global_percent : 4.2);
+  testSeq = s.overlay_test;
+}
+tick(); setInterval(tick, 2000);
 </script>
 </body>
 </html>

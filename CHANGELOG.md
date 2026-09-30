@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.3
+- 🖥️ The settings page now scales to fill your window: bigger and easier to read on large screens, still one screen with no scrolling
+- ✨ Redesigned OBS overlay: a clear card with box art, progress and your latest unlock, plus a bigger "Achievement unlocked" popup
+- The overlay now shows a small "waiting for a Steam game" card instead of nothing (or tick *Hide it when I'm not in a Steam game*)
+- 🏆 New **Test popup** button in the OBS tab to preview the unlock animation
+
 ## v0.6.2
 - The OBS tab's setup box shrinks to a single "✔ OBS is set up" line once it's done
 
