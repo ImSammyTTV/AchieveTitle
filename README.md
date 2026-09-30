@@ -430,8 +430,11 @@ Fair question: it asks for your Twitch login. Here's exactly what that means.
   [dev.twitch.tv/console](https://dev.twitch.tv/console) and paste its Client ID under **App → Privacy → Use my own Twitch app instead**. Then nothing goes
   through AchieveTitle's app.
 
+- **There's no money involved.** No ads, no paid version, no donations, no data collected. I have no interest in making
+  money from this. It's an idea I had, and I wanted to give it to the community in case it helps someone.
+
 One honest caveat: the Windows and Mac apps aren't signed by Microsoft or Apple yet, which is why your computer may warn
-you the first time. That's about paying for certificates, not about what the app does.
+you the first time. That warning appears for any app without a signature, not because of anything the app does.
 
 ## 🔒 Privacy
 
