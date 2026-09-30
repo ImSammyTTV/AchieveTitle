@@ -20,9 +20,7 @@
          /* One glow for the whole window: without this it tiles down long pages (e.g. in an OBS dock). */
          background-repeat:no-repeat; background-attachment:fixed; min-height:100% }
   html { background:var(--bg) }
-  /* The whole layout scales with the window (--z, set by fit() below) so it fills big screens
-     and still fits on one screen without scrolling. */
-  .app { zoom:var(--z, 1); height:calc(100vh / var(--z, 1)); display:flex; flex-direction:column; max-width:1760px; margin:0 auto; padding:14px 22px 18px; gap:12px }
+  .app { height:100vh; display:flex; flex-direction:column; max-width:1280px; margin:0 auto; padding:14px 20px 18px; gap:12px }
 
   /* Header */
   header { display:flex; align-items:center; gap:14px; flex-wrap:wrap }
@@ -44,7 +42,7 @@
   .update .row { margin-left:auto }
 
   /* Layout */
-  .main { flex:1; display:grid; grid-template-columns:minmax(370px, 31%) 1fr; gap:16px; min-height:0 }
+  .main { flex:1; display:grid; grid-template-columns:380px 1fr; gap:16px; min-height:0 }
   .card { background:linear-gradient(180deg, var(--panel2), var(--panel)); border:1px solid var(--line); border-radius:16px; min-height:0 }
 
   /* Status card */
@@ -84,6 +82,16 @@
   .inline input#bar_length { width:70px }
   .barpreview { display:flex; align-items:center; gap:10px; margin-top:10px; padding:9px 12px; border-radius:9px; background:var(--field); border:1px solid var(--line2); font-size:17px; letter-spacing:-.5px }
   .barpreview small { margin-left:auto; letter-spacing:0; font-size:12px }
+  .seg { display:flex; flex-wrap:wrap; gap:6px }
+  .seg button { background:var(--field); border:1px solid var(--line2); padding:7px 11px; font-weight:600; font-size:13px }
+  .seg button.sel { border-color:var(--accent); background:rgba(145,71,255,.22) }
+  .stage { position:relative; aspect-ratio:616/176; border-radius:10px; overflow:hidden; border:1px solid var(--line2);
+           background:linear-gradient(120deg,#2b6a3f,#8a7a2a 35%,#6d2f8f 70%,#1d3d7a) }
+  .stage iframe { position:absolute; left:0; top:0; width:600px; height:160px; border:0; transform-origin:0 0; background:transparent }
+  .steps { margin:0; padding-left:20px; display:grid; gap:7px; font-size:13px; color:var(--text) }
+  .steps .copy { margin-top:5px }
+  .barbox { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start }
+  .steps-row { display:grid; grid-template-columns:1fr 1.7fr 1fr 1fr; gap:14px; padding-left:18px }
   details summary { cursor:pointer; color:var(--accent2); font-size:12.5px; font-weight:600 }
   .inline { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap } .inline label { margin:0; white-space:nowrap } .inline input[type=number] { width:90px } .inline input { width:90px }
   .status .msg { font-size:12.5px }
@@ -180,7 +188,7 @@
     .app { height:auto; min-height:100vh }
     .main { grid-template-columns:1fr }
     .settings { overflow:visible } .panes { overflow:visible }
-    .grid2 { grid-template-columns:1fr }
+    .grid2, .barbox, .steps-row { grid-template-columns:1fr }
   }
   @media (max-width:560px) {
     .app { padding:12px 16px }
@@ -316,23 +324,29 @@
               <label>Fallback template <span class="hint">· no game, or no achievements</span></label>
               <input type="text" id="fallback_template">
 
-              <div class="box" style="margin-top:14px">
-                <h3>📊 Progress bar style <span class="hint" style="font-weight:400">· how <code>{bar}</code> looks</span></h3>
-                <div class="bars" id="barPresets"></div>
-                <div class="inline" style="margin-top:10px">
-                  <label for="bar_filled">Filled</label><input type="text" id="bar_filled" class="barchar" maxlength="12">
-                  <label for="bar_empty">Empty</label><input type="text" id="bar_empty" class="barchar" maxlength="12">
-                  <label for="bar_length">Length</label><input type="number" id="bar_length" min="5" max="20">
-                </div>
-                <div class="barpreview"><span id="barPreview"></span><small id="barChars"></small></div>
-                <p class="hint">Twitch titles are plain text, so colour comes from the characters: coloured emoji squares work well. Emoji count as 2 characters towards Twitch's limit.</p>
-              </div>
             </div>
-            <div class="box">
+            <div>
+              <div class="box">
               <h3>🧩 Placeholders</h3>
               <p class="hint" style="margin:0 0 6px">Click one to add it to the template you last clicked in.</p>
               <div class="chips" id="vars"></div>
               <p class="hint">Titles longer than Twitch's 140-character limit are shortened automatically, achievement names first.</p>
+              </div>
+            </div>
+          </div>
+          <div class="box barbox" style="margin-top:14px">
+            <div>
+              <h3>📊 Progress bar style <span class="hint" style="font-weight:400">· how <code>{bar}</code> looks</span></h3>
+              <div class="bars" id="barPresets"></div>
+            </div>
+            <div>
+              <div class="inline" style="margin-top:0">
+                <label for="bar_filled">Filled</label><input type="text" id="bar_filled" class="barchar" maxlength="12">
+                <label for="bar_empty">Empty</label><input type="text" id="bar_empty" class="barchar" maxlength="12">
+                <label for="bar_length">Length</label><input type="number" id="bar_length" min="5" max="20">
+              </div>
+              <div class="barpreview"><span id="barPreview"></span><small id="barChars"></small></div>
+              <p class="hint">Titles are plain text on Twitch, so colour comes from emoji squares (each counts as 2 characters).</p>
             </div>
           </div>
         </div>
@@ -405,25 +419,53 @@
             <a href="#" onclick="event.preventDefault(); $('obsDone').hidden = true; $('obsSetup').hidden = false">Set up again</a>
           </div>
           <div class="box" id="obsSetup" style="margin-bottom:14px; border-color:rgba(191,148,255,.45); background:linear-gradient(90deg, rgba(145,71,255,.14), rgba(245,180,0,.05))">
-            <h3>⚡ One-click OBS setup</h3>
-            <p class="hint" style="margin:0 0 10px">Adds the AchieveTitle script (starts AchieveTitle with OBS and only updates your title while you're live)
-              and the AchieveTitle control panel to OBS. Your OBS settings are backed up first.</p>
-            <div class="row"><button class="primary" id="obsBtn" onclick="setupOBS()">Set up OBS for me</button><span id="obsMsg" class="hint"></span></div>
+            <div class="row" style="flex-wrap:nowrap; align-items:center; gap:14px">
+              <div style="flex:1; min-width:0">
+                <h3 style="margin:0 0 3px">⚡ One-click OBS setup</h3>
+                <p class="hint" style="margin:0">Adds the AchieveTitle script and control panel to OBS (settings backed up first). <span id="obsMsg"></span></p>
+              </div>
+              <button class="primary" id="obsBtn" onclick="setupOBS()" style="white-space:nowrap">Set up OBS for me</button>
+            </div>
           </div>
           <div class="grid2">
             <div class="box">
-              <h3>🧭 Control panel dock</h3>
-              <p class="hint" style="margin:0">Added by the one-click setup. To add it by hand: OBS → <b>View → Docks → Custom Browser Docks</b>, name it <i>AchieveTitle</i>:</p>
-              <div class="copy"><code id="dockUrl"></code><button class="ghost" onclick="copy('dockUrl', this)">Copy</button></div>
-            </div>
+                <h3>✨ Overlay preview <span class="hint" style="font-weight:400">· what viewers see</span></h3>
+                <div class="stage" id="stage"><iframe id="ovPreview" title="Overlay preview" src="/overlay?preview=1" scrolling="no"></iframe></div>
+                <div class="row" style="margin-top:10px">
+                  <button class="primary" onclick="testOverlay(this)">🏆 Test popup</button>
+                  <label class="check" style="margin:0"><input type="checkbox" id="overlayHideIdle"> Hide it when I'm not in a Steam game</label>
+                </div>
+              </div>
             <div class="box">
-              <h3>✨ Overlay</h3>
-              <p class="hint" style="margin:0">Add a <b>Browser Source</b> with this URL, width <b>600</b>, height <b>160</b>. Shows your game, progress and an "Achievement unlocked" popup.</p>
-              <div class="copy"><code id="overlayUrl"></code><button class="ghost" onclick="copy('overlayUrl', this)">Copy</button></div>
-              <label class="check"><input type="checkbox" id="overlayHideIdle"> Hide it when I'm not in a Steam game</label>
-              <div class="row" style="margin-top:8px"><button class="ghost" onclick="testOverlay(this)">🏆 Test popup</button><span class="hint">plays the unlock animation in OBS</span></div>
+              <h3>🎉 Unlock celebration</h3>
+              <label style="margin-top:0">Animation</label>
+              <div class="seg" id="ovAnim">
+                <button type="button" data-v="confetti">🎊 Confetti</button><button type="button" data-v="glow">✨ Glow</button><button type="button" data-v="simple">▫️ Simple</button>
+              </div>
+              <label>Sound</label>
+              <div class="seg" id="ovSound">
+                <button type="button" data-v="none">🔇 None</button><button type="button" data-v="chime">🔔 Chime</button><button type="button" data-v="fanfare">🎺 Fanfare</button><button type="button" data-v="custom">🎵 My own</button>
+              </div>
+              <div id="customSoundRow" class="row" style="margin-top:8px">
+                <label class="btn ghost" style="margin:0; cursor:pointer">Choose a sound file…<input type="file" id="soundFile" accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden></label>
+                <span class="hint" id="soundName">MP3, WAV, OGG or M4A, up to 3 MB</span>
+              </div>
+              <div class="inline" style="margin-top:10px">
+                <label for="ovVolume">Volume</label><input type="range" id="ovVolume" min="0" max="100" style="width:160px; accent-color:var(--accent)">
+                <span class="hint" id="ovVolumeVal"></span>
+                <button type="button" class="ghost" onclick="previewSound()">▶ Preview</button>
+              </div>
             </div>
           </div>
+          <div class="box guide" style="margin-top:14px">
+                <h3>📋 Add it to OBS</h3>
+                <ol class="steps steps-row">
+                  <li><b>Sources → + → Browser</b>, name it <i>AchieveTitle overlay</i>.</li>
+                  <li>Paste this <b>URL</b>: <div class="copy"><code id="overlayUrl"></code><button class="ghost" onclick="copy('overlayUrl', this)">Copy</button></div></li>
+                  <li><b>Width 600</b>, <b>Height 160</b>, tick <b>Control audio via OBS</b>, click <b>OK</b>.</li>
+                  <li>Drag it into place, then click <b>Test popup</b>.</li>
+                </ol>
+              </div>
         </div>
 
         <!-- App -->
@@ -466,6 +508,7 @@
   </div>
 </div>
 
+<script src="/sounds.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -498,6 +541,7 @@ async function load() {
   fields.forEach(f => $(f).value = c[f] ?? '');
   checks.forEach(f => $(f).checked = !!c[f]);
   $('tags').value = (c.tags || []).join(', ');
+  if (c.overlay) { overlayCfg = c.overlay; showOverlayCfg(); }
   const bar = c.bar || {filled:'▰', empty:'▱', length:10};
   $('bar_filled').value = bar.filled; $('bar_empty').value = bar.empty; $('bar_length').value = bar.length; showBar();
   manualCat = c.manual_category;
@@ -510,7 +554,6 @@ async function load() {
   $('ver').textContent = c.version; $('appVer').textContent = c.version;
   $('clientIdBox').style.display = c.has_builtin_client_id && !c.twitch_client_id ? 'none' : '';
   showOverlayUrl();
-  $('dockUrl').textContent = location.origin + '/dock';
   $('twitch').innerHTML = c.twitch_login
     ? `<div class="row"><span class="ok">✔ Connected as <b>${esc(c.twitch_login)}</b></span>
        <button class="ghost" onclick="post('/api/twitch/logout').then(load)">Disconnect</button></div>`
@@ -518,7 +561,7 @@ async function load() {
   setPill('pillTwitch', c.twitch_login ? 'on' : 'bad', c.twitch_login ? 'Twitch · ' + c.twitch_login : 'Twitch not connected');
   renderChat(c);
   $('vars').innerHTML = c.vars.map(v => `<code data-v="${v}">{${v}}</code>`).join('');
-  document.querySelectorAll('[data-v]').forEach(el => el.onclick = () => { const i = $(lastFocus); i.value += '{' + el.dataset.v + '}'; i.focus(); });
+  document.querySelectorAll('#vars [data-v]').forEach(el => el.onclick = () => { const i = $(lastFocus); i.value += '{' + el.dataset.v + '}'; i.focus(); });
 }
 ['template','fallback_template'].forEach(f => $(f).addEventListener('focus', () => lastFocus = f));
 
@@ -532,6 +575,7 @@ async function save() {
   checks.forEach(f => body[f] = $(f).checked);
   body.tags = cleanTags($('tags').value);
   body.bar = readBar();
+  body.overlay = overlayCfg;
   body.category_mode = document.querySelector('[name=category_mode]:checked').value;
   body.manual_category = manualCat;
   if (body.set_category && body.category_mode === 'manual' && !manualCat) {
@@ -575,9 +619,6 @@ async function poll() {
     const when = a.unlock_time ? new Date(a.unlock_time * 1000).toLocaleDateString(undefined, {day:'numeric', month:'short'}) : '';
     return `<li>🏆 <b title="${esc(a.name)}">${esc(a.name)}</b><span class="${a.global_percent && a.global_percent < 5 ? 'rare' : ''}">${pct}</span><span>${when}</span></li>`;
   }).join('');
-  // Show as many recent unlocks as fit without making the status card scroll.
-  const card = document.querySelector('.status'), list = $('recent');
-  while (list.children.length > 1 && card.scrollHeight > card.clientHeight + 1) list.lastElementChild.remove();
   currentTags = s.tags || [];
   $('copyTags').hidden = !currentTags.length;
   showChatStatus(s.chat);
@@ -587,6 +628,9 @@ async function poll() {
   $('chars').textContent = `${n} / 140 characters`;
   $('chars').className = 'count' + (n >= 140 ? ' full' : '');
   $('chars').title = "Twitch titles can be at most 140 characters. Longer titles are shortened automatically.";
+  // Last, once everything above is filled in: show as many recent unlocks as fit without the card scrolling.
+  const card = document.querySelector('.status'), list = $('recent');
+  while (list.children.length > 1 && card.scrollHeight > card.clientHeight + 1) list.lastElementChild.remove();
 }
 
 // Chat commands
@@ -707,15 +751,58 @@ async function steamCheck() {
 async function steamSignIn(e) { e.preventDefault(); await save(); location.href = '/api/steam/login'; }
 if (location.hash === '#steam-linked') { showTab('connect'); history.replaceState(null, '', '/'); }
 
+// Unlock celebration: animation, sound and volume (saved with the other settings)
+let overlayCfg = {animation:'confetti', sound:'chime', volume:70, custom_sound:''};
+function showOverlayCfg() {
+  document.querySelectorAll('#ovAnim button').forEach(b => b.classList.toggle('sel', b.dataset.v === overlayCfg.animation));
+  document.querySelectorAll('#ovSound button').forEach(b => b.classList.toggle('sel', b.dataset.v === overlayCfg.sound));
+  $('customSoundRow').hidden = overlayCfg.sound !== 'custom';
+  $('soundName').textContent = overlayCfg.custom_sound ? '🎵 ' + overlayCfg.custom_sound : 'MP3, WAV, OGG or M4A, up to 3 MB';
+  $('ovVolume').value = overlayCfg.volume; $('ovVolumeVal').textContent = overlayCfg.volume + '%';
+}
+// These apply straight away, so "Test popup" always shows the current choice.
+const saveOverlay = () => post('/api/quick', {overlay: overlayCfg}).catch(() => {});
+document.querySelectorAll('#ovAnim button').forEach(b => b.onclick = () => { overlayCfg.animation = b.dataset.v; showOverlayCfg(); saveOverlay(); });
+document.querySelectorAll('#ovSound button').forEach(b => b.onclick = () => {
+  overlayCfg.sound = b.dataset.v; showOverlayCfg();
+  if (b.dataset.v === 'custom' && !overlayCfg.custom_sound) $('soundFile').click();
+  else { saveOverlay(); previewSound(); }
+});
+$('ovVolume').addEventListener('input', () => { overlayCfg.volume = +$('ovVolume').value; $('ovVolumeVal').textContent = overlayCfg.volume + '%'; });
+$('ovVolume').addEventListener('change', saveOverlay);
+$('soundFile').addEventListener('change', async () => {
+  const f = $('soundFile').files[0]; if (!f) return;
+  const fd = new FormData(); fd.append('file', f);
+  $('soundName').textContent = 'Uploading…';
+  try {
+    const r = await fetch('/api/overlay/sound', {method:'POST', body:fd});
+    if (!r.ok) throw new Error(await r.text());
+    overlayCfg.custom_sound = (await r.json()).name; overlayCfg.sound = 'custom';
+    showOverlayCfg(); previewSound();
+  } catch (e) { $('soundName').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  $('soundFile').value = '';
+});
+function previewSound() { playUnlockSound(overlayCfg.sound, overlayCfg.volume, '/overlay/sound?t=' + Date.now()); }
+
 // Overlay URL (the "hide when idle" choice is part of the URL OBS loads) and test popup
-function showOverlayUrl() { $('overlayUrl').textContent = location.origin + '/overlay' + ($('overlayHideIdle').checked ? '?hideidle=1' : ''); }
+function showOverlayUrl() {
+  const idle = $('overlayHideIdle').checked;
+  $('overlayUrl').textContent = location.origin + '/overlay' + (idle ? '?hideidle=1' : '');
+  const src = '/overlay?preview=1' + (idle ? '&hideidle=1' : '');
+  if (!$('ovPreview').src.endsWith(src)) $('ovPreview').src = src;
+}
+// Scale the 600 × 160 overlay to fit the preview box, like OBS would show it.
+function fitPreview() { const w = $('stage').clientWidth; if (w) $('ovPreview').style.transform = `translate(${w * 8 / 616}px, ${w * 8 / 616}px) scale(${w / 616})`; }
+new ResizeObserver(fitPreview).observe($('stage'));
 try { $('overlayHideIdle').checked = localStorage.getItem('overlayHideIdle') === '1'; } catch (e) {}
 $('overlayHideIdle').addEventListener('change', () => {
   try { localStorage.setItem('overlayHideIdle', $('overlayHideIdle').checked ? '1' : '0'); } catch (e) {}
   showOverlayUrl();
 });
 async function testOverlay(btn) {
+  await post('/api/quick', {overlay: overlayCfg}).catch(() => {});
   await post('/api/overlay/test').catch(() => {});
+  previewSound(); // the preview itself stays silent, so play the sound here
   btn.textContent = '🏆 Sent!'; setTimeout(() => btn.textContent = '🏆 Test popup', 2000);
 }
 
@@ -783,7 +870,9 @@ async function quitApp() {
 
 async function checkUpdate() {
   const u = await (await fetch('/api/update')).json();
+  const was = $('update').hidden;
   $('update').hidden = !u.available;
+  if (was !== $('update').hidden) poll(); // the banner changes how much room the status card has
   if (!u.available) return;
   $('updTitle').textContent = `🎉 AchieveTitle ${u.latest} is available`;
   $('updLink').href = u.page_url;
@@ -826,15 +915,8 @@ async function installUpdate() {
   $('updText').textContent = "AchieveTitle didn't come back up by itself. Please start it again.";
 }
 
-// Scale the layout to the window: bigger on large screens, never smaller than designed,
-// and never so big that it no longer fits without scrolling.
-function fit() {
-  const w = innerWidth, h = innerHeight;
-  const z = w > 980 ? Math.max(1, Math.min(w / 1400, h / 860, 1.6)) : 1;
-  document.documentElement.style.setProperty('--z', z.toFixed(3));
-}
-fit(); addEventListener('resize', fit);
 
+addEventListener('resize', () => { clearTimeout(window.rt); window.rt = setTimeout(poll, 200); });
 load(); poll(); checkUpdate(); setInterval(poll, 5000); setInterval(checkUpdate, 10 * 60 * 1000);
 </script>
 </body>

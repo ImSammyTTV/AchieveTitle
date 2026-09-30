@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.6.8
+- 🎉 Unlock celebrations on the OBS overlay: **Confetti**, **Glow** or **Simple**, with a gold shine and a progress-bar pulse
+- 🔔 Unlock sounds: built-in **Chime** or **Fanfare**, or **your own** MP3/WAV/OGG, with a volume slider and preview
+- 👀 Live overlay preview in the OBS tab, plus a step-by-step guide for adding it to OBS
+- Back to the centred layout, now with every tab fitting on one screen without scrolling
+- The status card shows as many recent unlocks as fit
+- Removed the manual control panel box (the one-click setup adds it)
+- Fixed: the sound and animation buttons could be taken over by the placeholder buttons
+
 ## v0.6.7
 - 🎛️ The OBS control panel is now a proper mini dashboard: switches for title updates, chat commands and category, edit your custom text and template, pick a bar style, see recent unlocks, and send a test popup, all without leaving OBS. Changes apply instantly
 

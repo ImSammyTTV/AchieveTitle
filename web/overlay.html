@@ -33,10 +33,21 @@
   .toast .kicker { font-size:12px; letter-spacing:1.2px; text-transform:uppercase; color:#ffe27a; font-weight:800 }
   .toast .name { font-size:21px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   .toast .rare { font-size:13.5px; color:#f3ecff; font-weight:600 }
+  .toast { overflow:hidden }
+  .toast::after { content:""; position:absolute; inset:0; background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,.55) 50%, transparent 62%);
+                  transform:translateX(-120%); pointer-events:none }
+  .toast.shine::after { animation:shine 1.3s .25s ease-out }
+  .toast.glow { animation:glow 1.3s ease-in-out 3 }
+  .bar.pulse { animation:barpulse 1s ease-in-out 2 }
+  #fx { position:absolute; inset:0; pointer-events:none }
+  @keyframes shine { to { transform:translateX(120%) } }
+  @keyframes glow { 0%,100% { box-shadow:0 12px 34px rgba(145,71,255,.55) } 50% { box-shadow:0 0 38px 8px rgba(255,214,90,.85) } }
+  @keyframes barpulse { 0%,100% { box-shadow:none } 50% { box-shadow:0 0 14px 3px rgba(255,226,122,.8) } }
   @keyframes pop { 0% { transform:scale(.4) rotate(-20deg) } 60% { transform:scale(1.2) rotate(8deg) } 100% { transform:none } }
 </style>
 </head>
 <body>
+<canvas id="fx" width="600" height="160"></canvas>
 <div class="card hide" id="card">
   <img class="art" id="art" alt="" hidden>
   <div class="art art-empty" id="artEmpty">🏆</div>
@@ -54,20 +65,57 @@
     <div class="rare" id="tRare"></div>
   </div>
 </div>
+<script src="/sounds.js"></script>
 <script>
 // ?hideidle=1 hides the card when you're not in a Steam game with achievements.
 const hideIdle = new URLSearchParams(location.search).get('hideidle') === '1';
 const $ = id => document.getElementById(id);
 let seen = null, appId = null, testSeq = null;
 
+// Celebration settings come from AchieveTitle. ?preview=1 is the settings-page
+// preview: it shows the animation but leaves the sound to the page itself.
+const preview = new URLSearchParams(location.search).get('preview') === '1';
+let fxCfg = {animation:'confetti', sound:'chime', volume:70, sound_ver:0};
+async function loadCfg() { try { const c = await (await fetch('/api/config')).json(); if (c.overlay) fxCfg = c.overlay; } catch (e) {} }
+
 function popup(name, pct) {
+  const t = $('toast');
   $('tName').textContent = name;
   $('tRare').textContent = pct ? `Only ${pct < 10 ? pct.toFixed(1) : Math.round(pct)}% of players have this` : '';
-  $('toast').classList.add('show');
+  t.classList.remove('show', 'shine', 'glow'); void t.offsetWidth; // restart the animations
+  t.classList.add('show');
+  if (fxCfg.animation !== 'simple') t.classList.add('shine');
+  if (fxCfg.animation === 'glow') t.classList.add('glow');
+  if (fxCfg.animation === 'confetti') confetti();
+  if (!preview) playUnlockSound(fxCfg.sound, fxCfg.volume, '/overlay/sound?v=' + fxCfg.sound_ver);
   clearTimeout(popup.t);
-  popup.t = setTimeout(() => $('toast').classList.remove('show'), 7000);
+  popup.t = setTimeout(() => t.classList.remove('show', 'shine', 'glow'), 7000);
 }
 
+// A short confetti burst from the trophy, drawn on a canvas inside the overlay.
+function confetti() {
+  const cv = $('fx'), g = cv.getContext('2d');
+  const colours = ['#ffe27a', '#f5b400', '#bf94ff', '#9147ff', '#ffffff', '#6fe3b0'];
+  const bits = Array.from({length: 90}, () => ({
+    x: 60, y: 60, vx: 2 + Math.random() * 9, vy: -5 + Math.random() * 7, r: Math.random() * 6.28,
+    vr: -0.3 + Math.random() * 0.6, w: 4 + Math.random() * 5, h: 3 + Math.random() * 4, c: colours[Math.floor(Math.random() * colours.length)],
+  }));
+  const start = performance.now();
+  cancelAnimationFrame(confetti.raf);
+  (function frame(now) {
+    const age = (now - start) / 1000;
+    g.clearRect(0, 0, cv.width, cv.height);
+    if (age > 2.6) return;
+    g.globalAlpha = Math.min(1, 2.6 - age);
+    for (const b of bits) {
+      b.vy += 0.22; b.vx *= 0.985; b.x += b.vx; b.y += b.vy; b.r += b.vr;
+      g.save(); g.translate(b.x, b.y); g.rotate(b.r); g.fillStyle = b.c; g.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); g.restore();
+    }
+    confetti.raf = requestAnimationFrame(frame);
+  })(start);
+}
+
+let lastUnlocked = null;
 async function tick() {
   let s;
   try { s = await (await fetch('/api/status')).json(); } catch (e) { return; }
@@ -81,6 +129,8 @@ async function tick() {
     $('count').innerHTML = `<b>${s.unlocked}</b> / ${s.total} achievements · ${Math.floor(100 * s.unlocked / s.total)}%`;
     $('latest').textContent = s.latest ? '🏆 ' + s.latest.name : '';
     $('bar').style.width = (100 * s.unlocked / s.total) + '%';
+    if (lastUnlocked !== null && s.unlocked > lastUnlocked) { $('barWrap').classList.remove('pulse'); void $('barWrap').offsetWidth; $('barWrap').classList.add('pulse'); }
+    lastUnlocked = s.unlocked;
     $('barWrap').hidden = false;
   } else {
     $('game').textContent = 'Waiting for a Steam game…';
@@ -95,10 +145,13 @@ async function tick() {
   seen = key; appId = s.app_id;
 
   // "Test popup" button in the settings page.
-  if (testSeq !== null && s.overlay_test !== testSeq) popup(s.latest ? s.latest.name : 'Dragon Slayer', s.latest ? s.latest.global_percent : 4.2);
+  if (testSeq !== null && s.overlay_test !== testSeq) {
+    const [n, p] = s.latest ? [s.latest.name, s.latest.global_percent] : ['Dragon Slayer', 4.2];
+    loadCfg().then(() => popup(n, p)); // use the celebration settings just chosen
+  }
   testSeq = s.overlay_test;
 }
-tick(); setInterval(tick, 2000);
+loadCfg().then(tick); setInterval(tick, 2000); setInterval(loadCfg, 5000);
 </script>
 </body>
 </html>

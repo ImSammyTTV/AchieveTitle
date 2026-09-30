@@ -28,7 +28,8 @@ type Config struct {
 
 	CheckUpdates bool `json:"check_updates"`
 
-	Bar BarStyle `json:"bar"` // how {bar} looks
+	Bar     BarStyle      `json:"bar"`     // how {bar} looks
+	Overlay OverlayConfig `json:"overlay"` // unlock animation and sound
 
 	// Chat commands are answered by a separate bot account the streamer connects.
 	Chat         ChatConfig `json:"chat"`
@@ -115,6 +116,7 @@ func defaultConfig() Config {
 		CategoryMode:    "auto",
 		CheckUpdates:    true,
 		Bar:             defaultBarStyle(),
+		Overlay:         defaultOverlay(),
 	}
 }
 

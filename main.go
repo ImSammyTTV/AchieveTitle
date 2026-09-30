@@ -175,6 +175,11 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /overlay", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFileFS(w, r, static, "overlay.html")
 	})
+	mux.HandleFunc("GET /overlay/sound", serveSound)
+	mux.HandleFunc("POST /api/overlay/sound", s.sameOrigin(s.uploadSound))
+	mux.HandleFunc("GET /sounds.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFileFS(w, r, static, "sounds.js")
+	})
 	mux.HandleFunc("GET /dock", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFileFS(w, r, static, "dock.html")
 	})
@@ -261,31 +266,32 @@ func (s *server) getStatus(w http.ResponseWriter, r *http.Request) {
 
 // publicConfig never sends secrets back to the browser.
 type publicConfig struct {
-	SteamID         string     `json:"steam_id"`
-	HasSteamKey     bool       `json:"has_steam_key"`
-	CustomTitle     string     `json:"custom_title"`
-	Template        string     `json:"template"`
-	FallbackTmpl    string     `json:"fallback_template"`
-	IntervalSeconds int        `json:"interval_seconds"`
-	Enabled         bool       `json:"enabled"`
-	RestoreOnExit   bool       `json:"restore_on_exit"`
-	SetCategory     bool       `json:"set_category"`
-	CategoryMode    string     `json:"category_mode"`
-	ManualCategory  *Category  `json:"manual_category"`
-	ManageTags      bool       `json:"manage_tags"`
-	Tags            []string   `json:"tags"`
-	CheckUpdates    bool       `json:"check_updates"`
-	Bar             BarStyle   `json:"bar"`
-	TwitchClientID  string     `json:"twitch_client_id"`
-	HasBuiltinID    bool       `json:"has_builtin_client_id"`
-	TwitchLogin     string     `json:"twitch_login"`
-	BotLogin        string     `json:"bot_login"`
-	ChannelCanChat  bool       `json:"channel_can_chat"`
-	Chat            ChatConfig `json:"chat"`
-	ChatVars        []string   `json:"chat_vars"`
-	Vars            []string   `json:"vars"`
-	Version         string     `json:"version"`
-	RedirectURI     string     `json:"redirect_uri"`
+	SteamID         string        `json:"steam_id"`
+	HasSteamKey     bool          `json:"has_steam_key"`
+	CustomTitle     string        `json:"custom_title"`
+	Template        string        `json:"template"`
+	FallbackTmpl    string        `json:"fallback_template"`
+	IntervalSeconds int           `json:"interval_seconds"`
+	Enabled         bool          `json:"enabled"`
+	RestoreOnExit   bool          `json:"restore_on_exit"`
+	SetCategory     bool          `json:"set_category"`
+	CategoryMode    string        `json:"category_mode"`
+	ManualCategory  *Category     `json:"manual_category"`
+	ManageTags      bool          `json:"manage_tags"`
+	Tags            []string      `json:"tags"`
+	CheckUpdates    bool          `json:"check_updates"`
+	Bar             BarStyle      `json:"bar"`
+	Overlay         OverlayConfig `json:"overlay"`
+	TwitchClientID  string        `json:"twitch_client_id"`
+	HasBuiltinID    bool          `json:"has_builtin_client_id"`
+	TwitchLogin     string        `json:"twitch_login"`
+	BotLogin        string        `json:"bot_login"`
+	ChannelCanChat  bool          `json:"channel_can_chat"`
+	Chat            ChatConfig    `json:"chat"`
+	ChatVars        []string      `json:"chat_vars"`
+	Vars            []string      `json:"vars"`
+	Version         string        `json:"version"`
+	RedirectURI     string        `json:"redirect_uri"`
 }
 
 func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
@@ -294,7 +300,7 @@ func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
 		SteamID: c.SteamID, HasSteamKey: c.SteamAPIKey != "", CustomTitle: c.CustomTitle,
 		Template: c.Template, FallbackTmpl: c.FallbackTmpl, IntervalSeconds: c.IntervalSeconds,
 		Enabled: c.Enabled, RestoreOnExit: c.RestoreOnExit, TwitchClientID: c.TwitchClientID,
-		SetCategory: c.SetCategory, CategoryMode: c.CategoryMode, ManualCategory: c.ManualCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags), CheckUpdates: c.CheckUpdates, Bar: c.Bar.clean(),
+		SetCategory: c.SetCategory, CategoryMode: c.CategoryMode, ManualCategory: c.ManualCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags), CheckUpdates: c.CheckUpdates, Bar: c.Bar.clean(), Overlay: c.Overlay.clean(),
 		HasBuiltinID: DefaultTwitchClientID != "", TwitchLogin: c.TwitchLogin,
 		BotLogin: c.BotLogin, Chat: c.Chat, ChatVars: ChatVars, ChannelCanChat: hasScopes(c.TwitchScopes, botScope),
 		Vars: TemplateVars, Version: version, RedirectURI: s.base + "/auth/callback",
@@ -325,6 +331,10 @@ func (s *server) postConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		c.CheckUpdates = in.CheckUpdates
 		c.Bar = in.Bar.clean()
+		// The uploaded file's name and version are set by the upload itself.
+		ov := in.Overlay
+		ov.CustomSound, ov.SoundVer = c.Overlay.CustomSound, c.Overlay.SoundVer
+		c.Overlay = ov.clean()
 		c.Chat = cleanChatConfig(in.Chat)
 	})
 	if err != nil {
@@ -358,12 +368,13 @@ func (s *server) setEnabled(w http.ResponseWriter, r *http.Request) {
 // POST /api/config, fields left out are kept as they are.
 func (s *server) quickSettings(w http.ResponseWriter, r *http.Request) {
 	var in struct {
-		Enabled     *bool     `json:"enabled"`
-		ChatEnabled *bool     `json:"chat_enabled"`
-		SetCategory *bool     `json:"set_category"`
-		CustomTitle *string   `json:"custom_title"`
-		Template    *string   `json:"template"`
-		Bar         *BarStyle `json:"bar"`
+		Enabled     *bool          `json:"enabled"`
+		ChatEnabled *bool          `json:"chat_enabled"`
+		SetCategory *bool          `json:"set_category"`
+		CustomTitle *string        `json:"custom_title"`
+		Template    *string        `json:"template"`
+		Bar         *BarStyle      `json:"bar"`
+		Overlay     *OverlayConfig `json:"overlay"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&in); err != nil {
 		http.Error(w, err.Error(), 400)
@@ -390,6 +401,11 @@ func (s *server) quickSettings(w http.ResponseWriter, r *http.Request) {
 		}
 		if in.Bar != nil {
 			c.Bar = in.Bar.clean()
+		}
+		if in.Overlay != nil {
+			ov := *in.Overlay
+			ov.CustomSound, ov.SoundVer = c.Overlay.CustomSound, c.Overlay.SoundVer
+			c.Overlay = ov.clean()
 		}
 	})
 	if err != nil {
