@@ -18,7 +18,7 @@
   <a href="https://github.com/ImSammyTTV/AchieveTitle/releases/latest"><b>⬇️ Download</b></a> ·
   <a href="#-quick-start"><b>🚀 Quick start</b></a> ·
   <a href="#-chat-commands"><b>💬 Chat</b></a> ·
-  <a href="#-obs"><b>🎥 OBS</b></a> ·
+  <a href="#-obs"><img src="assets/logo-obs.svg" width="16" alt=""> <b>OBS</b></a> ·
   <a href="#-mac"><img src="assets/os-apple.svg" width="16" alt=""> <b>Mac</b></a> ·
   <a href="#-linux"><img src="assets/os-linux.svg" width="16" alt=""> <b>Linux</b></a> ·
   <a href="#-help"><b>❓ Help</b></a>
@@ -55,7 +55,7 @@ Templates with placeholders for progress, rarity and more, plus a progress bar i
 </td>
 <td valign="top">
 
-### 🎥 Built for OBS
+### <img src="assets/logo-obs.svg" width="20" alt=""> Built for OBS
 One-click OBS setup, a control panel dock, and an overlay with **animated unlock celebrations**, sounds
 and the real **achievement art**.
 
@@ -196,7 +196,7 @@ Let viewers check your progress in chat. Switch it on in the **Chat** tab (or fr
 
 ---
 
-## 🎥 OBS
+## <img src="assets/logo-obs.svg" width="26" alt=""> OBS
 
 ### One-click setup
 Close OBS, open AchieveTitle's **OBS** tab and click **Set up OBS for me**. It adds the **AchieveTitle script**
