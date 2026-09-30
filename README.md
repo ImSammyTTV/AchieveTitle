@@ -251,6 +251,28 @@ AUR and Flatpak packaging files are in [`packaging/`](packaging).
 
 ---
 
+## 🔏 Code signing policy
+
+Windows releases will be signed once the project's application to SignPath Foundation is approved.
+When they are:
+
+- Free code signing is provided by [SignPath.io](https://about.signpath.io), with the certificate by [SignPath Foundation](https://signpath.org).
+- Only builds made by this repository's [GitHub Actions release workflow](.github/workflows/release.yml) from its public source code are signed.
+- **Committers and reviewers:** [ImSammyTTV](https://github.com/ImSammyTTV)
+- **Approver:** [ImSammyTTV](https://github.com/ImSammyTTV). Every signing request is approved manually.
+
+## 🔒 Privacy
+
+AchieveTitle has no servers of its own and collects no data. It only talks to:
+
+- **Steam** (`api.steampowered.com`), to read your current game and achievements
+- **Twitch** (`id.twitch.tv`, `api.twitch.tv`, `eventsub.wss.twitch.tv`), to log in, update your stream info and, if you turn on chat commands, read and reply in your chat
+- **GitHub** (`api.github.com`, `github.com`), to check for and download new versions of AchieveTitle (can be switched off in settings)
+
+Your Steam key and Twitch logins are stored only on your own computer.
+
+---
+
 <p align="center">
   Made with 💜 for streamers · <a href="LICENSE">MIT License</a> · <a href="CHANGELOG.md">Changelog</a>
 </p>
