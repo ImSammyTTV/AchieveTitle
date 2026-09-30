@@ -1,9 +1,9 @@
 cask "achievetitle" do
   arch arm: "arm64", intel: "amd64"
 
-  version "0.7.2"
-  sha256 arm:   "e443304a7ce9042db919a9f1be0851e8717043a0995da00db7eb1be085372a3e",
-         intel: "61606b575dc889e293a2e99934e9abc4629d3f5a2a042e021bf7ca136e099600"
+  version "0.7.3"
+  sha256 arm:   "cdda2e84c2b95ddd5a2a471de61eed8e35eb9ba2e2c33ca15624f2980141e4a8",
+         intel: "43cf13878cd2fef6697c11988e43d604b618855361265d3c37ad7c58721e3e37"
 
   url "https://github.com/ImSammyTTV/AchieveTitle/releases/download/v#{version}/AchieveTitle-v#{version}-darwin-#{arch}.zip"
   name "AchieveTitle"
