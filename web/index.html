@@ -70,6 +70,8 @@
   .acct img { width:36px; height:36px; border-radius:8px }
   .acct b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
   .btn.steam-btn { background:linear-gradient(90deg,#1b2838,#2a475e); border:1px solid #66c0f4; color:#fff }
+  .done-line { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; font-size:13px }
+  .done-line a { margin-left:auto; font-size:12.5px }
   details summary { cursor:pointer; color:var(--accent2); font-size:12.5px; font-weight:600 }
   .inline { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap } .inline label { margin:0; white-space:nowrap } .inline input[type=number] { width:90px } .inline input { width:90px }
   .status .msg { font-size:12.5px }
@@ -374,7 +376,11 @@
 
         <!-- OBS -->
         <div class="pane" data-pane="obs">
-          <div class="box" style="margin-bottom:14px; border-color:rgba(191,148,255,.45); background:linear-gradient(90deg, rgba(145,71,255,.14), rgba(245,180,0,.05))">
+          <div class="done-line" id="obsDone" hidden>
+            <span class="ok">✔ OBS is set up.</span> <span class="hint">The AchieveTitle panel is under View → Docks in OBS.</span>
+            <a href="#" onclick="event.preventDefault(); $('obsDone').hidden = true; $('obsSetup').hidden = false">Set up again</a>
+          </div>
+          <div class="box" id="obsSetup" style="margin-bottom:14px; border-color:rgba(191,148,255,.45); background:linear-gradient(90deg, rgba(145,71,255,.14), rgba(245,180,0,.05))">
             <h3>⚡ One-click OBS setup</h3>
             <p class="hint" style="margin:0 0 10px">Adds the AchieveTitle script (starts AchieveTitle with OBS and only updates your title while you're live)
               and the AchieveTitle control panel to OBS. Your OBS settings are backed up first.</p>
@@ -383,7 +389,7 @@
           <div class="grid2">
             <div class="box">
               <h3>🧭 Control panel dock</h3>
-              <p class="hint" style="margin:0">Added by the button above. To add it yourself: OBS → <b>View → Docks → Custom Browser Docks</b>, name it <i>AchieveTitle</i>:</p>
+              <p class="hint" style="margin:0">Added by the one-click setup. To add it by hand: OBS → <b>View → Docks → Custom Browser Docks</b>, name it <i>AchieveTitle</i>:</p>
               <div class="copy"><code id="dockUrl"></code><button class="ghost" onclick="copy('dockUrl', this)">Copy</button></div>
             </div>
             <div class="box">
@@ -664,6 +670,8 @@ async function obsStatus() {
   let st;
   try { st = await (await fetch('/api/obs')).json(); } catch (e) { return; }
   const done = st.script_added && st.dock_added;
+  // Once it's done, the setup box shrinks to one line.
+  $('obsDone').hidden = !done; $('obsSetup').hidden = done;
   $('obsBtn').textContent = done ? 'Set up again' : 'Set up OBS for me';
   $('obsBtn').className = done ? 'ghost' : 'primary';
   $('obsMsg').innerHTML = !st.found ? '<span class="warn">OBS wasn\'t found. Open OBS once and close it, then try.</span>'
@@ -675,8 +683,8 @@ async function setupOBS() {
   $('obsBtn').disabled = true; $('obsMsg').textContent = 'Setting up…';
   try {
     await post('/api/obs/setup');
-    await obsStatus();
     $('obsMsg').innerHTML = '<span class="ok">✔ Done! Open OBS: the script is loaded and the AchieveTitle panel is under View → Docks.</span>';
+    setTimeout(obsStatus, 4000);
   } catch (e) {
     $('obsMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`;
   }

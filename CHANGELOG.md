@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.6.2
+- The OBS tab's setup box shrinks to a single "✔ OBS is set up" line once it's done
+
 ## v0.6.1
 - Fixed: *Set up OBS for me* couldn't find the scene collection in newer OBS versions ("Untitled.json.json")
 
