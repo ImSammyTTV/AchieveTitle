@@ -61,18 +61,13 @@ jobs:
           body_path: notes.md
           # Tags like v0.5.0-beta.1 become pre-releases; plain tags become Latest.
           prerelease: ${{ contains(env.TAG, '-') }}
-      - name: Update the Homebrew tap
-        # Needs a HOMEBREW_TAP_TOKEN secret that can push to ImSammyTTV/homebrew-tap.
+      - name: Update the Homebrew cask
+        # Casks/achievetitle.rb in this repo is the Homebrew tap; keep it on the new version.
         if: ${{ !contains(env.TAG, '-') }}
-        env:
-          TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
-          if [ -z "$TOKEN" ]; then echo "No HOMEBREW_TAP_TOKEN secret; skipping the tap."; exit 0; fi
-          git clone "https://x-access-token:$TOKEN@github.com/ImSammyTTV/homebrew-tap.git" tap
-          mkdir -p tap/Casks
-          packaging/homebrew/make-cask.sh "$TAG" dist/SHA256SUMS.txt > tap/Casks/achievetitle.rb
-          cd tap
+          git fetch -q origin main && git checkout -q -B main origin/main
+          packaging/homebrew/make-cask.sh "$TAG" dist/SHA256SUMS.txt > Casks/achievetitle.rb
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Casks/achievetitle.rb
-          git diff --cached --quiet || { git commit -m "AchieveTitle $TAG"; git push; }
+          git diff --cached --quiet || { git commit -m "Homebrew: AchieveTitle $TAG"; git push origin main; }

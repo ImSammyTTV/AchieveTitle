@@ -254,7 +254,8 @@ aren't quarantined the way browser downloads are.
 **Use Homebrew?** Install it with:
 
 ```sh
-brew install --cask imsammyttv/tap/achievetitle
+brew tap imsammyttv/achievetitle https://github.com/ImSammyTTV/AchieveTitle
+brew install --cask achievetitle
 ```
 
 <details>
