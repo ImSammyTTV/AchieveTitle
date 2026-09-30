@@ -81,6 +81,7 @@ type app struct {
 	store   *Store
 	worker  *Worker
 	updater *Updater
+	chat    *Chat
 	srv     *server
 	http    *http.Server
 	ctx     context.Context
@@ -108,9 +109,13 @@ func startApp(port int, restarted bool) (*app, bool) {
 
 	a := &app{store: store, worker: newWorker(store), updater: newUpdater(), port: port}
 	a.ctx, a.stop = signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	a.srv = &server{store: store, worker: a.worker, updater: a.updater, base: fmt.Sprintf("http://localhost:%d", port), state: randHex(), quit: a.stop}
+	a.srv = &server{store: store, worker: a.worker, updater: a.updater, base: fmt.Sprintf("http://localhost:%d", port), state: randHex(), botState: randHex(), quit: a.stop}
+	a.chat = newChat(store, a.worker)
+	a.srv.chat = a.chat
+	a.worker.onUnlock = a.chat.Announce
 
 	go a.worker.Run(a.ctx)
+	go a.chat.Run(a.ctx)
 	go a.updater.Run(a.ctx, func() bool { return store.Get().CheckUpdates })
 	a.http = &http.Server{Handler: a.srv.routes(), ReadHeaderTimeout: 10 * time.Second}
 	go a.http.Serve(ln)
@@ -144,11 +149,13 @@ func (a *app) wait() {
 }
 
 type server struct {
-	store  *Store
-	worker *Worker
-	base   string
-	state  string // OAuth CSRF state
-	quit   func()
+	store    *Store
+	worker   *Worker
+	base     string
+	state    string // OAuth CSRF state for the channel login
+	botState string // and for the chat bot login
+	chat     *Chat
+	quit     func()
 
 	updater    *Updater
 	restarting atomic.Bool
@@ -195,6 +202,8 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/twitch/login", s.twitchLogin)
 	mux.HandleFunc("POST /api/twitch/token", s.sameOrigin(s.twitchToken))
 	mux.HandleFunc("POST /api/twitch/logout", s.sameOrigin(s.twitchLogout))
+	mux.HandleFunc("GET /api/bot/login", s.botLogin)
+	mux.HandleFunc("POST /api/bot/logout", s.sameOrigin(s.botLogout))
 	return mux
 }
 
@@ -218,31 +227,37 @@ func writeJSON(w http.ResponseWriter, v any) {
 }
 
 func (s *server) getStatus(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, s.worker.Status())
+	st := s.worker.Status()
+	st.Chat = s.chat.Status()
+	writeJSON(w, st)
 }
 
 // publicConfig never sends secrets back to the browser.
 type publicConfig struct {
-	SteamID         string    `json:"steam_id"`
-	HasSteamKey     bool      `json:"has_steam_key"`
-	CustomTitle     string    `json:"custom_title"`
-	Template        string    `json:"template"`
-	FallbackTmpl    string    `json:"fallback_template"`
-	IntervalSeconds int       `json:"interval_seconds"`
-	Enabled         bool      `json:"enabled"`
-	RestoreOnExit   bool      `json:"restore_on_exit"`
-	SetCategory     bool      `json:"set_category"`
-	CategoryMode    string    `json:"category_mode"`
-	ManualCategory  *Category `json:"manual_category"`
-	ManageTags      bool      `json:"manage_tags"`
-	Tags            []string  `json:"tags"`
-	CheckUpdates    bool      `json:"check_updates"`
-	TwitchClientID  string    `json:"twitch_client_id"`
-	HasBuiltinID    bool      `json:"has_builtin_client_id"`
-	TwitchLogin     string    `json:"twitch_login"`
-	Vars            []string  `json:"vars"`
-	Version         string    `json:"version"`
-	RedirectURI     string    `json:"redirect_uri"`
+	SteamID         string     `json:"steam_id"`
+	HasSteamKey     bool       `json:"has_steam_key"`
+	CustomTitle     string     `json:"custom_title"`
+	Template        string     `json:"template"`
+	FallbackTmpl    string     `json:"fallback_template"`
+	IntervalSeconds int        `json:"interval_seconds"`
+	Enabled         bool       `json:"enabled"`
+	RestoreOnExit   bool       `json:"restore_on_exit"`
+	SetCategory     bool       `json:"set_category"`
+	CategoryMode    string     `json:"category_mode"`
+	ManualCategory  *Category  `json:"manual_category"`
+	ManageTags      bool       `json:"manage_tags"`
+	Tags            []string   `json:"tags"`
+	CheckUpdates    bool       `json:"check_updates"`
+	TwitchClientID  string     `json:"twitch_client_id"`
+	HasBuiltinID    bool       `json:"has_builtin_client_id"`
+	TwitchLogin     string     `json:"twitch_login"`
+	BotLogin        string     `json:"bot_login"`
+	ChannelCanChat  bool       `json:"channel_can_chat"`
+	Chat            ChatConfig `json:"chat"`
+	ChatVars        []string   `json:"chat_vars"`
+	Vars            []string   `json:"vars"`
+	Version         string     `json:"version"`
+	RedirectURI     string     `json:"redirect_uri"`
 }
 
 func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
@@ -253,6 +268,7 @@ func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
 		Enabled: c.Enabled, RestoreOnExit: c.RestoreOnExit, TwitchClientID: c.TwitchClientID,
 		SetCategory: c.SetCategory, CategoryMode: c.CategoryMode, ManualCategory: c.ManualCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags), CheckUpdates: c.CheckUpdates,
 		HasBuiltinID: DefaultTwitchClientID != "", TwitchLogin: c.TwitchLogin,
+		BotLogin: c.BotLogin, Chat: c.Chat, ChatVars: ChatVars, ChannelCanChat: hasScopes(c.TwitchScopes, botScope),
 		Vars: TemplateVars, Version: version, RedirectURI: s.base + "/auth/callback",
 	})
 }
@@ -280,6 +296,7 @@ func (s *server) postConfig(w http.ResponseWriter, r *http.Request) {
 			c.CategoryMode, c.ManualCategory = "manual", in.ManualCategory
 		}
 		c.CheckUpdates = in.CheckUpdates
+		c.Chat = cleanChatConfig(in.Chat)
 	})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -289,6 +306,7 @@ func (s *server) postConfig(w http.ResponseWriter, r *http.Request) {
 		go s.worker.Restore()
 	}
 	s.worker.Kick()
+	s.chat.Reload()
 	w.WriteHeader(204)
 }
 
@@ -325,7 +343,24 @@ func (s *server) twitchLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Set a Twitch Client ID in settings first.", 400)
 		return
 	}
-	http.Redirect(w, r, twitchAuthURL(id, s.base+"/auth/callback", s.state), http.StatusFound)
+	http.Redirect(w, r, twitchAuthURL(id, s.base+"/auth/callback", s.state, twitchScope), http.StatusFound)
+}
+
+// botLogin starts the Twitch login for the chat bot account. force_verify
+// shows Twitch's "Not you?" link so a different account can be picked.
+func (s *server) botLogin(w http.ResponseWriter, r *http.Request) {
+	id := clientID(s.store.Get())
+	if id == "" {
+		http.Error(w, "Set a Twitch Client ID in settings first.", 400)
+		return
+	}
+	http.Redirect(w, r, twitchAuthURL(id, s.base+"/auth/callback", s.botState, botScope), http.StatusFound)
+}
+
+func (s *server) botLogout(w http.ResponseWriter, r *http.Request) {
+	s.store.Update(func(c *Config) { c.BotToken, c.BotUserID, c.BotLogin = "", "", "" })
+	s.chat.Reload()
+	w.WriteHeader(204)
 }
 
 func (s *server) twitchToken(w http.ResponseWriter, r *http.Request) {
@@ -334,18 +369,31 @@ func (s *server) twitchToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", 400)
 		return
 	}
-	if in.State != s.state {
+	if in.State != s.state && in.State != s.botState {
 		http.Error(w, "login expired, please try again", 400)
 		return
 	}
-	uid, login, err := s.worker.twitch.Validate(r.Context(), in.Token)
+	uid, login, scopes, err := s.worker.twitch.Validate(r.Context(), in.Token)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	s.store.Update(func(c *Config) { c.TwitchToken, c.TwitchUserID, c.TwitchLogin = in.Token, uid, login })
+	if in.State == s.botState {
+		if !hasScopes(scopes, botScope) {
+			http.Error(w, "the bot account didn't grant chat permissions, please try again", 400)
+			return
+		}
+		s.store.Update(func(c *Config) { c.BotToken, c.BotUserID, c.BotLogin = in.Token, uid, login })
+		s.chat.Reload()
+		writeJSON(w, map[string]string{"login": login, "account": "bot"})
+		return
+	}
+	s.store.Update(func(c *Config) {
+		c.TwitchToken, c.TwitchUserID, c.TwitchLogin, c.TwitchScopes = in.Token, uid, login, scopes
+	})
 	s.worker.Kick()
-	writeJSON(w, map[string]string{"login": login})
+	s.chat.Reload()
+	writeJSON(w, map[string]string{"login": login, "account": "channel"})
 }
 
 func (s *server) twitchLogout(w http.ResponseWriter, r *http.Request) {

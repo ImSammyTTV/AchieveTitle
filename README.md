@@ -17,6 +17,7 @@
 <p align="center">
   <a href="https://github.com/ImSammyTTV/achievetitle/releases/latest"><b>⬇️ Download</b></a> ·
   <a href="#-quick-start"><b>🚀 Quick start</b></a> ·
+  <a href="#-chat-commands"><b>💬 Chat</b></a> ·
   <a href="#-obs"><b>🎥 OBS</b></a> ·
   <a href="#-mac"><b>🍎 Mac</b></a> ·
   <a href="#-linux"><b>🐧 Linux</b></a> ·
@@ -69,9 +70,24 @@ Restores your original title, category and tags when you stop, even after a cras
 </td>
 <td valign="top">
 
+### 💬 Chat commands
+`!achievements`, `!next`, `!rarest` and more, answered by your own bot account, plus optional
+unlock announcements in chat.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
 ### ⬆️ Updates itself
 Sits quietly in your system tray / menu bar and installs new versions with one click. Your settings
 are always kept.
+
+</td>
+<td valign="top">
+
+### 🔒 Private by design
+No accounts, no servers, no tracking. Everything runs on your own computer.
 
 </td>
 </tr>
@@ -131,6 +147,29 @@ Hunting {next} ({next_rarity} of players!)                 →  Hunting Speedrun
 ```
 
 A **fallback template** is used when you're not in a Steam game or the game has no achievements.
+
+---
+
+## 💬 Chat commands
+
+Let viewers check your progress in chat. Switch it on under **4. Chat commands** in the settings page.
+
+| Command | Example reply |
+|---|---|
+| `!achievements` | 🏆 yourchannel has 38/50 achievements in Elden Ring (76%). Latest: Dragon Slayer |
+| `!last` | Latest unlocks: Dragon Slayer (4.2%), Lord of Frenzied Flame (9%), Elden Lord (31%) |
+| `!next` | Next hunt: Speedrunner (only 0.8% of players have it) |
+| `!rarest` | Rarest unlock so far: Dragon Slayer (only 4.2% of players have it) |
+| `!progress` | Elden Ring: ▰▰▰▰▰▰▰▱▱▱ 76% (38/50) |
+
+- Turn each command **on or off**, **rename** it (e.g. `!ach`) and **write your own reply** with placeholders.
+- Optional **unlock announcements**: *"🎉 yourchannel just unlocked Dragon Slayer (only 4.2% of players have it)!"*
+- A **cooldown** stops spam; you and your mods skip it.
+
+> [!TIP]
+> Replies come from a **bot account** you connect (make a free Twitch account like `yournamebot`, then click
+> **Connect bot account** and choose *Not you?* on Twitch to log in as it). Type `/mod yournamebot` in your chat
+> so it's never slowed down. Prefer no bot? Choose **My own channel account** instead.
 
 ---
 

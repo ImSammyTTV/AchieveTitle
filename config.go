@@ -28,6 +28,13 @@ type Config struct {
 
 	CheckUpdates bool `json:"check_updates"`
 
+	// Chat commands are answered by a separate bot account the streamer connects.
+	Chat         ChatConfig `json:"chat"`
+	TwitchScopes []string   `json:"twitch_scopes,omitempty"` // granted to the channel login
+	BotToken     string     `json:"bot_token,omitempty"`
+	BotUserID    string     `json:"bot_user_id,omitempty"`
+	BotLogin     string     `json:"bot_login,omitempty"`
+
 	// Channel info from before AchieveTitle changed it, kept on disk so it can
 	// still be restored after a crash or an update restart.
 	OriginalChannel *Channel `json:"original_channel,omitempty"`
@@ -38,8 +45,65 @@ type Config struct {
 	TwitchLogin    string `json:"twitch_login,omitempty"`
 }
 
+// ChatCommand is one chat command, e.g. "!achievements".
+type ChatCommand struct {
+	ID      string `json:"id"` // stable key; the trigger can be renamed
+	Enabled bool   `json:"enabled"`
+	Trigger string `json:"trigger"`
+	Reply   string `json:"reply"`
+}
+
+type ChatConfig struct {
+	Enabled bool `json:"enabled"`
+	// ReplyAs is "bot" (the connected bot account) or "channel" (the streamer's own account).
+	ReplyAs          string        `json:"reply_as"`
+	CooldownSeconds  int           `json:"cooldown_seconds"`
+	Commands         []ChatCommand `json:"commands"`
+	AnnounceUnlocks  bool          `json:"announce_unlocks"`
+	AnnounceTemplate string        `json:"announce_template"`
+	NoGameReply      string        `json:"no_game_reply"`
+}
+
+var defaultChatCommands = []ChatCommand{
+	{ID: "achievements", Enabled: true, Trigger: "!achievements", Reply: "🏆 {channel} has {unlocked}/{total} achievements in {game} ({percent}). Latest: {latest}"},
+	{ID: "last", Enabled: true, Trigger: "!last", Reply: "Latest unlocks: {recent}"},
+	{ID: "next", Enabled: true, Trigger: "!next", Reply: "Next hunt: {next} (only {next_rarity} of players have it)"},
+	{ID: "rarest", Enabled: true, Trigger: "!rarest", Reply: "Rarest unlock so far: {rarest} (only {rarest_rarity} of players have it)"},
+	{ID: "progress", Enabled: true, Trigger: "!progress", Reply: "{game}: {bar} {percent} ({unlocked}/{total})"},
+}
+
+func defaultChat() ChatConfig {
+	c := ChatConfig{
+		ReplyAs:          "bot",
+		CooldownSeconds:  30,
+		AnnounceUnlocks:  true,
+		AnnounceTemplate: "🎉 {channel} just unlocked {latest} (only {latest_rarity} of players have it)!",
+		NoGameReply:      "{channel} isn't playing a Steam game with achievements right now.",
+	}
+	c.fillDefaults()
+	return c
+}
+
+// fillDefaults adds commands that are missing from older settings files,
+// so new commands appear after an update without touching existing ones.
+func (c *ChatConfig) fillDefaults() {
+	have := map[string]bool{}
+	for _, cmd := range c.Commands {
+		have[cmd.ID] = true
+	}
+	for _, d := range defaultChatCommands {
+		if !have[d.ID] {
+			c.Commands = append(c.Commands, d)
+		}
+	}
+	if c.CooldownSeconds < 5 {
+		c.CooldownSeconds = 30
+	}
+}
+
 func defaultConfig() Config {
 	return Config{
+		Chat:            defaultChat(),
 		CustomTitle:     "Chill stream",
 		Template:        "{custom} [{unlocked}/{total} Achievements] 🏆 {latest}",
 		FallbackTmpl:    "{custom}",
@@ -81,6 +145,7 @@ func loadStore() (*Store, error) {
 	if err := json.Unmarshal(b, &s.cfg); err != nil {
 		return nil, err
 	}
+	s.cfg.Chat.fillDefaults()
 	return s, nil
 }
 

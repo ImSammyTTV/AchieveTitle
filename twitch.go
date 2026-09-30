@@ -20,7 +20,13 @@ import (
 // own in the settings page.
 var DefaultTwitchClientID = "e1n36uf3stt4tb0chevm8zbt6x0ix3"
 
-const twitchScope = "channel:manage:broadcast"
+// twitchScope is requested for the streamer's own channel: manage the stream
+// info, plus chat so chat commands can reply from the channel when no bot
+// account is connected.
+const twitchScope = "channel:manage:broadcast user:read:chat user:write:chat"
+
+// botScope is what the chat bot account needs: read chat and send messages as itself.
+const botScope = "user:read:chat user:write:chat"
 
 var twitchAPI = "https://api.twitch.tv/helix"
 
@@ -59,12 +65,12 @@ var boxArtSizeRe = regexp.MustCompile(`-\d+x\d+\.`)
 
 var errTwitchAuth = fmt.Errorf("twitch login expired: reconnect Twitch in the settings page")
 
-func twitchAuthURL(clientID, redirect, state string) string {
+func twitchAuthURL(clientID, redirect, state, scope string) string {
 	q := url.Values{
 		"response_type": {"token"}, // implicit grant: no client secret needed in a desktop app
 		"client_id":     {clientID},
 		"redirect_uri":  {redirect},
-		"scope":         {twitchScope},
+		"scope":         {scope},
 		"state":         {state},
 		"force_verify":  {"true"},
 	}
@@ -72,16 +78,16 @@ func twitchAuthURL(clientID, redirect, state string) string {
 }
 
 // Validate checks a token and returns the user it belongs to.
-func (t *Twitch) Validate(ctx context.Context, token string) (userID, login string, err error) {
+func (t *Twitch) Validate(ctx context.Context, token string) (userID, login string, scopes []string, err error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", "https://id.twitch.tv/oauth2/validate", nil)
 	req.Header.Set("Authorization", "OAuth "+token)
 	resp, err := t.http.Do(req)
 	if err != nil {
-		return "", "", err
+		return "", "", nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == 401 {
-		return "", "", errTwitchAuth
+		return "", "", nil, errTwitchAuth
 	}
 	var r struct {
 		UserID string   `json:"user_id"`
@@ -89,12 +95,17 @@ func (t *Twitch) Validate(ctx context.Context, token string) (userID, login stri
 		Scopes []string `json:"scopes"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return "", "", err
+		return "", "", nil, err
 	}
-	return r.UserID, r.Login, nil
+	return r.UserID, r.Login, r.Scopes, nil
 }
 
 func (t *Twitch) do(ctx context.Context, cfg Config, method, path string, body any, out any) error {
+	return t.doAs(ctx, cfg.TwitchToken, clientID(cfg), method, path, body, out)
+}
+
+// doAs calls the Helix API with a specific account's token (the channel or the bot).
+func (t *Twitch) doAs(ctx context.Context, token, client, method, path string, body any, out any) error {
 	var rd *bytes.Reader
 	if body != nil {
 		b, _ := json.Marshal(body)
@@ -106,8 +117,8 @@ func (t *Twitch) do(ctx context.Context, cfg Config, method, path string, body a
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+cfg.TwitchToken)
-	req.Header.Set("Client-Id", clientID(cfg))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Client-Id", client)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := t.http.Do(req)
 	if err != nil {
@@ -274,6 +285,20 @@ func CleanTags(in []string) []string {
 		}
 	}
 	return out
+}
+
+// hasScopes reports whether granted includes every scope in the space-separated want.
+func hasScopes(granted []string, want string) bool {
+	for _, w := range strings.Fields(want) {
+		found := false
+		for _, g := range granted {
+			found = found || g == w
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 func clientID(cfg Config) string {

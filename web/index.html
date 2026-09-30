@@ -32,6 +32,10 @@
   .cat { background:#0e0e10; border:1px solid var(--line); border-radius:8px; padding:6px; cursor:pointer; text-align:center; font-size:12px; color:var(--text) }
   .cat:hover, .cat.sel { border-color:var(--accent) }
   .cat img { width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px; display:block; margin-bottom:4px; background:#26262c }
+  .cmd { display:grid; grid-template-columns:auto 150px 1fr; gap:8px; align-items:center; margin-top:8px }
+  .cmd input[type=text] { padding:7px 8px }
+  @media (max-width:600px) { .cmd { grid-template-columns:auto 1fr } .cmd .reply { grid-column:1 / -1 } }
+  .sub { margin-left:24px }
   .picked { display:flex; gap:10px; align-items:center; margin-top:10px }
   .picked img { width:45px; height:60px; border-radius:4px; object-fit:cover }
   .count { display:inline-block; margin-top:8px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:#0e0e10; color:var(--muted); font-size:13px }
@@ -122,6 +126,37 @@
   </section>
 
   <section>
+    <h2>4. Chat commands (optional)</h2>
+    <label class="toggle"><input type="checkbox" id="chat_enabled"> Answer chat commands like <code>!achievements</code></label>
+    <div id="chatBox">
+      <p class="hint" id="chatStatus"></p>
+
+      <label style="margin-top:14px">Who replies in chat?</label>
+      <label class="radio"><input type="radio" name="reply_as" value="bot"> My bot account <span class="hint">(recommended)</span></label>
+      <div class="sub" id="botArea"></div>
+      <label class="radio"><input type="radio" name="reply_as" value="channel"> My own channel account</label>
+      <div class="sub" id="chanArea"></div>
+
+      <label style="margin-top:14px">Commands</label>
+      <p class="hint" style="margin:0">Tick to turn a command on. You can rename the command and change the reply.</p>
+      <div id="cmds"></div>
+
+      <label>Cooldown per command (seconds) <span class="hint">you and your mods skip it</span></label>
+      <input type="number" id="chat_cooldown" min="5" step="5">
+
+      <label class="toggle"><input type="checkbox" id="chat_announce"> Announce new achievements in chat</label>
+      <input type="text" id="chat_announce_template" class="sub" style="width:calc(100% - 24px)">
+
+      <label>Reply when you're not in a game with achievements</label>
+      <input type="text" id="chat_no_game">
+
+      <p class="hint chips">Placeholders: <span id="chatVars"></span><br>
+        A part in brackets, like <code>(only {next_rarity} of players)</code>, is left out when its placeholder is empty.</p>
+    </div>
+    <div class="row" style="margin-top:16px"><button onclick="save()">Save</button><span id="savedChat"></span></div>
+  </section>
+
+  <section>
     <h2>OBS overlay (optional)</h2>
     <p class="hint">Add a <b>Browser Source</b> in OBS with this URL (width 600, height 160). It shows a progress bar and pops up when you unlock something.</p>
     <div class="preview"><code id="overlayUrl"></code></div>
@@ -157,6 +192,7 @@ async function load() {
   $('twitch').innerHTML = c.twitch_login
     ? `<span class="ok">Connected as <b>${esc(c.twitch_login)}</b></span> <button class="secondary" onclick="post('/api/twitch/logout').then(load)">Disconnect</button>`
     : `<a class="btn" href="/api/twitch/login" onclick="return saveFirst(event)">Connect Twitch</a>`;
+  renderChat(c);
   $('vars').innerHTML = c.vars.map(v => `<code data-v="${v}">{${v}}</code>`).join('');
   document.querySelectorAll('[data-v]').forEach(el => el.onclick = () => { const i = $(lastFocus); i.value += '{' + el.dataset.v + '}'; i.focus(); });
 }
@@ -165,6 +201,7 @@ async function load() {
 async function saveFirst(e) { e.preventDefault(); await save(); location.href = '/api/twitch/login'; }
 
 async function save() {
+  $('savedChat').innerHTML = ''; $('saved').innerHTML = '';
   const body = {steam_api_key: $('steam_api_key').value.trim()};
   fields.forEach(f => body[f] = $(f).value.trim());
   body.interval_seconds = parseInt(body.interval_seconds) || 60;
@@ -175,7 +212,12 @@ async function save() {
   if (body.set_category && body.category_mode === 'manual' && !manualCat) {
     $('saved').innerHTML = '<span class="err">Pick a game for your category first.</span>'; return;
   }
-  try { await post('/api/config', body); $('saved').innerHTML = '<span class="ok">Saved ✓</span>'; $('steam_api_key').value=''; load(); setTimeout(poll, 2000); }
+  body.chat = readChat();
+  if (body.chat.enabled && body.chat.reply_as === 'bot' && !chatCfg.bot_login) {
+    $('savedChat').innerHTML = '<span class="err">Connect a bot account first, or choose your own channel account.</span>';
+  }
+  try { await post('/api/config', body); $('saved').innerHTML = $('savedChat').innerHTML || '<span class="ok">Saved ✓</span>';
+    if (!$('savedChat').innerHTML) $('savedChat').innerHTML = '<span class="ok">Saved ✓</span>'; $('steam_api_key').value=''; load(); setTimeout(poll, 2000); }
   catch (e) { $('saved').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
 }
 
@@ -191,6 +233,7 @@ async function poll() {
   $('copyTags').hidden = !currentTags.length;
   h += `<br><small>${s.running ? 'Auto-update ON' : 'Auto-update OFF'}${s.last_check && !s.last_check.startsWith('0001') ? ' · checked ' + new Date(s.last_check).toLocaleTimeString() : ''}</small>`;
   if (s.error) h += `<br><span class="err">${esc(s.error)}</span>`;
+  showChatStatus(s.chat);
   $('status').innerHTML = h;
   $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
   $('preview').textContent = s.title || '—';
@@ -200,6 +243,61 @@ async function poll() {
   $('chars').className = 'count' + (n >= 140 ? ' full' : '');
   $('chars').title = "Twitch titles can be at most 140 characters. Longer titles are shortened automatically.";
 }
+// Chat commands
+let chatCfg = {};
+function renderChat(c) {
+  chatCfg = c;
+  const ch = c.chat;
+  $('chat_enabled').checked = ch.enabled;
+  document.querySelector(`[name=reply_as][value=${ch.reply_as === 'channel' ? 'channel' : 'bot'}]`).checked = true;
+  $('chat_cooldown').value = ch.cooldown_seconds;
+  $('chat_announce').checked = ch.announce_unlocks;
+  $('chat_announce_template').value = ch.announce_template;
+  $('chat_no_game').value = ch.no_game_reply;
+  $('chatVars').innerHTML = [...c.vars, ...c.chat_vars].map(v => `<code>{${v}}</code>`).join('');
+  $('cmds').innerHTML = '';
+  ch.commands.forEach(cmd => {
+    const row = document.createElement('div');
+    row.className = 'cmd'; row.dataset.id = cmd.id;
+    row.innerHTML = `<input type="checkbox" ${cmd.enabled ? 'checked' : ''} aria-label="Turn on">
+      <input type="text" class="trigger" value="${esc(cmd.trigger)}" aria-label="Command">
+      <input type="text" class="reply" value="${esc(cmd.reply)}" aria-label="Reply">`;
+    $('cmds').appendChild(row);
+  });
+  $('botArea').innerHTML = c.bot_login
+    ? `<span class="ok">Bot connected: <b>${esc(c.bot_login)}</b></span> <button class="secondary" onclick="post('/api/bot/logout').then(load)">Disconnect bot</button>`
+    : `<a class="btn" href="/api/bot/login" onclick="return connectBot(event)">Connect bot account</a>
+       <p class="hint">Make a separate Twitch account for your bot first (e.g. <i>${esc(c.twitch_login || 'yourname')}bot</i>).
+       On the Twitch page, click <b>Not you?</b> and log in as the bot. Tip: type <code>/mod yourbot</code> in your chat so it's never slowed down.</p>`;
+  $('chanArea').innerHTML = c.channel_can_chat
+    ? `<span class="hint">Replies will come from <b>${esc(c.twitch_login)}</b>.</span>`
+    : `<p class="hint">Needs one extra permission from Twitch: <a href="/api/twitch/login" onclick="return saveFirst(event)">reconnect your channel</a> to allow it.</p>`;
+  showChatBox();
+}
+function readChat() {
+  return {
+    enabled: $('chat_enabled').checked,
+    reply_as: document.querySelector('[name=reply_as]:checked').value,
+    cooldown_seconds: parseInt($('chat_cooldown').value) || 30,
+    announce_unlocks: $('chat_announce').checked,
+    announce_template: $('chat_announce_template').value.trim(),
+    no_game_reply: $('chat_no_game').value.trim(),
+    commands: [...document.querySelectorAll('.cmd')].map(r => ({
+      id: r.dataset.id, enabled: r.querySelector('input[type=checkbox]').checked,
+      trigger: r.querySelector('.trigger').value.trim(), reply: r.querySelector('.reply').value.trim(),
+    })),
+  };
+}
+function showChatBox() { $('chatBox').style.opacity = $('chat_enabled').checked ? 1 : .5; }
+$('chat_enabled').addEventListener('change', showChatBox);
+async function connectBot(e) { e.preventDefault(); await save(); location.href = '/api/bot/login'; }
+function showChatStatus(st) {
+  if (!st) return;
+  const cls = st.startsWith('connected') ? 'ok' : (st.startsWith('error') || st.startsWith('needs')) ? 'err' : '';
+  const text = st === 'off' ? 'Chat commands are off.' : st.charAt(0).toUpperCase() + st.slice(1);
+  $('chatStatus').innerHTML = `<span class="${cls}">${esc(text)}</span>`;
+}
+
 // Category picker
 const catCard = c => `<img src="${esc(c.box_art)}" alt="" loading="lazy">${esc(c.name)}`;
 function showCategory() {

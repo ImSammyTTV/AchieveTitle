@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +31,7 @@ type Status struct {
 	LastUpdate   time.Time     `json:"last_update"`
 	Error        string        `json:"error"`
 	TwitchLogin  string        `json:"twitch_login"`
+	Chat         string        `json:"chat"`
 }
 
 type Worker struct {
@@ -44,6 +46,13 @@ type Worker struct {
 	steamID  string   // resolved SteamID64
 	resolved string   // the input it was resolved from
 	original *Channel // channel info before we first changed it
+
+	// For chat: the latest progress, and what has already been announced.
+	game       string
+	prog       *Progress
+	seenApp    string
+	seenUnlock int64
+	onUnlock   func([]Achievement)
 }
 
 func newWorker(s *Store) *Worker {
@@ -131,6 +140,8 @@ func (w *Worker) tick(ctx context.Context) {
 		}
 	}
 
+	w.trackUnlocks(appID, prog)
+
 	tmpl := cfg.FallbackTmpl
 	if prog != nil {
 		tmpl = cfg.Template
@@ -144,6 +155,7 @@ func (w *Worker) tick(ctx context.Context) {
 	title := renderTitle(tmpl, buildVars(cfg, game, prog))
 
 	w.mu.Lock()
+	w.game, w.prog = game, prog
 	w.status.Game, w.status.AppID, w.status.Title = game, appID, title
 	w.status.Unlocked, w.status.Total, w.status.Latest, w.status.Next, w.status.Recent = 0, 0, nil, nil, nil
 	if prog != nil {
@@ -263,4 +275,38 @@ func (w *Worker) Restore() {
 	log.Printf("title restored: %s", w.original.Title)
 	w.original = nil
 	w.store.Update(func(c *Config) { c.OriginalChannel = nil })
+}
+
+// trackUnlocks announces achievements unlocked since the last check. It stays
+// quiet on the first check of a game, so switching games doesn't spam chat.
+func (w *Worker) trackUnlocks(appID string, p *Progress) {
+	if p == nil {
+		w.seenApp, w.seenUnlock = appID, 0
+		return
+	}
+	var newest int64
+	var fresh []Achievement
+	for _, a := range p.Achievements { // newest first
+		if !a.Achieved {
+			continue
+		}
+		newest = max(newest, a.UnlockTime)
+		if w.seenApp == appID && a.UnlockTime > w.seenUnlock && len(fresh) < 3 {
+			fresh = append(fresh, a)
+		}
+	}
+	w.seenApp, w.seenUnlock = appID, max(newest, w.seenUnlock)
+	if len(fresh) > 0 && w.onUnlock != nil {
+		// Oldest first, so chat reads in the order they were unlocked.
+		slices.Reverse(fresh)
+		go w.onUnlock(fresh)
+	}
+}
+
+// ChatVars returns the placeholders for chat replies, from the latest check.
+func (w *Worker) ChatVars() map[string]string {
+	w.mu.RLock()
+	game, prog := w.game, w.prog
+	w.mu.RUnlock()
+	return buildVars(w.store.Get(), game, prog)
 }

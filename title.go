@@ -17,7 +17,10 @@ func titleLen(s string) int { return len(utf16.Encode([]rune(s))) }
 var placeholderRe = regexp.MustCompile(`\{(\w+)\}`)
 
 // TemplateVars documents the placeholders shown in the settings page.
-var TemplateVars = []string{"custom", "game", "unlocked", "total", "percent", "remaining", "latest", "latest_rarity", "next", "next_rarity"}
+var TemplateVars = []string{"custom", "game", "unlocked", "total", "percent", "remaining", "latest", "latest_rarity", "next", "next_rarity", "rarest", "rarest_rarity", "bar"}
+
+// ChatVars are the extra placeholders only chat replies can use.
+var ChatVars = []string{"channel", "user", "recent"}
 
 func buildVars(cfg Config, game string, p *Progress) map[string]string {
 	v := map[string]string{"custom": cfg.CustomTitle, "game": game}
@@ -37,7 +40,33 @@ func buildVars(cfg Config, game string, p *Progress) map[string]string {
 		v["next"] = p.RarestLocked.Name
 		v["next_rarity"] = rarity(p.RarestLocked.Percent)
 	}
+	if p.RarestUnlocked != nil {
+		v["rarest"] = p.RarestUnlocked.Name
+		v["rarest_rarity"] = rarity(p.RarestUnlocked.Percent)
+	}
+	v["bar"] = progressBar(p.Unlocked, p.Total)
+	var recent []string
+	for _, a := range p.Achievements { // newest first
+		if !a.Achieved || len(recent) == 3 {
+			continue
+		}
+		if r := rarity(a.Percent); r != "" {
+			recent = append(recent, a.Name+" ("+r+")")
+		} else {
+			recent = append(recent, a.Name)
+		}
+	}
+	v["recent"] = strings.Join(recent, ", ")
 	return v
+}
+
+// progressBar draws a 10-segment bar like ▰▰▰▱▱▱▱▱▱▱.
+func progressBar(done, total int) string {
+	if total <= 0 {
+		return ""
+	}
+	n := done * 10 / total
+	return strings.Repeat("▰", n) + strings.Repeat("▱", 10-n)
 }
 
 func rarity(pct float64) string {

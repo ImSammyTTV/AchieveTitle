@@ -102,13 +102,14 @@ type Achievement struct {
 }
 
 type Progress struct {
-	AppID        string
-	Game         string
-	Achievements []Achievement
-	Unlocked     int
-	Total        int
-	Latest       *Achievement // most recently unlocked
-	RarestLocked *Achievement // lowest global % still locked
+	AppID          string
+	Game           string
+	Achievements   []Achievement
+	Unlocked       int
+	Total          int
+	Latest         *Achievement // most recently unlocked
+	RarestLocked   *Achievement // lowest global % still locked
+	RarestUnlocked *Achievement // lowest global % already unlocked
 }
 
 // Achievements returns progress, or (nil, nil) if the game has no achievements.
@@ -144,6 +145,11 @@ func (s *Steam) Achievements(ctx context.Context, key, steamID, appID string) (*
 		})
 	}
 	p.Total = len(p.Achievements)
+	// Sort (newest unlock first) before taking pointers into the slice:
+	// sorting moves elements, so earlier pointers would point at the wrong ones.
+	sort.SliceStable(p.Achievements, func(i, j int) bool {
+		return p.Achievements[i].UnlockTime > p.Achievements[j].UnlockTime
+	})
 	for i := range p.Achievements {
 		a := &p.Achievements[i]
 		if a.Achieved {
@@ -151,13 +157,13 @@ func (s *Steam) Achievements(ctx context.Context, key, steamID, appID string) (*
 			if p.Latest == nil || a.UnlockTime > p.Latest.UnlockTime {
 				p.Latest = a
 			}
+			if rarity != nil && a.Percent > 0 && (p.RarestUnlocked == nil || a.Percent < p.RarestUnlocked.Percent) {
+				p.RarestUnlocked = a
+			}
 		} else if rarity != nil && (p.RarestLocked == nil || a.Percent < p.RarestLocked.Percent) {
 			p.RarestLocked = a
 		}
 	}
-	sort.SliceStable(p.Achievements, func(i, j int) bool {
-		return p.Achievements[i].UnlockTime > p.Achievements[j].UnlockTime
-	})
 	return p, nil
 }
 

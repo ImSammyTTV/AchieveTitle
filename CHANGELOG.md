@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.6.0
+- 💬 Chat commands: `!achievements`, `!last`, `!next`, `!rarest` and `!progress`
+  - Each can be switched on or off, renamed and given your own reply
+  - Replies come from **your own bot account** (or your channel account if you prefer)
+  - Cooldown per command; you and your mods skip it
+- 🎉 Optional chat announcement when you unlock an achievement
+- New placeholders: `{rarest}`, `{rarest_rarity}`, `{bar}` (and `{recent}`, `{user}`, `{channel}` in chat)
+- Fixed: the "latest" and "rarest missing" achievement could occasionally be the wrong one
+- 🍎 One-line Mac installer that skips macOS's security prompts
+
+**Using your channel account for chat replies?** Click *Connect Twitch* once more to give it chat permission.
+
 ## v0.5.0
 - Status box and OBS panel show the Twitch category's box art
 - Choose your category yourself: search Twitch categories (with box art) and pick one,
