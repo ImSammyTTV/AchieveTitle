@@ -21,7 +21,8 @@
   <a href="#-obs"><img src="assets/logo-obs.svg" width="16" alt=""> <b>OBS</b></a> ·
   <a href="#-mac"><img src="assets/os-apple.svg" width="16" alt=""> <b>Mac</b></a> ·
   <a href="#-linux"><img src="assets/os-linux.svg" width="16" alt=""> <b>Linux</b></a> ·
-  <a href="#-help"><b>❓ Help</b></a>
+  <a href="#-help"><b>❓ Help</b></a> ·
+  <a href="https://github.com/ImSammyTTV/AchieveTitle/issues/new"><b>🐛 Report a bug</b></a>
 </p>
 
 ---
@@ -360,7 +361,9 @@ OBS keeps a copy of web pages. Right-click the Browser Source → **Properties**
 Updating or reinstalling never removes them.
 </details>
 
-Still stuck? [Open an issue](https://github.com/ImSammyTTV/AchieveTitle/issues) and include your `achievetitle.log`.
+🐛 **Found a bug or have an idea?** [Open an issue](https://github.com/ImSammyTTV/AchieveTitle/issues/new). For bugs, say what you
+expected and what happened instead, and attach your `achievetitle.log` (it's next to your settings). Ideas and
+"it'd be nice if…" suggestions are welcome too.
 
 ---
 
