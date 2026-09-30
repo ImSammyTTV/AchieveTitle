@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="AchieveTitle: live Steam achievement progress in your Twitch stream title" width="100%">
+  <img src="assets/banner-v2.svg" alt="AchieveTitle: live Steam achievement progress in your Twitch stream title" width="100%">
 </p>
 
 <p align="center">
