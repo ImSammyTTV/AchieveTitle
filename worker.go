@@ -56,6 +56,27 @@ type Worker struct {
 	seenApp    string
 	seenUnlock int64
 	onUnlock   func([]Achievement)
+
+	// Keeping Twitch happy: channel updates are spaced out, and paused for a
+	// while if Twitch still says they're too fast. Used only under runMu.
+	nextPatch time.Time // earliest time the next update may be sent
+	tooFast   bool      // Twitch rejected the last update as too fast
+	sentTitle string    // the last title we sent...
+	seenTitle string    // ...and how Twitch stored it, if it tidied it up
+	pending   bool      // an update is waiting for nextPatch (guarded by mu)
+}
+
+// errTwitchTooFast is Twitch saying the channel was updated too often.
+var errTwitchTooFast = errors.New("twitch: updating too fast")
+
+// Twitch limits how often a channel can be updated.
+const (
+	patchGap     = 30 * time.Second
+	tooFastPause = 3 * time.Minute
+)
+
+func (w *Worker) slowDownErr() error {
+	return fmt.Errorf("Twitch asked AchieveTitle to slow down, so your title will update at %s", w.nextPatch.Format("15:04"))
 }
 
 func newWorker(s *Store) *Worker {
@@ -89,6 +110,11 @@ func (w *Worker) Run(ctx context.Context) {
 	for {
 		w.tick(ctx)
 		wait := time.Duration(w.store.Get().IntervalSeconds) * time.Second
+		w.mu.RLock()
+		if d := time.Until(w.nextPatch) + time.Second; w.pending && d > 0 && d < wait {
+			wait = d // a held-back update goes out as soon as it's allowed
+		}
+		w.mu.RUnlock()
 		select {
 		case <-ctx.Done():
 			return
@@ -200,7 +226,14 @@ func (w *Worker) tick(ctx context.Context) {
 	}
 
 	patch := map[string]any{}
-	if ch.Title != title {
+	switch {
+	case ch.Title == title:
+	case title == w.sentTitle && w.seenTitle == "":
+		// Twitch stored our last title slightly differently (e.g. tidied up
+		// spacing). Accept its version instead of sending it again and again.
+		w.seenTitle = ch.Title
+	case title == w.sentTitle && ch.Title == w.seenTitle:
+	default:
 		patch["title"] = title
 	}
 	var catErr error
@@ -230,11 +263,36 @@ func (w *Worker) tick(ctx context.Context) {
 			ch.Tags = tags
 		}
 	}
+	w.mu.Lock()
+	w.pending = len(patch) > 0
+	w.mu.Unlock()
+	if len(patch) > 0 && time.Now().Before(w.nextPatch) {
+		// Too soon after the last update: Run sends it once the gap has passed.
+		if w.tooFast {
+			w.setErr(w.slowDownErr())
+		} else {
+			w.setErr(catErr)
+		}
+		return
+	}
 	if len(patch) > 0 {
-		if err := w.twitch.UpdateChannel(ctx, cfg, patch); err != nil {
+		err := w.twitch.UpdateChannel(ctx, cfg, patch)
+		w.nextPatch = time.Now().Add(patchGap)
+		if w.tooFast = errors.Is(err, errTwitchTooFast); w.tooFast {
+			w.nextPatch = time.Now().Add(tooFastPause)
+			w.setErr(w.slowDownErr())
+			return
+		}
+		if err != nil {
 			w.setErr(err)
 			return
 		}
+		if t, ok := patch["title"].(string); ok {
+			w.sentTitle, w.seenTitle = t, ""
+		}
+		w.mu.Lock()
+		w.pending = false
+		w.mu.Unlock()
 		log.Printf("twitch channel updated: %v", patch)
 		w.mu.Lock()
 		w.status.LastUpdate = time.Now()

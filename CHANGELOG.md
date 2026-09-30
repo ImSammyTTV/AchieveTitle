@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.7.3
+- Fixed: *"HTTP 429 You are updating too fast"* from Twitch. Title updates are now spaced at least 30 seconds apart (changes made in between still go through), and if Twitch asks for a break AchieveTitle waits a few minutes and tells you when your title will update
+- Fixed: a title that Twitch saves slightly differently is no longer sent again on every check
+- ✨ The settings page background now has your game's achievement icons slowly drifting past
+
 ## v0.7.2
 - Recent unlocks overlay shows rarity as just "4.2%", so long achievement names fit
 - README: tidier OBS section with the recent unlocks overlay pictured, and proper OBS, Apple and Linux logos

@@ -20,6 +20,18 @@
          /* One glow for the whole window: without this it tiles down long pages (e.g. in an OBS dock). */
          background-repeat:no-repeat; background-attachment:fixed; min-height:100% }
   html { background:var(--bg) }
+
+  /* Drifting achievement icons behind everything, tilted and faded out */
+  .drift { position:fixed; inset:-30% -30%; z-index:0; pointer-events:none; overflow:hidden; transform:rotate(-16deg);
+           opacity:.09; display:flex; flex-direction:column; justify-content:center; gap:34px;
+           -webkit-mask-image:radial-gradient(closest-side, #000 35%, transparent 100%); mask-image:radial-gradient(closest-side, #000 35%, transparent 100%) }
+  .drift-row { display:flex; gap:34px; width:max-content; animation:drift var(--t, 90s) linear infinite }
+  .drift-row:nth-child(even) { animation-direction:reverse }
+  .drift-row > * { width:56px; height:56px; border-radius:12px; flex:none; object-fit:cover; display:grid; place-items:center;
+                   font-size:30px; background:rgba(255,255,255,.08); filter:grayscale(.2) }
+  @keyframes drift { to { transform:translateX(-50%) } }
+  @media (prefers-reduced-motion: reduce) { .drift-row { animation:none } }
+  .app { position:relative; z-index:1 }
   .app { height:100vh; display:flex; flex-direction:column; max-width:1280px; margin:0 auto; padding:14px 20px 18px; gap:12px }
 
   /* Header */
@@ -212,6 +224,7 @@
 </style>
 </head>
 <body>
+<div class="drift" id="drift" aria-hidden="true"></div>
 <div class="app" id="app">
 
   <header>
@@ -648,6 +661,7 @@ async function poll() {
   $('checked').textContent = s.last_check && !s.last_check.startsWith('0001') ? 'Last checked ' + new Date(s.last_check).toLocaleTimeString() : 'Not checked yet';
   $('status').innerHTML = s.error ? `<span class="err">⚠ ${esc(s.error)}</span>` : '';
   const recent = (s.recent || []).slice(0, 6);
+  drawDrift((s.recent || []).map(a => a.icon).filter(Boolean));
   $('recentBox').hidden = !recent.length;
   $('recent').innerHTML = recent.map(a => {
     const pct = a.global_percent ? (a.global_percent < 10 ? a.global_percent.toFixed(1) : Math.round(a.global_percent)) + '% of players' : '';
@@ -984,6 +998,22 @@ async function installUpdate() {
   $('updText').textContent = "AchieveTitle didn't come back up by itself. Please start it again.";
 }
 
+
+// Background: rows of achievement icons drifting past. Uses the current game's
+// unlocked art, or trophies when there's none yet. Rebuilt only when the icons change.
+let driftKey = null;
+function drawDrift(icons) {
+  const key = icons.join('|');
+  if (key === driftKey) return;
+  driftKey = key;
+  const tile = i => icons.length ? `<img src="${esc(icons[i % icons.length])}" alt="">` : '<div>🏆</div>';
+  $('drift').innerHTML = Array.from({length: 7}, (_, r) => {
+    // Each row is its tiles twice over, so sliding by half loops seamlessly.
+    const tiles = Array.from({length: 16}, (_, i) => tile(i + r * 3)).join('');
+    return `<div class="drift-row" style="--t:${80 + r * 13}s">${tiles}${tiles}</div>`;
+  }).join('');
+}
+drawDrift([]);
 
 addEventListener('resize', () => { clearTimeout(window.rt); window.rt = setTimeout(poll, 200); });
 load(); poll(); checkUpdate(); setInterval(poll, 5000); setInterval(checkUpdate, 10 * 60 * 1000);

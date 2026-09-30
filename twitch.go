@@ -128,6 +128,9 @@ func (t *Twitch) doAs(ctx context.Context, token, client, method, path string, b
 	if resp.StatusCode == 401 {
 		return errTwitchAuth
 	}
+	if resp.StatusCode == 429 {
+		return errTwitchTooFast
+	}
 	if resp.StatusCode >= 300 {
 		var e struct{ Message string }
 		json.NewDecoder(resp.Body).Decode(&e)
