@@ -1,11 +1,11 @@
 #!/bin/sh
 # AchieveTitle installer for any Linux distro (including Steam Deck). No root needed.
-#   curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/achievetitle/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/AchieveTitle/main/install.sh | sh
 # Uninstall:
-#   curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/achievetitle/main/install.sh | sh -s -- --uninstall
+#   curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/AchieveTitle/main/install.sh | sh -s -- --uninstall
 set -eu
 
-REPO="ImSammyTTV/achievetitle"
+REPO="ImSammyTTV/AchieveTitle"
 BIN_DIR="$HOME/.local/bin"
 DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}"
 CFG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"

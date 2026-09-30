@@ -75,7 +75,7 @@ function script_description()
   return [[<h3>AchieveTitle</h3>
 <p>Shows your Steam achievement progress in your Twitch title.</p>
 <p>Control panel: <b>View → Docks → Custom Browser Docks</b>, URL <code>http://localhost:7878/dock</code></p>
-<p><a href="https://github.com/ImSammyTTV/achievetitle">Download &amp; help</a></p>]]
+<p><a href="https://github.com/ImSammyTTV/AchieveTitle">Download &amp; help</a></p>]]
 end
 
 function script_properties()

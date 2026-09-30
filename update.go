@@ -23,7 +23,7 @@ import (
 
 // updateAPI is GitHub's "latest release" endpoint; it never returns pre-releases.
 // Overridable at build time for testing.
-var updateAPI = "https://api.github.com/repos/ImSammyTTV/achievetitle/releases/latest"
+var updateAPI = "https://api.github.com/repos/ImSammyTTV/AchieveTitle/releases/latest"
 
 // UpdateInfo is what the settings page shows about updates.
 type UpdateInfo struct {

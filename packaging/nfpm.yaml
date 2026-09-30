@@ -6,7 +6,7 @@ platform: linux
 version: ${VERSION}
 maintainer: ImSammyTTV <https://github.com/ImSammyTTV>
 description: Show live Steam achievement progress in your Twitch stream title.
-homepage: https://github.com/ImSammyTTV/achievetitle
+homepage: https://github.com/ImSammyTTV/AchieveTitle
 license: MIT
 section: games
 recommends:

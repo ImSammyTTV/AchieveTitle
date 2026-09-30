@@ -1,14 +1,14 @@
 #!/bin/sh
 # AchieveTitle installer for macOS (Apple Silicon and Intel).
-#   curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/achievetitle/main/install-mac.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/AchieveTitle/main/install-mac.sh | sh
 # Uninstall:
-#   curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/achievetitle/main/install-mac.sh | sh -s -- --uninstall
+#   curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/AchieveTitle/main/install-mac.sh | sh -s -- --uninstall
 #
 # Downloads the latest release from GitHub, checks it against the release's
 # SHA256SUMS.txt and installs AchieveTitle.app into Applications.
 set -eu
 
-REPO="ImSammyTTV/achievetitle"
+REPO="ImSammyTTV/AchieveTitle"
 APP="AchieveTitle.app"
 
 if [ "$(uname -s)" != "Darwin" ]; then

@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ImSammyTTV/achievetitle/releases/latest"><img src="https://img.shields.io/github/v/release/ImSammyTTV/achievetitle?style=for-the-badge&color=9147ff&label=Download" alt="Latest release"></a>
-  <a href="https://github.com/ImSammyTTV/achievetitle/releases"><img src="https://img.shields.io/github/downloads/ImSammyTTV/achievetitle/total?style=for-the-badge&color=f5b400&label=Downloads" alt="Downloads"></a>
+  <a href="https://github.com/ImSammyTTV/AchieveTitle/releases/latest"><img src="https://img.shields.io/github/v/release/ImSammyTTV/AchieveTitle?style=for-the-badge&color=9147ff&label=Download" alt="Latest release"></a>
+  <a href="https://github.com/ImSammyTTV/AchieveTitle/releases"><img src="https://img.shields.io/github/downloads/ImSammyTTV/AchieveTitle/total?style=for-the-badge&color=f5b400&label=Downloads" alt="Downloads"></a>
   <img src="https://img.shields.io/badge/Windows%20%7C%20macOS%20%7C%20Linux-2f2f35?style=for-the-badge" alt="Windows, macOS, Linux">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-00c46a?style=for-the-badge" alt="MIT license"></a>
 </p>
@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ImSammyTTV/achievetitle/releases/latest"><b>⬇️ Download</b></a> ·
+  <a href="https://github.com/ImSammyTTV/AchieveTitle/releases/latest"><b>⬇️ Download</b></a> ·
   <a href="#-quick-start"><b>🚀 Quick start</b></a> ·
   <a href="#-chat-commands"><b>💬 Chat</b></a> ·
   <a href="#-obs"><b>🎥 OBS</b></a> ·
@@ -105,7 +105,7 @@ No accounts, no servers, no tracking. Everything runs on your own computer.
 
 ## 🚀 Quick start
 
-1. **Download** the file for your system from the [latest release](https://github.com/ImSammyTTV/achievetitle/releases/latest):
+1. **Download** the file for your system from the [latest release](https://github.com/ImSammyTTV/AchieveTitle/releases/latest):
 
    | System | Download |
    |---|---|
@@ -199,7 +199,7 @@ bar and an *"Achievement unlocked"* popup.
 Open **Terminal** (press ⌘ Space, type *Terminal*, press Enter), paste this and press Enter:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/achievetitle/main/install-mac.sh | sh
+curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/AchieveTitle/main/install-mac.sh | sh
 ```
 
 It picks the right version for your Mac, checks the download against the release's checksum, installs
@@ -225,10 +225,10 @@ Uninstall: `curl -fsSL …/install-mac.sh | sh -s -- --uninstall` (your settings
 Works on every distro, including **Steam Deck**. The quickest way (no admin password needed):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/achievetitle/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/ImSammyTTV/AchieveTitle/main/install.sh | sh
 ```
 
-Or install a package from the [latest release](https://github.com/ImSammyTTV/achievetitle/releases/latest):
+Or install a package from the [latest release](https://github.com/ImSammyTTV/AchieveTitle/releases/latest):
 
 | Distro | Package |
 |---|---|
@@ -283,7 +283,7 @@ installs (.deb, .rpm, Arch) update through your package manager as usual.
 `config.json` holds your settings and `achievetitle.log` the log. Updating or reinstalling never removes them.
 </details>
 
-Still stuck? [Open an issue](https://github.com/ImSammyTTV/achievetitle/issues) and include your `achievetitle.log`.
+Still stuck? [Open an issue](https://github.com/ImSammyTTV/AchieveTitle/issues) and include your `achievetitle.log`.
 
 ---
 
