@@ -251,6 +251,12 @@ It picks the right version for your Mac, checks the download against the release
 **AchieveTitle.app** into Applications and opens it. There are no *"can't be opened"* warnings, because Terminal downloads
 aren't quarantined the way browser downloads are.
 
+**Use Homebrew?** Install it with:
+
+```sh
+brew install --cask imsammyttv/tap/achievetitle
+```
+
 <details>
 <summary>Installing from the zip instead</summary>
 
