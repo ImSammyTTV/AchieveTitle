@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.4
+- The OBS tab uses the real OBS logo
+
 ## v0.7.3
 - Fixed: *"HTTP 429 You are updating too fast"* from Twitch. Title updates are now spaced at least 30 seconds apart (changes made in between still go through), and if Twitch asks for a break AchieveTitle waits a few minutes and tells you when your title will update
 - Fixed: a title that Twitch saves slightly differently is no longer sent again on every check
