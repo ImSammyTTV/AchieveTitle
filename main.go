@@ -179,6 +179,7 @@ func (s *server) routes() http.Handler {
 		http.ServeFileFS(w, r, static, "dock.html")
 	})
 	mux.HandleFunc("POST /api/enabled", s.sameOrigin(s.setEnabled))
+	mux.HandleFunc("POST /api/quick", s.sameOrigin(s.quickSettings))
 	mux.HandleFunc("GET /auth/callback", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFileFS(w, r, static, "callback.html")
 	})
@@ -353,6 +354,53 @@ func (s *server) setEnabled(w http.ResponseWriter, r *http.Request) {
 }
 
 // setEnabledTo turns automatic updates on or off (dock, tray and OBS script).
+// quickSettings changes a few settings at once (used by the OBS dock). Unlike
+// POST /api/config, fields left out are kept as they are.
+func (s *server) quickSettings(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Enabled     *bool     `json:"enabled"`
+		ChatEnabled *bool     `json:"chat_enabled"`
+		SetCategory *bool     `json:"set_category"`
+		CustomTitle *string   `json:"custom_title"`
+		Template    *string   `json:"template"`
+		Bar         *BarStyle `json:"bar"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&in); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if in.Enabled != nil {
+		if err := s.setEnabledTo(*in.Enabled); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	}
+	err := s.store.Update(func(c *Config) {
+		if in.ChatEnabled != nil {
+			c.Chat.Enabled = *in.ChatEnabled
+		}
+		if in.SetCategory != nil {
+			c.SetCategory = *in.SetCategory
+		}
+		if in.CustomTitle != nil {
+			c.CustomTitle = strings.TrimSpace(*in.CustomTitle)
+		}
+		if in.Template != nil && strings.TrimSpace(*in.Template) != "" {
+			c.Template = strings.TrimSpace(*in.Template)
+		}
+		if in.Bar != nil {
+			c.Bar = in.Bar.clean()
+		}
+	})
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	s.worker.Kick()
+	s.chat.Reload()
+	w.WriteHeader(204)
+}
+
 func (s *server) setEnabledTo(on bool) error {
 	was := s.store.Get()
 	if err := s.store.Update(func(c *Config) { c.Enabled = on }); err != nil {

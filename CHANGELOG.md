@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.6.7
+- 🎛️ The OBS control panel is now a proper mini dashboard: switches for title updates, chat commands and category, edit your custom text and template, pick a bar style, see recent unlocks, and send a test popup, all without leaving OBS. Changes apply instantly
+
 ## v0.6.6
 - Fixed: the settings page background repeated in bands in narrow windows such as an OBS dock
 
