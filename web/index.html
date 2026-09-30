@@ -545,10 +545,11 @@
             <div class="box">
               <h3>🔒 Privacy</h3>
               <p class="hint" style="margin:0">Everything stays on this computer. AchieveTitle only talks to Steam, Twitch and GitHub (for updates).</p>
-              <div id="clientIdBox">
-                <label>Twitch Client ID <span class="hint">· only for custom builds (redirect: <code id="redir"></code>)</span></label>
-                <input type="text" id="twitch_client_id" autocomplete="off">
-              </div>
+              <details id="clientIdBox" style="margin-top:10px">
+                <summary class="hint" style="cursor:pointer">Use my own Twitch app instead</summary>
+                <p class="hint" style="margin:6px 0">Register a free app at <a href="https://dev.twitch.tv/console" target="_blank" rel="noopener">dev.twitch.tv/console</a> (Client Type <b>Public</b>, redirect <code id="redir"></code>), paste its Client ID here, save, then connect Twitch again.</p>
+                <input type="text" id="twitch_client_id" autocomplete="off" placeholder="Leave empty to use AchieveTitle's app">
+              </details>
             </div>
           </div>
         </div>
@@ -616,7 +617,7 @@ async function load() {
   steamCheck();
   $('redir').textContent = c.redirect_uri;
   $('ver').textContent = c.version; $('appVer').textContent = c.version;
-  $('clientIdBox').style.display = c.has_builtin_client_id && !c.twitch_client_id ? 'none' : '';
+  if (c.twitch_client_id || !c.has_builtin_client_id) $('clientIdBox').open = true;
   showOverlayUrl();
   $('twitch').innerHTML = c.twitch_login
     ? `<div class="acct">${twitchPic(c.twitch_avatar)}<b>${esc(c.twitch_login)}</b>

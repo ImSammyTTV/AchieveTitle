@@ -22,6 +22,7 @@
   <a href="#-mac"><img src="assets/os-apple.svg" width="16" alt=""> <b>Mac</b></a> ·
   <a href="#-linux"><img src="assets/os-linux.svg" width="16" alt=""> <b>Linux</b></a> ·
   <a href="#-help"><b>❓ Help</b></a> ·
+  <a href="#%EF%B8%8F-why-trust-achievetitle"><b>🛡️ Why trust it?</b></a> ·
   <a href="https://github.com/ImSammyTTV/AchieveTitle/issues/new"><b>🐛 Report a bug</b></a>
 </p>
 
@@ -409,6 +410,28 @@ When they are:
 - **Committers and reviewers:** [ImSammyTTV](https://github.com/ImSammyTTV)
 - **Approver:** [ImSammyTTV](https://github.com/ImSammyTTV). Every signing request is approved manually.
 </details>
+
+## 🛡️ Why trust AchieveTitle?
+
+Fair question: it asks for your Twitch login. Here's exactly what that means.
+
+- **Your logins never leave your computer.** There's no AchieveTitle server. When you click *Connect Twitch*, Twitch sends
+  the login straight back to AchieveTitle running on your own PC. Nobody else, including the person who made it, ever sees it.
+- **It only asks Twitch for what it needs.** Twitch shows the list before you agree: change your stream title, category
+  and tags, and read and send chat messages (only used if you turn on chat commands). It can't see your email, payouts,
+  subscribers or anything else, and it can't stream, ban people or change your account.
+- **Every line of code is public.** Everything it does is in this repository for anyone to read.
+- **The downloads are built by GitHub, not on someone's PC.** Each release is built from this public code by
+  [GitHub Actions](https://github.com/ImSammyTTV/AchieveTitle/actions), and every file is listed in `SHA256SUMS.txt`
+  so you can check nothing was changed. The installers check it for you.
+- **You can switch it off any time.** Click *Disconnect* in AchieveTitle, or remove it on Twitch under
+  **Settings → Connections**. Quitting AchieveTitle can also put your original title back.
+- **Rather not use the shared Twitch app at all?** Register your own free app at
+  [dev.twitch.tv/console](https://dev.twitch.tv/console) and paste its Client ID under **App → Privacy → Use my own Twitch app instead**. Then nothing goes
+  through AchieveTitle's app.
+
+One honest caveat: the Windows and Mac apps aren't signed by Microsoft or Apple yet, which is why your computer may warn
+you the first time. That's about paying for certificates, not about what the app does.
 
 ## 🔒 Privacy
 

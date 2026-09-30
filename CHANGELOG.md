@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.7.10
+- **Use my own Twitch app instead** (App tab → Privacy): for anyone who'd rather sign in through a Twitch app they registered themselves
+- README: new *Why trust AchieveTitle?* section
+
 ## v0.7.9
 - Ready-made title examples now show a mix of games (Elden Ring, Stardew Valley, Baldur's Gate 3, Hollow Knight, Hades, Terraria, Sekiro)
 
