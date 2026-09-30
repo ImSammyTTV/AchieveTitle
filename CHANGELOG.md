@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.8
+- ✨ **Ready-made titles** in the Title tab: 9 title templates to pick from with one click, each shown with an example
+
 ## v0.7.7
 - The drifting background moves about half as fast
 - New **Background** choice in the App tab: moving icons, still icons, or plain

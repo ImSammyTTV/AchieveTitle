@@ -35,6 +35,11 @@
   @media (prefers-reduced-motion: reduce) { .drift-row { animation:none } }
   body.bg-still .drift-row { animation:none } body.bg-off .drift { display:none }
   .app { position:relative; z-index:1 }
+  .presets { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px }
+  .presets button { display:block; min-width:0; text-align:left; background:var(--field); border:1px solid var(--line2); padding:5px 10px; font-weight:600; font-size:12.5px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .presets button:hover { border-color:var(--accent) }
+  .presets button.sel { border-color:var(--accent); background:rgba(145,71,255,.22) }
+  .presets small { display:block; color:var(--muted); font-weight:400; font-size:11px; font-family:ui-monospace, monospace; overflow:hidden; text-overflow:ellipsis }
   .tab-ico { width:1.05em; height:1.05em; vertical-align:-.15em }
   .app { height:100vh; display:flex; flex-direction:column; max-width:1280px; margin:0 auto; padding:14px 20px 18px; gap:12px }
 
@@ -387,6 +392,10 @@
               <p class="hint">Titles are plain text on Twitch, so colour comes from emoji squares (each counts as 2 characters).</p>
             </div>
           </div>
+          <div class="box" style="margin-top:14px">
+            <h3>✨ Ready-made titles <span class="hint" style="font-weight:400">· click one to use it as your title template, then Save</span></h3>
+            <div class="presets" id="titlePresets"></div>
+          </div>
         </div>
 
         <!-- Category & tags -->
@@ -593,6 +602,7 @@ function setPill(id, state, text) {
 async function load() {
   const c = await (await fetch('/api/config')).json();
   fields.forEach(f => $(f).value = c[f] ?? '');
+  showPresets();
   checks.forEach(f => $(f).checked = !!c[f]);
   $('tags').value = (c.tags || []).join(', ');
   if (c.overlay) { overlayCfg = c.overlay; showOverlayCfg(); }
@@ -900,6 +910,30 @@ function drawChase() {
 $('chaseSearch').addEventListener('input', drawChase);
 addEventListener('keydown', e => { if (e.key === 'Escape') closeChase(); });
 async function setChase(apiName) { await post('/api/quick', {chasing: apiName}).catch(() => {}); setTimeout(poll, 1200); }
+
+// Ready-made title templates, each shown with an example of how it reads.
+const TITLE_PRESETS = [
+  ['{game} [{unlocked}/{total} Achievements] {bar} 🏆 {latest}', 'Brotato [45/179 Achievements] 🟩⬛⬛⬛⬛ 🏆 Danger 3'],
+  ['{custom} | {game} {percent} complete 🏆', 'Chill stream | Brotato 25% complete 🏆'],
+  ['🏆 {unlocked}/{total} in {game} | Next: {next} ({next_rarity})', '🏆 45/179 in Brotato | Next: Crash Zone (0.9%)'],
+  ['{custom} 🎯 Chasing {chasing} (only {chasing_rarity} have it)', 'Chill stream 🎯 Chasing Speedrunner (only 0.8% have it)'],
+  ['{game} 100% run: {remaining} achievements to go! {bar}', 'Brotato 100% run: 134 achievements to go! 🟩⬛⬛⬛⬛'],
+  ['{custom} | Just unlocked {latest} (only {latest_rarity}!)', 'Chill stream | Just unlocked Danger 3 (only 49%!)'],
+  ['{game} achievement hunt {unlocked}/{total} 🏅 Rarest: {rarest} ({rarest_rarity})', 'Brotato achievement hunt 45/179 🏅 Rarest: Baby (11%)'],
+  ['{custom} [{unlocked}/{total}]', 'Chill stream [45/179]'],
+  ['{custom} | {game} {bar} {percent}', 'Chill stream | Brotato 🟩⬛⬛⬛⬛ 25%'],
+];
+function showPresets() {
+  const cur = $('template').value;
+  $('titlePresets').innerHTML = TITLE_PRESETS.map(([t, ex], i) =>
+    `<button type="button" data-i="${i}" class="${t === cur ? 'sel' : ''}" title="${esc(ex + "\n" + t)}">${esc(ex)}<small>${esc(t)}</small></button>`).join('');
+  document.querySelectorAll('#titlePresets button').forEach(b => b.onclick = () => {
+    $('template').value = TITLE_PRESETS[b.dataset.i][0];
+    $('template').dispatchEvent(new Event('input', {bubbles: true}));
+    showPresets();
+  });
+}
+$('template').addEventListener('input', () => document.querySelectorAll('#titlePresets button').forEach(b => b.classList.toggle('sel', TITLE_PRESETS[b.dataset.i][0] === $('template').value)));
 
 // Progress bar style for {bar}
 const BAR_PRESETS = [['▰','▱'],['🟪','⬛'],['🟩','⬛'],['🟨','⬛'],['🟦','⬜'],['🟥','⬛'],['█','░'],['●','○'],['★','☆'],['■','□']];
