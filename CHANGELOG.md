@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.9
+- Ready-made title examples now show a mix of games (Elden Ring, Stardew Valley, Baldur's Gate 3, Hollow Knight, Hades, Terraria, Sekiro)
+
 ## v0.7.8
 - ✨ **Ready-made titles** in the Title tab: 9 title templates to pick from with one click, each shown with an example
 

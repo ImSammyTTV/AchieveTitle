@@ -913,15 +913,15 @@ async function setChase(apiName) { await post('/api/quick', {chasing: apiName}).
 
 // Ready-made title templates, each shown with an example of how it reads.
 const TITLE_PRESETS = [
-  ['{game} [{unlocked}/{total} Achievements] {bar} 🏆 {latest}', 'Brotato [45/179 Achievements] 🟩⬛⬛⬛⬛ 🏆 Danger 3'],
-  ['{custom} | {game} {percent} complete 🏆', 'Chill stream | Brotato 25% complete 🏆'],
-  ['🏆 {unlocked}/{total} in {game} | Next: {next} ({next_rarity})', '🏆 45/179 in Brotato | Next: Crash Zone (0.9%)'],
-  ['{custom} 🎯 Chasing {chasing} (only {chasing_rarity} have it)', 'Chill stream 🎯 Chasing Speedrunner (only 0.8% have it)'],
-  ['{game} 100% run: {remaining} achievements to go! {bar}', 'Brotato 100% run: 134 achievements to go! 🟩⬛⬛⬛⬛'],
-  ['{custom} | Just unlocked {latest} (only {latest_rarity}!)', 'Chill stream | Just unlocked Danger 3 (only 49%!)'],
-  ['{game} achievement hunt {unlocked}/{total} 🏅 Rarest: {rarest} ({rarest_rarity})', 'Brotato achievement hunt 45/179 🏅 Rarest: Baby (11%)'],
+  ['{game} [{unlocked}/{total} Achievements] {bar} 🏆 {latest}', 'ELDEN RING [30/42 Achievements] 🟩🟩🟩🟩⬛ 🏆 Elden Lord'],
+  ['{custom} | {game} {percent} complete 🏆', 'Cozy farming | Stardew Valley 61% complete 🏆'],
+  ['🏆 {unlocked}/{total} in {game} | Next: {next} ({next_rarity})', "🏆 38/54 in Baldur's Gate 3 | Next: Foehammer (4.1%)"],
+  ['{custom} 🎯 Chasing {chasing} (only {chasing_rarity} have it)', 'Blind run 🎯 Chasing Void (only 2.3% have it)'],
+  ['{game} 100% run: {remaining} achievements to go! {bar}', 'Hades 100% run: 7 achievements to go! 🟩🟩🟩🟩⬛'],
+  ['{custom} | Just unlocked {latest} (only {latest_rarity}!)', 'Late night grind | Just unlocked Is There No Escape? (only 34%!)'],
+  ['{game} achievement hunt {unlocked}/{total} 🏅 Rarest: {rarest} ({rarest_rarity})', 'Terraria achievement hunt 71/115 🏅 Rarest: Rainbows and Unicorns (1.9%)'],
   ['{custom} [{unlocked}/{total}]', 'Chill stream [45/179]'],
-  ['{custom} | {game} {bar} {percent}', 'Chill stream | Brotato 🟩⬛⬛⬛⬛ 25%'],
+  ['{custom} | {game} {bar} {percent}', 'Road to platinum | Sekiro 🟩🟩🟩⬛⬛ 62%'],
 ];
 function showPresets() {
   const cur = $('template').value;
