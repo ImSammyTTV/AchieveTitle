@@ -35,6 +35,16 @@ jobs:
         env:
           CGO_ENABLED: "0"
         run: packaging/build-release.sh "$GITHUB_REF_NAME"
+      - name: Release notes from CHANGELOG.md
+        # Uses the "## vX.Y.Z" section matching this tag (without any -beta suffix).
+        run: |
+          v="${GITHUB_REF_NAME%%-*}"
+          awk -v h="## $v" '$0==h{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "No '## $v' section in CHANGELOG.md" >&2; exit 1; fi
+          cat notes.md
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+          body_path: notes.md
+          # Tags like v0.5.0-beta.1 become pre-releases; plain tags become Latest.
+          prerelease: ${{ contains(github.ref_name, '-') }}
