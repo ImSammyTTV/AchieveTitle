@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.6.1
+- Fixed: *Set up OBS for me* couldn't find the scene collection in newer OBS versions ("Untitled.json.json")
+
 ## v0.6.0
 - 🎥 **Set up OBS for me**: one click adds the AchieveTitle script and control panel to OBS (settings backed up first)
 - ✨ Redesigned settings page: everything on one screen, with tabs, a live status card and recent unlocks

@@ -8,11 +8,14 @@ import (
 	"testing"
 )
 
-func fakeOBS(t *testing.T) (dir string) {
+func fakeOBS(t *testing.T) (dir string) { return fakeOBSNamed(t, "My_Scenes") }
+
+// fakeOBSNamed writes SceneCollectionFile=<name>; newer OBS versions put ".json" on the end.
+func fakeOBSNamed(t *testing.T, name string) (dir string) {
 	dir = t.TempDir()
 	os.MkdirAll(filepath.Join(dir, "basic", "scenes"), 0o755)
 	// Windows line endings and an existing dock, like a real OBS install.
-	ini := "[General]\r\nFirstRun=true\r\n\r\n[Basic]\r\nProfile=Untitled\r\nSceneCollectionFile=My_Scenes\r\n\r\n[BasicWindow]\r\n" +
+	ini := "[General]\r\nFirstRun=true\r\n\r\n[Basic]\r\nProfile=Untitled\r\nSceneCollectionFile=" + name + "\r\n\r\n[BasicWindow]\r\n" +
 		`ExtraBrowserDocks=[{"title":"Chat","url":"https://twitch.tv/popout/chat","uuid":"x"}]` + "\r\nDockState=abc\r\n"
 	os.WriteFile(filepath.Join(dir, "user.ini"), []byte(ini), 0o644)
 	os.WriteFile(filepath.Join(dir, "basic", "scenes", "My_Scenes.json"),
@@ -98,5 +101,20 @@ func TestINISetAddsMissingSection(t *testing.T) {
 func TestLuaString(t *testing.T) {
 	if got := luaString(`C:\Program Files\AchieveTitle\AchieveTitle.exe`); got != `"C:\\Program Files\\AchieveTitle\\AchieveTitle.exe"` {
 		t.Fatalf("got %s", got)
+	}
+}
+
+func TestSetupOBSNewerNaming(t *testing.T) {
+	dir := fakeOBSNamed(t, "My_Scenes.json") // how current OBS on macOS stores it
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("APPDATA", os.Getenv("XDG_CONFIG_HOME"))
+	obsConfigDirs = func() []string { return []string{dir} }
+	obsRunning = func() bool { return false }
+	s := &server{base: "http://localhost:7878"}
+	if err := s.setupOBS(); err != nil {
+		t.Fatal(err)
+	}
+	if st := s.obsStatus(); !st.ScriptAdded || st.SceneCollName != "My_Scenes" {
+		t.Fatalf("status: %+v", st)
 	}
 }

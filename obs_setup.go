@@ -72,6 +72,16 @@ func obsUserINI(dir string) string {
 	return filepath.Join(dir, "global.ini")
 }
 
+// sceneCollectionPath finds the scene collection OBS opens with. Newer OBS
+// versions store the name with ".json" already on it, older ones without.
+func sceneCollectionPath(dir, ini string) (path, name string) {
+	name = strings.TrimSuffix(iniGet(ini, "Basic", "SceneCollectionFile"), ".json")
+	if name == "" {
+		return "", ""
+	}
+	return filepath.Join(dir, "basic", "scenes", name+".json"), name
+}
+
 func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
 
 // scriptPath is where the ready-to-use OBS script is written: next to the
@@ -119,10 +129,10 @@ func (s *server) obsStatus() OBSStatus {
 	st.Found = true
 	ini, _ := os.ReadFile(obsUserINI(dir))
 	st.DockAdded = strings.Contains(iniGet(string(ini), "BasicWindow", "ExtraBrowserDocks"), s.base+"/dock")
-	coll := iniGet(string(ini), "Basic", "SceneCollectionFile")
+	collPath, coll := sceneCollectionPath(dir, string(ini))
 	st.SceneCollName = coll
-	if coll != "" {
-		b, _ := os.ReadFile(filepath.Join(dir, "basic", "scenes", coll+".json"))
+	if collPath != "" {
+		b, _ := os.ReadFile(collPath)
 		st.ScriptAdded = strings.Contains(string(b), "achievetitle.lua")
 	}
 	return st
@@ -177,11 +187,10 @@ func (s *server) setupOBS() error {
 	}
 
 	// 2. The script, in the scene collection OBS opens with.
-	coll := iniGet(ini, "Basic", "SceneCollectionFile")
-	if coll == "" {
+	collPath, _ := sceneCollectionPath(dir, ini)
+	if collPath == "" {
 		return errors.New("couldn't tell which scene collection OBS uses. Open OBS once, close it, then try again")
 	}
-	collPath := filepath.Join(dir, "basic", "scenes", coll+".json")
 	b, err := os.ReadFile(collPath)
 	if err != nil {
 		return fmt.Errorf("reading your OBS scene collection: %w", err)
