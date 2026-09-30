@@ -59,6 +59,7 @@ func trayReady(a *app) {
 	open := systray.AddMenuItem("Open settings", "Open the AchieveTitle settings page")
 	auto := systray.AddMenuItemCheckbox("Update Twitch title automatically", "", a.store.Get().Enabled)
 	update := systray.AddMenuItem("Update available…", "A new version of AchieveTitle is available")
+	checkUpd := systray.AddMenuItem("Check for updates", "Look for a new version of AchieveTitle now")
 	update.Hide()
 	systray.AddSeparator()
 	quit := systray.AddMenuItem("Quit AchieveTitle", "")
@@ -99,7 +100,22 @@ func trayReady(a *app) {
 			case <-open.ClickedCh:
 				openBrowser(a.srv.base)
 			case <-update.ClickedCh:
-				openBrowser(a.srv.base)
+				openBrowser(a.srv.base + "/#updates")
+			case <-checkUpd.ClickedCh:
+				checkUpd.SetTitle("Checking…")
+				go func() {
+					if err := a.updater.Check(a.ctx); err != nil {
+						checkUpd.SetTitle("Couldn't check for updates")
+					} else if a.updater.Info().Available {
+						checkUpd.SetTitle("Check for updates")
+						openBrowser(a.srv.base + "/#updates")
+					} else {
+						checkUpd.SetTitle("You're up to date (" + version + ")")
+					}
+					refresh()
+					time.Sleep(5 * time.Second)
+					checkUpd.SetTitle("Check for updates")
+				}()
 			case <-auto.ClickedCh:
 				a.srv.setEnabledTo(!a.store.Get().Enabled)
 				refresh()

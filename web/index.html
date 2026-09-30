@@ -426,6 +426,15 @@
         <!-- App -->
         <div class="pane" data-pane="app">
           <div class="grid2">
+            <div class="box" style="grid-column:1 / -1">
+              <h3>⬆️ Updates</h3>
+              <div class="row">
+                <span>You have <b id="appVer"></b>.</span>
+                <button class="ghost" id="checkBtn" onclick="checkNow()">Check for updates</button>
+                <button class="primary" id="appUpdBtn" onclick="installUpdate()" hidden>Update now</button>
+                <span id="checkMsg" class="hint"></span>
+              </div>
+            </div>
             <div class="box">
               <h3>⏱️ Behaviour</h3>
               <label>Check Steam every (seconds)</label>
@@ -495,7 +504,7 @@ async function load() {
   $('steam_api_key').placeholder = c.has_steam_key ? '•••••••• saved (paste a new one to replace it)' : 'Paste your key here';
   steamCheck();
   $('redir').textContent = c.redirect_uri;
-  $('ver').textContent = c.version;
+  $('ver').textContent = c.version; $('appVer').textContent = c.version;
   $('clientIdBox').style.display = c.has_builtin_client_id && !c.twitch_client_id ? 'none' : '';
   showOverlayUrl();
   $('dockUrl').textContent = location.origin + '/dock';
@@ -783,13 +792,29 @@ async function checkUpdate() {
   if (u.error) $('updText').innerHTML += ` <span class="err">${esc(u.error)}</span>`;
 }
 
+// "Check for updates" button (App tab): asks GitHub right now instead of waiting for the daily check.
+async function checkNow() {
+  $('checkBtn').disabled = true; $('checkMsg').textContent = 'Checking…';
+  try {
+    const u = await (await post('/api/update/check')).json();
+    $('appUpdBtn').hidden = !(u.available && u.can_install);
+    $('checkMsg').innerHTML = u.error ? `<span class="err">Couldn't check: ${esc(u.error)}</span>`
+      : u.available ? `<span class="warn">🎉 ${esc(u.latest)} is available.</span>` + (u.can_install ? '' : ` <a href="${esc(u.page_url)}" target="_blank" rel="noopener">Download it</a> (${esc(u.cant_install)})`)
+      : `<span class="ok">✔ You're up to date.</span>`;
+    checkUpdate();
+  } catch (e) { $('checkMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  $('checkBtn').disabled = false;
+}
+if (location.hash === '#updates') { showTab('app'); history.replaceState(null, '', '/'); setTimeout(checkNow, 300); }
+
 async function installUpdate() {
   const from = (await (await fetch('/api/config')).json()).version;
-  $('updBtn').disabled = true;
-  $('updText').textContent = 'Downloading and checking the update…';
+  $('updBtn').disabled = true; $('appUpdBtn').disabled = true;
+  $('update').hidden = false;
+  $('updText').textContent = 'Downloading and checking the update…'; $('checkMsg').textContent = 'Downloading and checking the update…';
   try { await post('/api/update/install'); }
-  catch (e) { $('updText').innerHTML = `<span class="err">${esc(e.message)}</span>`; $('updBtn').disabled = false; return; }
-  $('updText').textContent = 'Restarting AchieveTitle…';
+  catch (e) { $('updText').innerHTML = $('checkMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; $('updBtn').disabled = $('appUpdBtn').disabled = false; return; }
+  $('updText').textContent = $('checkMsg').textContent = 'Restarting AchieveTitle…';
   // Wait for the new version to come back up, then reload the page.
   for (let i = 0; i < 60; i++) {
     await new Promise(r => setTimeout(r, 1000));

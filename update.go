@@ -92,7 +92,7 @@ func (u *Updater) Info() UpdateInfo {
 	return u.info
 }
 
-// Run checks for updates at start and then twice a day.
+// Run checks for updates at start and then once a day.
 func (u *Updater) Run(ctx context.Context, enabled func() bool) {
 	for {
 		if enabled() && version != "dev" {
@@ -101,7 +101,7 @@ func (u *Updater) Run(ctx context.Context, enabled func() bool) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(12 * time.Hour):
+		case <-time.After(24 * time.Hour):
 		}
 	}
 }

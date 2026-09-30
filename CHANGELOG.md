@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.5
+- ⬆️ **Check for updates** button in the App tab (and in the tray / menu bar menu), with *Update now* right next to it. No need to restart AchieveTitle to find new versions
+- Automatic update checks now happen once a day
+
 ## v0.6.4
 - 📊 Choose how `{bar}` looks: coloured emoji styles (🟪⬛, 🟩⬛, 🟨⬛, 🟦⬜, 🟥⬛), text styles (▰▱, █░, ●○, ★☆, ■□) or your own characters, 5 to 20 segments long, with a live preview
 
