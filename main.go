@@ -293,6 +293,8 @@ type publicConfig struct {
 	HasBuiltinID    bool          `json:"has_builtin_client_id"`
 	TwitchLogin     string        `json:"twitch_login"`
 	BotLogin        string        `json:"bot_login"`
+	TwitchAvatar    string        `json:"twitch_avatar"`
+	BotAvatar       string        `json:"bot_avatar"`
 	ChannelCanChat  bool          `json:"channel_can_chat"`
 	Chat            ChatConfig    `json:"chat"`
 	ChatVars        []string      `json:"chat_vars"`
@@ -302,6 +304,7 @@ type publicConfig struct {
 }
 
 func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
+	s.fetchAvatars()
 	c := s.store.Get()
 	writeJSON(w, publicConfig{
 		SteamID: c.SteamID, HasSteamKey: c.SteamAPIKey != "", CustomTitle: c.CustomTitle,
@@ -309,7 +312,7 @@ func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
 		Enabled: c.Enabled, RestoreOnExit: c.RestoreOnExit, TwitchClientID: c.TwitchClientID,
 		SetCategory: c.SetCategory, CategoryMode: c.CategoryMode, ManualCategory: c.ManualCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags), CheckUpdates: c.CheckUpdates, Bar: c.Bar.clean(), Overlay: c.Overlay.clean(),
 		HasBuiltinID: DefaultTwitchClientID != "", TwitchLogin: c.TwitchLogin,
-		BotLogin: c.BotLogin, Chat: c.Chat, ChatVars: ChatVars, ChannelCanChat: hasScopes(c.TwitchScopes, botScope),
+		BotLogin: c.BotLogin, TwitchAvatar: c.TwitchAvatar, BotAvatar: c.BotAvatar, Chat: c.Chat, ChatVars: ChatVars, ChannelCanChat: hasScopes(c.TwitchScopes, botScope),
 		Vars: TemplateVars, Version: version, RedirectURI: s.base + "/auth/callback",
 	})
 }
@@ -535,7 +538,7 @@ func (s *server) steamCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) botLogout(w http.ResponseWriter, r *http.Request) {
-	s.store.Update(func(c *Config) { c.BotToken, c.BotUserID, c.BotLogin = "", "", "" })
+	s.store.Update(func(c *Config) { c.BotToken, c.BotUserID, c.BotLogin, c.BotAvatar = "", "", "", "" })
 	s.chat.Reload()
 	w.WriteHeader(204)
 }
@@ -560,13 +563,13 @@ func (s *server) twitchToken(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "the bot account didn't grant chat permissions, please try again", 400)
 			return
 		}
-		s.store.Update(func(c *Config) { c.BotToken, c.BotUserID, c.BotLogin = in.Token, uid, login })
+		s.store.Update(func(c *Config) { c.BotToken, c.BotUserID, c.BotLogin, c.BotAvatar = in.Token, uid, login, "" })
 		s.chat.Reload()
 		writeJSON(w, map[string]string{"login": login, "account": "bot"})
 		return
 	}
 	s.store.Update(func(c *Config) {
-		c.TwitchToken, c.TwitchUserID, c.TwitchLogin, c.TwitchScopes = in.Token, uid, login, scopes
+		c.TwitchToken, c.TwitchUserID, c.TwitchLogin, c.TwitchScopes, c.TwitchAvatar = in.Token, uid, login, scopes, ""
 	})
 	s.worker.Kick()
 	s.chat.Reload()
@@ -575,7 +578,7 @@ func (s *server) twitchToken(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) twitchLogout(w http.ResponseWriter, r *http.Request) {
 	s.worker.Restore()
-	s.store.Update(func(c *Config) { c.TwitchToken, c.TwitchUserID, c.TwitchLogin, c.Enabled = "", "", "", false })
+	s.store.Update(func(c *Config) { c.TwitchToken, c.TwitchUserID, c.TwitchLogin, c.TwitchAvatar, c.Enabled = "", "", "", "", false })
 	w.WriteHeader(204)
 }
 
@@ -632,5 +635,23 @@ func openBrowser(u string) {
 	}
 	if err := cmd.Start(); err != nil {
 		log.Println("open this in your browser:", u)
+	}
+}
+
+// fetchAvatars looks up the profile pictures of connected Twitch accounts that
+// don't have one saved yet (just connected, or connected before this existed).
+func (s *server) fetchAvatars() {
+	c := s.store.Get()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if c.TwitchToken != "" && c.TwitchAvatar == "" {
+		if a, err := s.worker.twitch.Avatar(ctx, c.TwitchToken, clientID(c), c.TwitchUserID); err == nil {
+			s.store.Update(func(c *Config) { c.TwitchAvatar = a })
+		}
+	}
+	if c.BotToken != "" && c.BotAvatar == "" {
+		if a, err := s.worker.twitch.Avatar(ctx, c.BotToken, clientID(c), c.BotUserID); err == nil {
+			s.store.Update(func(c *Config) { c.BotAvatar = a })
+		}
 	}
 }

@@ -2,6 +2,7 @@
 
 ## v0.7.4
 - Real OBS, Twitch and Steam logos in the settings page instead of emoji
+- Your Twitch profile picture (and your bot's) now shows next to the connected accounts, like Steam's does
 
 ## v0.7.3
 - Fixed: *"HTTP 429 You are updating too fast"* from Twitch. Title updates are now spaced at least 30 seconds apart (changes made in between still go through), and if Twitch asks for a break AchieveTitle waits a few minutes and tells you when your title will update

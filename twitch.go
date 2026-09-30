@@ -310,3 +310,19 @@ func clientID(cfg Config) string {
 	}
 	return DefaultTwitchClientID
 }
+
+// Avatar returns an account's Twitch profile picture URL.
+func (t *Twitch) Avatar(ctx context.Context, token, client, userID string) (string, error) {
+	var r struct {
+		Data []struct {
+			ProfileImageURL string `json:"profile_image_url"`
+		}
+	}
+	if err := t.doAs(ctx, token, client, "GET", "/users?id="+url.QueryEscape(userID), nil, &r); err != nil {
+		return "", err
+	}
+	if len(r.Data) == 0 {
+		return "", fmt.Errorf("twitch user not found")
+	}
+	return r.Data[0].ProfileImageURL, nil
+}

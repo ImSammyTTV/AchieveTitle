@@ -84,6 +84,8 @@
   .num { width:20px; height:20px; border-radius:50%; background:var(--accent); display:grid; place-items:center; font-size:11.5px; flex:none }
   .acct { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; background:var(--field); border:1px solid var(--line2) }
   .acct img { width:36px; height:36px; border-radius:8px }
+  .acct-ph { width:36px; height:36px; border-radius:8px; background:#9146ff; flex:none }
+  .acct-sm { padding:6px 8px; margin-top:6px } .acct-sm img, .acct-sm .acct-ph { width:24px; height:24px; border-radius:6px } .acct-sm span { color:var(--muted) }
   .acct b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
   .btn.steam-btn { background:linear-gradient(90deg,#1b2838,#2a475e); border:1px solid #66c0f4; color:#fff }
   .done-line { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; font-size:13px }
@@ -598,7 +600,7 @@ async function load() {
   $('clientIdBox').style.display = c.has_builtin_client_id && !c.twitch_client_id ? 'none' : '';
   showOverlayUrl();
   $('twitch').innerHTML = c.twitch_login
-    ? `<div class="row"><span class="ok">✔ Connected as <b>${esc(c.twitch_login)}</b></span>
+    ? `<div class="acct">${twitchPic(c.twitch_avatar)}<b>${esc(c.twitch_login)}</b>
        <button class="ghost" onclick="post('/api/twitch/logout').then(load)">Disconnect</button></div>`
     : `<a class="btn primary" href="/api/twitch/login" onclick="return saveFirst(event)">Connect Twitch</a>`;
   setPill('pillTwitch', c.twitch_login ? 'on' : 'bad', c.twitch_login ? 'Twitch · ' + c.twitch_login : 'Twitch not connected');
@@ -704,11 +706,11 @@ function renderChat(c) {
     $('cmds').appendChild(row);
   });
   $('botArea').innerHTML = c.bot_login
-    ? `<div class="row"><span class="ok">✔ Bot: <b>${esc(c.bot_login)}</b></span> <button class="ghost" onclick="post('/api/bot/logout').then(load)">Disconnect</button></div>`
+    ? `<div class="acct">${twitchPic(c.bot_avatar)}<b>${esc(c.bot_login)}</b><button class="ghost" onclick="post('/api/bot/logout').then(load)">Disconnect</button></div>`
     : `<a class="btn primary" href="/api/bot/login" onclick="return connectBot(event)">Connect bot account</a>
        <p class="hint">Make a free Twitch account for it (e.g. <i>${esc(c.twitch_login || 'yourname')}bot</i>), click <b>Not you?</b> on Twitch to log in as it, then <code>/mod</code> it.</p>`;
   $('chanArea').innerHTML = c.channel_can_chat
-    ? `<p class="hint">Replies would come from <b>${esc(c.twitch_login)}</b>.</p>`
+    ? `<div class="acct acct-sm">${twitchPic(c.twitch_avatar)}<span>Replies would come from <b>${esc(c.twitch_login)}</b></span></div>`
     : `<p class="hint">Needs one extra Twitch permission: <a href="/api/twitch/login" onclick="return saveFirst(event)">reconnect your channel</a>.</p>`;
   showChatBox();
 }
@@ -1015,6 +1017,9 @@ function drawDrift(icons) {
   }).join('');
 }
 drawDrift([]);
+
+// A connected Twitch account's profile picture (a Twitch-purple square until it loads).
+const twitchPic = url => url ? `<img src="${esc(url)}" alt="">` : '<span class="acct-ph"></span>';
 
 addEventListener('resize', () => { clearTimeout(window.rt); window.rt = setTimeout(poll, 200); });
 load(); poll(); checkUpdate(); setInterval(poll, 5000); setInterval(checkUpdate, 10 * 60 * 1000);

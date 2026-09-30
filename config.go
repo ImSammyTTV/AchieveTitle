@@ -40,6 +40,7 @@ type Config struct {
 	BotToken     string     `json:"bot_token,omitempty"`
 	BotUserID    string     `json:"bot_user_id,omitempty"`
 	BotLogin     string     `json:"bot_login,omitempty"`
+	BotAvatar    string     `json:"bot_avatar,omitempty"`
 
 	// Channel info from before AchieveTitle changed it, kept on disk so it can
 	// still be restored after a crash or an update restart.
@@ -49,6 +50,7 @@ type Config struct {
 	TwitchToken    string `json:"twitch_token,omitempty"`
 	TwitchUserID   string `json:"twitch_user_id,omitempty"`
 	TwitchLogin    string `json:"twitch_login,omitempty"`
+	TwitchAvatar   string `json:"twitch_avatar,omitempty"`
 }
 
 // ChatCommand is one chat command, e.g. "!achievements".
