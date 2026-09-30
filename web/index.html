@@ -4,175 +4,438 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AchieveTitle</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%239147ff'/%3E%3Cpath d='M40 28h48v18c0 16-10 28-24 28S40 62 40 46z' fill='%23ffd54a'/%3E%3Crect x='58' y='72' width='12' height='16' fill='%23ffd54a'/%3E%3Crect x='44' y='88' width='40' height='12' rx='3' fill='%23ffd54a'/%3E%3C/svg%3E">
 <style>
-  :root { --bg:#0e0e10; --panel:#18181b; --line:#2f2f35; --text:#efeff1; --muted:#adadb8; --accent:#9147ff; --ok:#00c46a; --err:#ff5c5c; }
+  :root {
+    --bg:#0b0a10; --panel:#16141d; --panel2:#1d1a27; --field:#0f0d15; --line:#2c2839; --line2:#3a3450;
+    --text:#f1eff7; --muted:#a9a3bb; --dim:#7d778f;
+    --accent:#9147ff; --accent2:#bf94ff; --gold:#f5b400; --gold2:#ffe27a; --ok:#2fd58a; --err:#ff6b7a; --warn:#ffc15e;
+  }
   * { box-sizing:border-box }
-  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, sans-serif }
-  main { max-width:760px; margin:0 auto; padding:24px 16px 64px }
-  h1 { margin:0 0 4px; font-size:24px } h2 { font-size:16px; margin:0 0 12px }
-  .sub { color:var(--muted); margin:0 0 20px }
-  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:16px }
-  label { display:block; font-weight:600; margin:12px 0 4px } label:first-of-type { margin-top:0 }
-  .hint { color:var(--muted); font-size:13px; font-weight:400 }
-  input[type=text], input[type=password], input[type=number] { width:100%; padding:9px 10px; border-radius:6px; border:1px solid var(--line); background:#0e0e10; color:var(--text); font:inherit }
-  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap }
-  button, .btn { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:9px 14px; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block }
-  button.secondary { background:#3a3a3d }
-  .preview { font-size:18px; padding:12px; background:#0e0e10; border-radius:6px; border:1px solid var(--line); word-break:break-word }
-  .chips code { background:#26262c; padding:2px 6px; border-radius:4px; margin:2px; display:inline-block; cursor:pointer }
-  .ok { color:var(--ok) } .err { color:var(--err) }
-  .bar { height:10px; background:#26262c; border-radius:5px; overflow:hidden; margin:8px 0 } .bar > i { display:block; height:100%; background:var(--accent) }
-  .toggle { display:flex; gap:8px; align-items:center; font-weight:600; margin-top:12px }
-  small { color:var(--muted) }
-  a { color:#bf94ff }
+  [hidden] { display:none !important }
+  html, body { height:100% }
+  body { margin:0; color:var(--text); font:14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+         background: radial-gradient(1200px 500px at 10% -10%, #3a1a78 0%, transparent 60%),
+                     radial-gradient(900px 500px at 110% 120%, #2a1459 0%, transparent 55%), var(--bg); }
+  .app { height:100vh; display:flex; flex-direction:column; max-width:1280px; margin:0 auto; padding:14px 20px 18px; gap:12px }
+
+  /* Header */
+  header { display:flex; align-items:center; gap:14px; flex-wrap:wrap }
+  .logo { width:40px; height:40px; flex:none; filter:drop-shadow(0 4px 14px rgba(145,71,255,.45)) }
+  .brand h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:-.3px }
+  .brand p { margin:0; color:var(--muted); font-size:12.5px }
+  .brand .ver { color:var(--accent2); font-weight:600 }
+  .pills { margin-left:auto; display:flex; gap:8px; flex-wrap:wrap }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; font-size:12.5px; font-weight:600;
+          background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--muted); white-space:nowrap }
+  .pill i { width:8px; height:8px; border-radius:50%; background:var(--dim) }
+  .pill.on { color:var(--text) } .pill.on i { background:var(--ok); box-shadow:0 0 8px var(--ok) }
+  .pill.bad { color:var(--text) } .pill.bad i { background:var(--err) }
+
+  /* Update banner */
+  .update { display:flex; align-items:center; gap:14px; padding:10px 14px; border-radius:12px;
+            background:linear-gradient(90deg, rgba(145,71,255,.28), rgba(245,180,0,.14)); border:1px solid rgba(191,148,255,.45) }
+  .update b { font-size:14px } .update span { color:var(--muted); font-size:13px }
+  .update .row { margin-left:auto }
+
+  /* Layout */
+  .main { flex:1; display:grid; grid-template-columns:380px 1fr; gap:16px; min-height:0 }
+  .card { background:linear-gradient(180deg, var(--panel2), var(--panel)); border:1px solid var(--line); border-radius:16px; min-height:0 }
+
+  /* Status card */
+  .status { padding:18px; display:flex; flex-direction:column; gap:14px; overflow:auto }
   .now { display:flex; gap:14px; align-items:flex-start }
-  .now img { width:72px; height:96px; border-radius:6px; object-fit:cover; background:#26262c; flex:none }
-  .radio { display:flex; gap:8px; align-items:center; font-weight:400; margin:6px 0 0 }
-  .cats { display:grid; grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:10px; margin-top:10px }
-  .cat { background:#0e0e10; border:1px solid var(--line); border-radius:8px; padding:6px; cursor:pointer; text-align:center; font-size:12px; color:var(--text) }
-  .cat:hover, .cat.sel { border-color:var(--accent) }
-  .cat img { width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px; display:block; margin-bottom:4px; background:#26262c }
-  .cmd { display:grid; grid-template-columns:auto 150px 1fr; gap:8px; align-items:center; margin-top:8px }
-  .cmd input[type=text] { padding:7px 8px }
-  @media (max-width:600px) { .cmd { grid-template-columns:auto 1fr } .cmd .reply { grid-column:1 / -1 } }
-  .sub { margin-left:24px }
-  .picked { display:flex; gap:10px; align-items:center; margin-top:10px }
-  .picked img { width:45px; height:60px; border-radius:4px; object-fit:cover }
-  .count { display:inline-block; margin-top:8px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; background:#0e0e10; color:var(--muted); font-size:13px }
+  .art { width:84px; height:112px; border-radius:10px; flex:none; object-fit:cover; background:var(--field);
+         box-shadow:0 8px 24px rgba(0,0,0,.45); border:1px solid var(--line2) }
+  .art-empty { display:grid; place-items:center; font-size:34px }
+  .kicker { font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--accent2) }
+  .game { font-size:18px; font-weight:800; line-height:1.25; margin:2px 0 4px; word-break:break-word }
+  .meta { color:var(--muted); font-size:12.5px }
+  .meta b { color:var(--text); font-weight:600 }
+  .big { font-size:26px; font-weight:800; letter-spacing:-.5px }
+  .big small { font-size:14px; color:var(--muted); font-weight:600 }
+  .bar { height:10px; background:var(--field); border-radius:999px; overflow:hidden; border:1px solid var(--line) }
+  .bar > i { display:block; height:100%; width:0; background:linear-gradient(90deg, var(--accent), var(--accent2) 70%, var(--gold2)); transition:width .8s ease; border-radius:999px }
+  .label { font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--dim); margin-bottom:6px }
+  .titlebox { padding:12px 14px; background:var(--field); border:1px solid var(--line2); border-radius:12px; font-size:15.5px; font-weight:600; word-break:break-word; min-height:48px }
+  .count { display:inline-block; margin-top:8px; padding:2px 9px; border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:12px }
   .count.full { color:var(--err); border-color:var(--err) }
+  .switch-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:12px; background:var(--field); border:1px solid var(--line) }
+  .switch-row b { font-size:13.5px } .switch-row span { display:block; color:var(--muted); font-size:12px }
+  .status .actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:auto }
+  .status .actions button { padding:9px 8px; white-space:nowrap }
+  details summary { cursor:pointer; color:var(--accent2); font-size:12.5px; font-weight:600 }
+  .inline { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap } .inline label { margin:0; white-space:nowrap } .inline input[type=number] { width:90px } .inline input { width:90px }
+  .status .msg { font-size:12.5px }
+  .recent { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:minmax(0,1fr); gap:6px }
+  .recent li { min-width:0; display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:10px; background:var(--field); border:1px solid var(--line); font-size:13px }
+  .recent li b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600 }
+  .recent li span { color:var(--muted); font-size:12px; white-space:nowrap }
+  .rare { color:var(--gold2) !important; font-weight:700 }
+
+  /* Switch */
+  .switch { position:relative; width:42px; height:24px; flex:none }
+  .switch input { opacity:0; width:0; height:0 }
+  .switch span { position:absolute; inset:0; background:var(--line2); border-radius:999px; cursor:pointer; transition:.2s }
+  .switch span::after { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s }
+  .switch input:checked + span { background:var(--accent) }
+  .switch input:checked + span::after { transform:translateX(18px) }
+  .switch input:focus-visible + span { outline:2px solid var(--accent2); outline-offset:2px }
+
+  /* Settings panel */
+  .settings { display:grid; grid-template-rows:auto 1fr auto; overflow:hidden }
+  .tabs { display:flex; gap:4px; padding:10px 10px 0; border-bottom:1px solid var(--line); overflow-x:auto }
+  .tab { background:none; border:0; color:var(--muted); font:inherit; font-weight:600; padding:9px 13px 11px; cursor:pointer;
+         border-bottom:2px solid transparent; white-space:nowrap; border-radius:8px 8px 0 0 }
+  .tab:hover { color:var(--text); background:rgba(255,255,255,.03) }
+  .tab.active { color:var(--text); border-bottom-color:var(--accent) }
+  .panes { overflow:auto; padding:18px 20px }
+  .pane { display:none } .pane.active { display:block }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px 22px }
+  .box { background:rgba(255,255,255,.02); border:1px solid var(--line); border-radius:12px; padding:14px }
+  .box h3 { margin:0 0 10px; font-size:14px; display:flex; align-items:center; gap:8px }
+  .savebar { display:flex; align-items:center; gap:12px; padding:12px 20px; border-top:1px solid var(--line); background:rgba(0,0,0,.18) }
+  .savebar .hint { margin-left:auto }
+
+  /* Forms */
+  label { display:block; font-weight:600; font-size:13px; margin:12px 0 5px }
+  .box > label:first-of-type, .pane > label:first-child { margin-top:0 }
+  input[type=text], input[type=password], input[type=number] { width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--line2);
+    background:var(--field); color:var(--text); font:inherit; transition:border-color .15s }
+  input:focus { outline:none; border-color:var(--accent) }
+  .hint { color:var(--muted); font-size:12.5px; font-weight:400 }
+  p.hint { margin:6px 0 0 }
+  code { background:#26222f; padding:1px 6px; border-radius:5px; font-size:12.5px }
+  .chips code { display:inline-block; margin:2px; cursor:pointer } .chips code:hover { background:var(--accent) }
+  .check { display:flex; gap:9px; align-items:flex-start; font-weight:600; margin:10px 0 0; cursor:pointer }
+  .check input { margin-top:3px; accent-color:var(--accent) }
+  .radio { display:flex; gap:8px; align-items:center; font-weight:500; margin:8px 0 0; cursor:pointer }
+  .radio input { accent-color:var(--accent) }
+  .sub { margin-left:24px }
+
+  button, .btn { background:var(--accent); color:#fff; border:0; border-radius:9px; padding:9px 15px; font:inherit; font-weight:700;
+                 cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:filter .15s }
+  button:hover, .btn:hover { filter:brightness(1.12) }
+  button:disabled { opacity:.6; cursor:default }
+  .ghost { background:rgba(255,255,255,.06); border:1px solid var(--line2) }
+  .primary { background:linear-gradient(90deg, var(--accent), #a970ff); box-shadow:0 6px 18px rgba(145,71,255,.35) }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+  .ok { color:var(--ok) } .err { color:var(--err) } .warn { color:var(--warn) }
+  a { color:var(--accent2) }
+  small { color:var(--muted) }
+
+  /* Category picker */
+  .cats { display:grid; grid-template-columns:repeat(auto-fill, minmax(84px, 1fr)); gap:8px; margin-top:10px; max-height:230px; overflow:auto; padding:2px }
+  .cat { background:var(--field); border:1px solid var(--line); border-radius:10px; padding:5px; cursor:pointer; text-align:center; font-size:11.5px; color:var(--text); display:block; font-weight:600 }
+  .cat:hover, .cat.sel { border-color:var(--accent); filter:none }
+  .cat img { width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:6px; display:block; margin-bottom:4px; background:var(--panel) }
+  .picked { display:flex; gap:10px; align-items:center; margin-top:10px }
+  .picked img { width:45px; height:60px; border-radius:6px; object-fit:cover }
+
+  /* Chat commands */
+  .cmd { display:grid; grid-template-columns:auto 130px 1fr; gap:8px; align-items:center; margin-top:8px }
+  .cmd input[type=text] { padding:7px 9px }
+  .cmd input[type=checkbox] { accent-color:var(--accent); width:16px; height:16px }
+
+  /* OBS */
+  .copy { display:flex; gap:8px; align-items:center; margin-top:6px }
+  .copy code { flex:1; padding:9px 11px; background:var(--field); border:1px solid var(--line2); border-radius:9px; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+
+  .stopped { height:100vh; display:grid; place-items:center; text-align:center }
+
+  /* Short laptop screens: tighten spacing so every tab still fits without scrolling. */
+  @media (max-height:800px) and (min-width:981px) {
+    .app { padding:10px 18px 12px; gap:10px }
+    .logo { width:34px; height:34px } .brand h1 { font-size:19px }
+    .update { padding:7px 12px }
+    .status { padding:14px; gap:10px } .art { width:66px; height:88px } .big { font-size:22px }
+    .titlebox { padding:9px 12px; font-size:14.5px; min-height:0 } .switch-row { padding:8px 11px }
+    .panes { padding:12px 16px } .box { padding:11px 12px } .grid2 { gap:10px 18px }
+    label { margin:8px 0 4px } .check, .radio { margin-top:6px }
+    input[type=text], input[type=password], input[type=number] { padding:7px 10px }
+    .cmd { margin-top:6px } .cmd input[type=text] { padding:6px 9px }
+    .savebar { padding:9px 16px } .tab { padding:8px 12px 9px }
+  }
+  @media (max-width:980px) {
+    .app { height:auto; min-height:100vh }
+    .main { grid-template-columns:1fr }
+    .settings { overflow:visible } .panes { overflow:visible }
+    .grid2 { grid-template-columns:1fr }
+  }
+  @media (max-width:560px) {
+    .app { padding:12px 16px }
+    .pills { margin-left:0 }
+    .cmd { grid-template-columns:auto 1fr } .cmd .reply { grid-column:1 / -1 }
+    .status .actions { grid-template-columns:1fr }
+    .update { flex-wrap:wrap } .update .row { margin-left:0 }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>AchieveTitle</h1>
-  <p class="sub">Live Steam achievement progress in your Twitch stream title. <small id="ver"></small></p>
+<div class="app" id="app">
 
-  <section id="update" hidden style="border-color:var(--accent)">
-    <h2 id="updTitle"></h2>
-    <p class="hint" id="updText"></p>
+  <header>
+    <svg class="logo" viewBox="0 0 150 150" aria-hidden="true">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f5b400"/></linearGradient></defs>
+      <rect width="150" height="150" rx="34" fill="#9147ff"/>
+      <path d="M47 33h56v21c0 19-12 33-28 33S47 73 47 54z" fill="url(#g)"/>
+      <path d="M47 40H30c0 16 8 26 21 28M103 40h17c0 16-8 26-21 28" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round"/>
+      <rect x="68" y="85" width="14" height="19" fill="#f5b400"/><rect x="52" y="104" width="46" height="14" rx="4" fill="url(#g)"/>
+    </svg>
+    <div class="brand">
+      <h1>AchieveTitle</h1>
+      <p>Live Steam achievements in your Twitch title · <span class="ver" id="ver"></span></p>
+    </div>
+    <div class="pills">
+      <span class="pill" id="pillTwitch"><i></i><span>Twitch</span></span>
+      <span class="pill" id="pillSteam"><i></i><span>Steam</span></span>
+      <span class="pill" id="pillChat"><i></i><span>Chat bot</span></span>
+    </div>
+  </header>
+
+  <div class="update" id="update" hidden>
+    <div><b id="updTitle"></b><br><span id="updText"></span></div>
     <div class="row">
-      <button id="updBtn" onclick="installUpdate()">Update now</button>
-      <a class="btn" style="background:#3a3a3d" id="updLink" target="_blank" rel="noopener">What's new</a>
+      <button id="updBtn" class="primary" onclick="installUpdate()">Update now</button>
+      <a class="btn ghost" id="updLink" target="_blank" rel="noopener">What's new</a>
     </div>
-  </section>
+  </div>
 
-  <section>
-    <h2>Status</h2>
-    <div class="now"><img id="art" alt="" hidden><div id="status">Loading…</div></div>
-    <div class="bar"><i id="bar" style="width:0"></i></div>
-    <div class="hint" style="margin:10px 0 4px">Current Twitch title</div>
-    <div class="preview" id="preview">—</div>
-    <div class="count" id="chars" hidden></div>
-    <div class="row" style="margin-top:12px">
-      <button class="secondary" onclick="post('/api/refresh').then(()=>setTimeout(poll,1500))">Check now</button>
-      <button class="secondary" onclick="post('/api/restore')">Restore original title</button>
-      <button class="secondary" onclick="quitApp()">Quit AchieveTitle</button>
-    </div>
-  </section>
-
-  <section>
-    <h2>1. Twitch</h2>
-    <div id="twitch"></div>
-    <div id="clientIdBox">
-      <label>Twitch Client ID <span class="hint">— create one at dev.twitch.tv/console (OAuth redirect: <code id="redir"></code>)</span></label>
-      <input type="text" id="twitch_client_id" autocomplete="off">
-    </div>
-  </section>
-
-  <section>
-    <h2>2. Steam</h2>
-    <label>Steam Web API key <span class="hint">— get one at steamcommunity.com/dev/apikey</span></label>
-    <input type="password" id="steam_api_key" autocomplete="off">
-    <label>Steam ID <span class="hint">— SteamID64, custom URL name, or your profile link</span></label>
-    <input type="text" id="steam_id">
-    <p class="hint">Your Steam profile and <b>Game details</b> must be set to Public (Steam → Profile → Edit Profile → Privacy Settings).</p>
-  </section>
-
-  <section>
-    <h2>3. Title</h2>
-    <label>Custom text <span class="hint">— used as <code>{custom}</code></span></label>
-    <input type="text" id="custom_title" maxlength="140">
-    <label>Title template <span class="hint">— when the game has achievements</span></label>
-    <input type="text" id="template">
-    <label>Fallback template <span class="hint">— no game running or no achievements</span></label>
-    <input type="text" id="fallback_template">
-    <p class="hint chips">Placeholders (click to add): <span id="vars"></span></p>
-    <label class="toggle"><input type="checkbox" id="set_category"> Set my Twitch category</label>
-    <div id="catBox" style="margin-left:24px">
-      <label class="radio"><input type="radio" name="category_mode" value="auto"> Match the Steam game I'm playing</label>
-      <p class="hint" style="margin:2px 0 0 24px">When you're not in a Steam game, your category is left as it is.</p>
-      <label class="radio"><input type="radio" name="category_mode" value="manual"> Let me choose the game</label>
-      <div id="manualBox" style="margin-left:24px">
-        <div class="picked" id="picked"></div>
-        <input type="text" id="catSearch" placeholder="Search Twitch categories, e.g. Minecraft" autocomplete="off" style="margin-top:10px">
-        <div class="cats" id="catResults"></div>
+  <div class="main">
+    <!-- Live status -->
+    <section class="card status" aria-label="Status">
+      <div class="now">
+        <img class="art" id="art" alt="" hidden>
+        <div class="art art-empty" id="artEmpty">🏆</div>
+        <div style="min-width:0">
+          <div class="kicker" id="kicker">Now</div>
+          <div class="game" id="game">Loading…</div>
+          <div class="meta" id="meta"></div>
+        </div>
       </div>
-    </div>
 
-    <label class="toggle"><input type="checkbox" id="manage_tags"> Set my stream tags</label>
-    <div id="tagsBox" style="margin-left:24px">
-      <input type="text" id="tags" placeholder="chillstream, English, AchievementHunting">
-      <p class="hint">Separate with commas. Up to 10 tags, each up to 25 letters or numbers (no spaces or symbols).
-        <a href="#" id="copyTags" hidden>Use my current Twitch tags</a></p>
-      <div id="tagPreview" class="chips"></div>
-    </div>
+      <div>
+        <div class="row" style="justify-content:space-between; align-items:baseline">
+          <div class="big" id="progress">–</div>
+          <div class="meta" id="latest"></div>
+        </div>
+        <div class="bar" style="margin-top:8px"><i id="bar"></i></div>
+      </div>
 
-    <label>Check every (seconds)</label>
-    <input type="number" id="interval_seconds" min="30" step="10">
-    <label class="toggle"><input type="checkbox" id="enabled"> Update my Twitch title automatically</label>
-    <label class="toggle"><input type="checkbox" id="restore_on_exit"> Restore my original title (and category/tags) when I stop or close the app</label>
-    <label class="toggle"><input type="checkbox" id="check_updates"> Tell me when a new version is available</label>
-    <div class="row" style="margin-top:16px"><button onclick="save()">Save</button><span id="saved"></span></div>
-  </section>
+      <div>
+        <div class="label">Current Twitch title</div>
+        <div class="titlebox" id="preview">—</div>
+        <div class="count" id="chars" hidden></div>
+      </div>
 
-  <section>
-    <h2>4. Chat commands (optional)</h2>
-    <label class="toggle"><input type="checkbox" id="chat_enabled"> Answer chat commands like <code>!achievements</code></label>
-    <div id="chatBox">
-      <p class="hint" id="chatStatus"></p>
+      <div id="recentBox" hidden>
+        <div class="label">Recent unlocks</div>
+        <ul class="recent" id="recent"></ul>
+      </div>
 
-      <label style="margin-top:14px">Who replies in chat?</label>
-      <label class="radio"><input type="radio" name="reply_as" value="bot"> My bot account <span class="hint">(recommended)</span></label>
-      <div class="sub" id="botArea"></div>
-      <label class="radio"><input type="radio" name="reply_as" value="channel"> My own channel account</label>
-      <div class="sub" id="chanArea"></div>
+      <div class="switch-row">
+        <div><b>Update my Twitch title automatically</b><span id="checked">Not checked yet</span></div>
+        <label class="switch" style="margin:0"><input type="checkbox" id="enabled" onchange="toggleAuto()"><span></span></label>
+      </div>
 
-      <label style="margin-top:14px">Commands</label>
-      <p class="hint" style="margin:0">Tick to turn a command on. You can rename the command and change the reply.</p>
-      <div id="cmds"></div>
+      <div class="msg" id="status"></div>
 
-      <label>Cooldown per command (seconds) <span class="hint">you and your mods skip it</span></label>
-      <input type="number" id="chat_cooldown" min="5" step="5">
+      <div class="actions">
+        <button class="ghost" title="Check Steam now" onclick="post('/api/refresh').then(()=>setTimeout(poll,1500))">↻ Check</button>
+        <button class="ghost" title="Put back your original title" onclick="post('/api/restore')">↩ Restore</button>
+        <button class="ghost" title="Stop AchieveTitle" onclick="quitApp()">⏻ Quit</button>
+      </div>
+    </section>
 
-      <label class="toggle"><input type="checkbox" id="chat_announce"> Announce new achievements in chat</label>
-      <input type="text" id="chat_announce_template" class="sub" style="width:calc(100% - 24px)">
+    <!-- Settings -->
+    <section class="card settings" aria-label="Settings">
+      <nav class="tabs" role="tablist">
+        <button class="tab" data-tab="connect">🔗 Connections</button>
+        <button class="tab" data-tab="title">✏️ Title</button>
+        <button class="tab" data-tab="category">🎮 Category &amp; tags</button>
+        <button class="tab" data-tab="chat">💬 Chat</button>
+        <button class="tab" data-tab="obs">🎥 OBS</button>
+        <button class="tab" data-tab="app">⚙️ App</button>
+      </nav>
 
-      <label>Reply when you're not in a game with achievements</label>
-      <input type="text" id="chat_no_game">
+      <div class="panes">
+        <!-- Connections -->
+        <div class="pane" data-pane="connect">
+          <div class="grid2">
+            <div class="box">
+              <h3>🟣 Twitch</h3>
+              <div id="twitch"></div>
+              <p class="hint">AchieveTitle changes your title, category and tags. It never posts anything as you unless you choose to in the Chat tab.</p>
+            </div>
+            <div class="box">
+              <h3>🎮 Steam</h3>
+              <label>Steam Web API key <span class="hint">· <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener">get one here</a> (use <code>localhost</code> as the domain)</span></label>
+              <input type="password" id="steam_api_key" autocomplete="off">
+              <label>Steam ID <span class="hint">· SteamID64, custom URL name or profile link</span></label>
+              <input type="text" id="steam_id">
+              <p class="hint">Set your Steam profile and <b>Game details</b> to Public (Steam → Profile → Edit Profile → Privacy Settings).</p>
+            </div>
+          </div>
+        </div>
 
-      <p class="hint chips">Placeholders: <span id="chatVars"></span><br>
-        A part in brackets, like <code>(only {next_rarity} of players)</code>, is left out when its placeholder is empty.</p>
-    </div>
-    <div class="row" style="margin-top:16px"><button onclick="save()">Save</button><span id="savedChat"></span></div>
-  </section>
+        <!-- Title -->
+        <div class="pane" data-pane="title">
+          <div class="grid2">
+            <div>
+              <label>Custom text <span class="hint">· used as <code>{custom}</code></span></label>
+              <input type="text" id="custom_title" maxlength="140" placeholder="Chill stream">
+              <label>Title template <span class="hint">· when the game has achievements</span></label>
+              <input type="text" id="template">
+              <label>Fallback template <span class="hint">· no game, or no achievements</span></label>
+              <input type="text" id="fallback_template">
+            </div>
+            <div class="box">
+              <h3>🧩 Placeholders</h3>
+              <p class="hint" style="margin:0 0 6px">Click one to add it to the template you last clicked in.</p>
+              <div class="chips" id="vars"></div>
+              <p class="hint">Titles longer than Twitch's 140-character limit are shortened automatically, achievement names first.</p>
+            </div>
+          </div>
+        </div>
 
-  <section>
-    <h2>OBS overlay (optional)</h2>
-    <p class="hint">Add a <b>Browser Source</b> in OBS with this URL (width 600, height 160). It shows a progress bar and pops up when you unlock something.</p>
-    <div class="preview"><code id="overlayUrl"></code></div>
-  </section>
-</main>
+        <!-- Category & tags -->
+        <div class="pane" data-pane="category">
+          <div class="grid2">
+            <div class="box">
+              <label class="check" style="margin:0"><input type="checkbox" id="set_category"> Set my Twitch category</label>
+              <div id="catBox" class="sub">
+                <label class="radio"><input type="radio" name="category_mode" value="auto"> Match the Steam game I'm playing</label>
+                <label class="radio"><input type="radio" name="category_mode" value="manual"> Let me choose the game</label>
+                <p class="hint">Outside a Steam game your category is left as it is.</p>
+                <div id="manualBox">
+                  <div class="picked" id="picked"></div>
+                  <input type="text" id="catSearch" placeholder="Search Twitch categories, e.g. Minecraft" autocomplete="off" style="margin-top:10px">
+                  <div class="cats" id="catResults"></div>
+                </div>
+              </div>
+            </div>
+            <div class="box">
+              <label class="check" style="margin:0"><input type="checkbox" id="manage_tags"> Set my stream tags</label>
+              <div id="tagsBox" class="sub">
+                <input type="text" id="tags" placeholder="chillstream, English, AchievementHunting" style="margin-top:10px">
+                <p class="hint">Separate with commas. Up to 10 tags of 25 letters or numbers each.
+                  <a href="#" id="copyTags" hidden>Use my current Twitch tags</a></p>
+                <div id="tagPreview" class="chips" style="margin-top:6px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="pane" data-pane="chat">
+          <div class="switch-row" style="margin-bottom:14px">
+            <div><b>Answer chat commands like <code>!achievements</code></b><span id="chatStatus">Chat commands are off.</span></div>
+            <label class="switch" style="margin:0"><input type="checkbox" id="chat_enabled"><span></span></label>
+          </div>
+          <div id="chatBox" class="grid2">
+            <div>
+              <div class="box">
+                <h3>🤖 Who replies?</h3>
+                <label class="radio" style="margin-top:0"><input type="radio" name="reply_as" value="bot"> My bot account <span class="hint">(recommended)</span></label>
+                <div class="sub" id="botArea" style="margin-top:6px"></div>
+                <label class="radio" style="margin-top:10px"><input type="radio" name="reply_as" value="channel"> My own channel account</label>
+                <div class="sub" id="chanArea"></div>
+              </div>
+              <label class="check" style="margin-top:12px"><input type="checkbox" id="chat_announce"> Announce new achievements in chat</label>
+              <input type="text" id="chat_announce_template" style="margin-top:6px">
+              <label>Reply when you're not in a game with achievements</label>
+              <input type="text" id="chat_no_game">
+            </div>
+            <div>
+              <h3 style="margin:0 0 2px; font-size:14px">⌨️ Commands</h3>
+              <p class="hint" style="margin:0">Tick to turn on · rename the command · write your own reply.</p>
+              <div id="cmds"></div>
+              <div class="inline"><label for="chat_cooldown">Cooldown (seconds)</label><input type="number" id="chat_cooldown" min="5" step="5"><span class="hint">you and your mods skip it</span></div>
+              <details style="margin-top:12px"><summary>Placeholders you can use</summary>
+                <p class="hint chips" style="margin-top:6px"><span id="chatVars"></span></p>
+                <p class="hint">A part in brackets, like <code>(only {next_rarity} of players)</code>, is left out when its placeholder is empty.</p>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <!-- OBS -->
+        <div class="pane" data-pane="obs">
+          <div class="grid2">
+            <div class="box">
+              <h3>🧭 Control panel dock</h3>
+              <p class="hint" style="margin:0">OBS → <b>View → Docks → Custom Browser Docks</b>. Name it <i>AchieveTitle</i> and paste:</p>
+              <div class="copy"><code id="dockUrl"></code><button class="ghost" onclick="copy('dockUrl', this)">Copy</button></div>
+            </div>
+            <div class="box">
+              <h3>✨ Overlay</h3>
+              <p class="hint" style="margin:0">Add a <b>Browser Source</b> (600 × 160). Progress bar plus an "Achievement unlocked" popup.</p>
+              <div class="copy"><code id="overlayUrl"></code><button class="ghost" onclick="copy('overlayUrl', this)">Copy</button></div>
+            </div>
+            <div class="box" style="grid-column:1 / -1">
+              <h3>📜 OBS script</h3>
+              <p class="hint" style="margin:0">OBS → <b>Tools → Scripts → +</b> and choose <code>obs/achievetitle.lua</code> from the AchieveTitle download.
+                It starts AchieveTitle with OBS and only updates your title while you're live.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- App -->
+        <div class="pane" data-pane="app">
+          <div class="grid2">
+            <div class="box">
+              <h3>⏱️ Behaviour</h3>
+              <label>Check Steam every (seconds)</label>
+              <input type="number" id="interval_seconds" min="30" step="10">
+              <label class="check"><input type="checkbox" id="restore_on_exit"> Restore my original title, category and tags when I stop or quit</label>
+              <label class="check"><input type="checkbox" id="check_updates"> Tell me when a new version is available</label>
+            </div>
+            <div class="box">
+              <h3>🔒 Privacy</h3>
+              <p class="hint" style="margin:0">Everything stays on this computer. AchieveTitle only talks to Steam, Twitch and GitHub (for updates).</p>
+              <div id="clientIdBox">
+                <label>Twitch Client ID <span class="hint">· only for custom builds (redirect: <code id="redir"></code>)</span></label>
+                <input type="text" id="twitch_client_id" autocomplete="off">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="savebar">
+        <button class="primary" onclick="save()">Save changes</button>
+        <span id="saved"></span>
+        <span class="hint">Changes apply within a minute</span>
+      </div>
+    </section>
+  </div>
+</div>
+
 <script>
 const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fields = ['steam_id','custom_title','template','fallback_template','interval_seconds','twitch_client_id'];
 const checks = ['enabled','restore_on_exit','set_category','manage_tags','check_updates'];
-let currentTags = [];
-let manualCat = null;
-let lastFocus = 'template';
+let currentTags = [], manualCat = null, lastFocus = 'template', chatCfg = {}, hasSteam = false;
 
 function post(url, body) {
   return fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : undefined})
     .then(async r => { if (!r.ok) throw new Error(await r.text()); return r; });
+}
+
+// Tabs (the last one used is remembered on this computer)
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.dataset.pane === name));
+  try { localStorage.setItem('tab', name); } catch (e) {}
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
+let startTab = 'connect';
+try { startTab = localStorage.getItem('tab') || 'connect'; } catch (e) {}
+showTab(startTab);
+
+function setPill(id, state, text) {
+  const p = $(id); p.className = 'pill' + (state ? ' ' + state : ''); p.querySelector('span').textContent = text;
 }
 
 async function load() {
@@ -182,16 +445,20 @@ async function load() {
   $('tags').value = (c.tags || []).join(', ');
   manualCat = c.manual_category;
   document.querySelector(`[name=category_mode][value=${c.category_mode === 'manual' ? 'manual' : 'auto'}]`).checked = true;
-  showCategory();
-  showTags();
+  showCategory(); showTags();
+  hasSteam = c.has_steam_key && c.steam_id;
   $('steam_api_key').placeholder = c.has_steam_key ? '•••••••• saved (leave blank to keep)' : '';
   $('redir').textContent = c.redirect_uri;
   $('ver').textContent = c.version;
   $('clientIdBox').style.display = c.has_builtin_client_id && !c.twitch_client_id ? 'none' : '';
   $('overlayUrl').textContent = location.origin + '/overlay';
+  $('dockUrl').textContent = location.origin + '/dock';
   $('twitch').innerHTML = c.twitch_login
-    ? `<span class="ok">Connected as <b>${esc(c.twitch_login)}</b></span> <button class="secondary" onclick="post('/api/twitch/logout').then(load)">Disconnect</button>`
-    : `<a class="btn" href="/api/twitch/login" onclick="return saveFirst(event)">Connect Twitch</a>`;
+    ? `<div class="row"><span class="ok">✔ Connected as <b>${esc(c.twitch_login)}</b></span>
+       <button class="ghost" onclick="post('/api/twitch/logout').then(load)">Disconnect</button></div>`
+    : `<a class="btn primary" href="/api/twitch/login" onclick="return saveFirst(event)">Connect Twitch</a>`;
+  setPill('pillTwitch', c.twitch_login ? 'on' : 'bad', c.twitch_login ? 'Twitch · ' + c.twitch_login : 'Twitch not connected');
+  setPill('pillSteam', hasSteam ? 'on' : 'bad', hasSteam ? 'Steam' : 'Steam not set up');
   renderChat(c);
   $('vars').innerHTML = c.vars.map(v => `<code data-v="${v}">{${v}}</code>`).join('');
   document.querySelectorAll('[data-v]').forEach(el => el.onclick = () => { const i = $(lastFocus); i.value += '{' + el.dataset.v + '}'; i.focus(); });
@@ -201,7 +468,7 @@ async function load() {
 async function saveFirst(e) { e.preventDefault(); await save(); location.href = '/api/twitch/login'; }
 
 async function save() {
-  $('savedChat').innerHTML = ''; $('saved').innerHTML = '';
+  const out = $('saved'); out.innerHTML = '';
   const body = {steam_api_key: $('steam_api_key').value.trim()};
   fields.forEach(f => body[f] = $(f).value.trim());
   body.interval_seconds = parseInt(body.interval_seconds) || 60;
@@ -210,41 +477,57 @@ async function save() {
   body.category_mode = document.querySelector('[name=category_mode]:checked').value;
   body.manual_category = manualCat;
   if (body.set_category && body.category_mode === 'manual' && !manualCat) {
-    $('saved').innerHTML = '<span class="err">Pick a game for your category first.</span>'; return;
+    showTab('category'); out.innerHTML = '<span class="err">Pick a game for your category first.</span>'; return;
   }
   body.chat = readChat();
-  if (body.chat.enabled && body.chat.reply_as === 'bot' && !chatCfg.bot_login) {
-    $('savedChat').innerHTML = '<span class="err">Connect a bot account first, or choose your own channel account.</span>';
-  }
-  try { await post('/api/config', body); $('saved').innerHTML = $('savedChat').innerHTML || '<span class="ok">Saved ✓</span>';
-    if (!$('savedChat').innerHTML) $('savedChat').innerHTML = '<span class="ok">Saved ✓</span>'; $('steam_api_key').value=''; load(); setTimeout(poll, 2000); }
-  catch (e) { $('saved').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  const warn = body.chat.enabled && body.chat.reply_as === 'bot' && !chatCfg.bot_login
+    ? 'Saved, but chat needs a bot account (or choose your own channel).' : '';
+  try {
+    await post('/api/config', body);
+    out.innerHTML = warn ? `<span class="warn">${warn}</span>` : '<span class="ok">✔ Saved</span>';
+    $('steam_api_key').value = ''; load(); setTimeout(poll, 2000);
+  } catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
+
+// The status card's switch applies straight away, no Save needed.
+async function toggleAuto() {
+  try { await post('/api/enabled', {enabled: $('enabled').checked}); setTimeout(poll, 800); }
+  catch (e) { $('enabled').checked = !$('enabled').checked; }
 }
 
 async function poll() {
-  const s = await (await fetch('/api/status')).json();
-  $('art').hidden = !s.category_art;
+  let s;
+  try { s = await (await fetch('/api/status')).json(); } catch (e) { $('status').innerHTML = '<span class="err">AchieveTitle isn\'t responding.</span>'; return; }
+  $('art').hidden = !s.category_art; $('artEmpty').hidden = !!s.category_art;
   if (s.category_art && $('art').src !== s.category_art) { $('art').src = s.category_art; $('art').alt = s.category; }
-  let h = s.game ? `Playing <b>${esc(s.game)}</b>` : 'Not in a Steam game';
-  if (s.total) h += ` — ${s.unlocked}/${s.total} achievements`;
-  if (s.latest) h += `<br><small>Latest: ${esc(s.latest.name)}</small>`;
-  if (s.category) h += `<br><small>Twitch category: ${esc(s.category)}${s.category_mode === 'manual' ? ' (chosen by you)' : ''}</small>`;
+  $('kicker').textContent = s.game ? 'Now playing' : 'Not in a Steam game';
+  $('game').textContent = s.game || (s.category ? s.category : 'Start a game on Steam');
+  $('meta').innerHTML = s.category ? `Twitch category: <b>${esc(s.category)}</b>${s.category_mode === 'manual' ? ' <small>(your pick)</small>' : ''}` : '';
+  $('progress').innerHTML = s.total ? `${s.unlocked}<small> / ${s.total} achievements · ${Math.floor(100 * s.unlocked / s.total)}%</small>` : '<small>No achievements to track</small>';
+  $('latest').innerHTML = s.latest ? `Latest: <b>${esc(s.latest.name)}</b>` : '';
+  $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
+  $('enabled').checked = s.running;
+  $('checked').textContent = s.last_check && !s.last_check.startsWith('0001') ? 'Last checked ' + new Date(s.last_check).toLocaleTimeString() : 'Not checked yet';
+  $('status').innerHTML = s.error ? `<span class="err">⚠ ${esc(s.error)}</span>` : '';
+  const recent = (s.recent || []).slice(0, 3);
+  $('recentBox').hidden = !recent.length;
+  $('recent').innerHTML = recent.map(a => {
+    const pct = a.global_percent ? (a.global_percent < 10 ? a.global_percent.toFixed(1) : Math.round(a.global_percent)) + '% of players' : '';
+    const when = a.unlock_time ? new Date(a.unlock_time * 1000).toLocaleDateString(undefined, {day:'numeric', month:'short'}) : '';
+    return `<li>🏆 <b title="${esc(a.name)}">${esc(a.name)}</b><span class="${a.global_percent && a.global_percent < 5 ? 'rare' : ''}">${pct}</span><span>${when}</span></li>`;
+  }).join('');
   currentTags = s.tags || [];
   $('copyTags').hidden = !currentTags.length;
-  h += `<br><small>${s.running ? 'Auto-update ON' : 'Auto-update OFF'}${s.last_check && !s.last_check.startsWith('0001') ? ' · checked ' + new Date(s.last_check).toLocaleTimeString() : ''}</small>`;
-  if (s.error) h += `<br><span class="err">${esc(s.error)}</span>`;
   showChatStatus(s.chat);
-  $('status').innerHTML = h;
-  $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
   $('preview').textContent = s.title || '—';
   const n = s.title ? s.title.length : 0; // UTF-16 units, the way Twitch counts (🏆 = 2)
   $('chars').hidden = !n;
-  $('chars').textContent = `Length: ${n} / 140 characters`;
+  $('chars').textContent = `${n} / 140 characters`;
   $('chars').className = 'count' + (n >= 140 ? ' full' : '');
   $('chars').title = "Twitch titles can be at most 140 characters. Longer titles are shortened automatically.";
 }
+
 // Chat commands
-let chatCfg = {};
 function renderChat(c) {
   chatCfg = c;
   const ch = c.chat;
@@ -265,13 +548,12 @@ function renderChat(c) {
     $('cmds').appendChild(row);
   });
   $('botArea').innerHTML = c.bot_login
-    ? `<span class="ok">Bot connected: <b>${esc(c.bot_login)}</b></span> <button class="secondary" onclick="post('/api/bot/logout').then(load)">Disconnect bot</button>`
-    : `<a class="btn" href="/api/bot/login" onclick="return connectBot(event)">Connect bot account</a>
-       <p class="hint">Make a separate Twitch account for your bot first (e.g. <i>${esc(c.twitch_login || 'yourname')}bot</i>).
-       On the Twitch page, click <b>Not you?</b> and log in as the bot. Tip: type <code>/mod yourbot</code> in your chat so it's never slowed down.</p>`;
+    ? `<div class="row"><span class="ok">✔ Bot: <b>${esc(c.bot_login)}</b></span> <button class="ghost" onclick="post('/api/bot/logout').then(load)">Disconnect</button></div>`
+    : `<a class="btn primary" href="/api/bot/login" onclick="return connectBot(event)">Connect bot account</a>
+       <p class="hint">Make a free Twitch account for it (e.g. <i>${esc(c.twitch_login || 'yourname')}bot</i>), click <b>Not you?</b> on Twitch to log in as it, then <code>/mod</code> it.</p>`;
   $('chanArea').innerHTML = c.channel_can_chat
-    ? `<span class="hint">Replies will come from <b>${esc(c.twitch_login)}</b>.</span>`
-    : `<p class="hint">Needs one extra permission from Twitch: <a href="/api/twitch/login" onclick="return saveFirst(event)">reconnect your channel</a> to allow it.</p>`;
+    ? `<p class="hint">Replies would come from <b>${esc(c.twitch_login)}</b>.</p>`
+    : `<p class="hint">Needs one extra Twitch permission: <a href="/api/twitch/login" onclick="return saveFirst(event)">reconnect your channel</a>.</p>`;
   showChatBox();
 }
 function readChat() {
@@ -288,24 +570,25 @@ function readChat() {
     })),
   };
 }
-function showChatBox() { $('chatBox').style.opacity = $('chat_enabled').checked ? 1 : .5; }
+function showChatBox() { $('chatBox').style.opacity = $('chat_enabled').checked ? 1 : .45; }
 $('chat_enabled').addEventListener('change', showChatBox);
 async function connectBot(e) { e.preventDefault(); await save(); location.href = '/api/bot/login'; }
 function showChatStatus(st) {
   if (!st) return;
-  const cls = st.startsWith('connected') ? 'ok' : (st.startsWith('error') || st.startsWith('needs')) ? 'err' : '';
+  const good = st.startsWith('connected'), bad = st.startsWith('error') || st.startsWith('needs');
   const text = st === 'off' ? 'Chat commands are off.' : st.charAt(0).toUpperCase() + st.slice(1);
-  $('chatStatus').innerHTML = `<span class="${cls}">${esc(text)}</span>`;
+  $('chatStatus').innerHTML = `<span class="${good ? 'ok' : bad ? 'err' : ''}">${esc(text)}</span>`;
+  setPill('pillChat', good ? 'on' : bad ? 'bad' : '', st === 'off' ? 'Chat bot off' : good ? 'Chat bot on' : 'Chat bot: needs setup');
 }
 
 // Category picker
 const catCard = c => `<img src="${esc(c.box_art)}" alt="" loading="lazy">${esc(c.name)}`;
 function showCategory() {
   const manual = document.querySelector('[name=category_mode]:checked')?.value === 'manual';
-  $('catBox').style.opacity = $('set_category').checked ? 1 : .5;
+  $('catBox').style.opacity = $('set_category').checked ? 1 : .45;
   $('manualBox').hidden = !manual;
   $('picked').innerHTML = manualCat
-    ? `<img src="${esc(manualCat.box_art)}" alt=""><div><b>${esc(manualCat.name)}</b><br><small>Your category while this is selected. Click Save to apply.</small></div>`
+    ? `<img src="${esc(manualCat.box_art)}" alt=""><div><b>${esc(manualCat.name)}</b><br><small>Save to apply.</small></div>`
     : '<small>No game chosen yet: search below and click one.</small>';
 }
 document.querySelectorAll('[name=category_mode]').forEach(r => r.addEventListener('change', showCategory));
@@ -333,31 +616,35 @@ $('catSearch').addEventListener('input', () => {
 // Mirrors Twitch's rules (and CleanTags on the server) so the preview matches what gets saved.
 const cleanTags = v => [...new Set(v.split(',').map(t => t.replace(/[^\p{L}\p{N}]/gu, '').slice(0, 25)).filter(Boolean))].slice(0, 10);
 function showTags() {
-  $('tagsBox').style.opacity = $('manage_tags').checked ? 1 : .5;
+  $('tagsBox').style.opacity = $('manage_tags').checked ? 1 : .45;
   $('tagPreview').innerHTML = cleanTags($('tags').value).map(t => `<code>${esc(t)}</code>`).join('');
 }
 $('tags').addEventListener('input', showTags);
 $('manage_tags').addEventListener('change', showTags);
 $('copyTags').onclick = e => { e.preventDefault(); $('tags').value = currentTags.join(', '); showTags(); };
-const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function copy(id, btn) {
+  navigator.clipboard?.writeText($(id).textContent).then(() => { btn.textContent = 'Copied ✔'; setTimeout(() => btn.textContent = 'Copy', 1500); });
+}
 
 async function quitApp() {
   if (!confirm('Stop AchieveTitle? Your original title will be restored if that option is on.')) return;
   await post('/api/quit').catch(() => {});
-  document.querySelector('main').innerHTML = '<h1>AchieveTitle has stopped.</h1><p class="sub">You can close this tab.</p>';
+  $('app').innerHTML = '<div class="stopped"><div><h1>AchieveTitle has stopped.</h1><p class="hint">You can close this tab.</p></div></div>';
 }
+
 async function checkUpdate() {
   const u = await (await fetch('/api/update')).json();
   $('update').hidden = !u.available;
   if (!u.available) return;
-  $('updTitle').textContent = `AchieveTitle ${u.latest} is available`;
+  $('updTitle').textContent = `🎉 AchieveTitle ${u.latest} is available`;
   $('updLink').href = u.page_url;
   $('updBtn').hidden = !u.can_install;
   $('updText').textContent = u.can_install
-    ? `You have ${u.current}. Updating keeps all your settings and restarts AchieveTitle.`
+    ? `You have ${u.current}. Updating keeps your settings and restarts AchieveTitle.`
     : `You have ${u.current}. Automatic update isn't possible here (${u.cant_install}).`;
   if (!u.can_install) $('updLink').textContent = 'Download';
-  if (u.error) $('updText').innerHTML += `<br><span class="err">${esc(u.error)}</span>`;
+  if (u.error) $('updText').innerHTML += ` <span class="err">${esc(u.error)}</span>`;
 }
 
 async function installUpdate() {

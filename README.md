@@ -94,7 +94,7 @@ No accounts, no servers, no tracking. Everything runs on your own computer.
 </table>
 
 <p align="center">
-  <img src="assets/screenshot-settings.png" alt="AchieveTitle settings page showing the current game, progress and Twitch title" width="720">
+  <img src="assets/screenshot-app.png" alt="The AchieveTitle app: live status with box art, progress and recent unlocks next to tabbed settings" width="100%">
 </p>
 
 > [!NOTE]

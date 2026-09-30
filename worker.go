@@ -149,6 +149,9 @@ func (w *Worker) tick(ctx context.Context) {
 			game = prog.Game
 		}
 	}
+	// {game} falls back to the category the streamer picked, but the status
+	// only ever names a game Steam actually reports.
+	steamGame := game
 	if game == "" && cfg.CategoryMode == "manual" && cfg.ManualCategory != nil {
 		game = cfg.ManualCategory.Name
 	}
@@ -156,7 +159,7 @@ func (w *Worker) tick(ctx context.Context) {
 
 	w.mu.Lock()
 	w.game, w.prog = game, prog
-	w.status.Game, w.status.AppID, w.status.Title = game, appID, title
+	w.status.Game, w.status.AppID, w.status.Title = steamGame, appID, title
 	w.status.Unlocked, w.status.Total, w.status.Latest, w.status.Next, w.status.Recent = 0, 0, nil, nil, nil
 	if prog != nil {
 		w.status.Unlocked, w.status.Total = prog.Unlocked, prog.Total
