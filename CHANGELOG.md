@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.6.6
+- Fixed: the settings page background repeated in bands in narrow windows such as an OBS dock
+
 ## v0.6.5
 - ⬆️ **Check for updates** button in the App tab (and in the tray / menu bar menu), with *Update now* right next to it. No need to restart AchieveTitle to find new versions
 - Automatic update checks now happen once a day
