@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 )
@@ -23,13 +25,37 @@ const twitchScope = "channel:manage:broadcast"
 var twitchAPI = "https://api.twitch.tv/helix"
 
 type Twitch struct {
-	http       *http.Client
-	categories map[string][2]string // game name -> [id, name]; used only from the worker goroutine
+	http   *http.Client
+	mu     sync.Mutex
+	byName map[string]Category // Steam game name -> category ("" ID = no match)
+	byID   map[string]Category
 }
 
 func newTwitch() *Twitch {
-	return &Twitch{http: &http.Client{Timeout: 15 * time.Second}, categories: map[string][2]string{}}
+	return &Twitch{http: &http.Client{Timeout: 15 * time.Second}, byName: map[string]Category{}, byID: map[string]Category{}}
 }
+
+// Category is a Twitch category (usually a game) with its box art.
+type Category struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	BoxArt string `json:"box_art"`
+}
+
+type helixCategory struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	BoxArt string `json:"box_art_url"`
+}
+
+func (h helixCategory) category() Category {
+	// Twitch returns a URL template ({width}x{height}) or a fixed small size; ask for 144x192.
+	art := strings.NewReplacer("{width}", "144", "{height}", "192").Replace(h.BoxArt)
+	art = boxArtSizeRe.ReplaceAllString(art, "-144x192.")
+	return Category{ID: h.ID, Name: h.Name, BoxArt: art}
+}
+
+var boxArtSizeRe = regexp.MustCompile(`-\d+x\d+\.`)
 
 var errTwitchAuth = fmt.Errorf("twitch login expired: reconnect Twitch in the settings page")
 
@@ -131,39 +157,84 @@ func (t *Twitch) UpdateChannel(ctx context.Context, cfg Config, patch map[string
 }
 
 // FindCategory maps a Steam game name to a Twitch category, preferring an exact
-// name match and falling back to Twitch's search. Returns "" if nothing fits.
-func (t *Twitch) FindCategory(ctx context.Context, cfg Config, game string) (id, name string, err error) {
-	if c, ok := t.categories[strings.ToLower(game)]; ok {
-		return c[0], c[1], nil
+// name match and falling back to Twitch's search. Returns a zero Category if
+// nothing clearly matches, so the stream never lands in the wrong game.
+func (t *Twitch) FindCategory(ctx context.Context, cfg Config, game string) (Category, error) {
+	key := strings.ToLower(game)
+	t.mu.Lock()
+	c, ok := t.byName[key]
+	t.mu.Unlock()
+	if ok {
+		return c, nil
 	}
-	var r struct {
-		Data []struct{ ID, Name string }
-	}
+	var r struct{ Data []helixCategory }
 	if err := t.do(ctx, cfg, "GET", "/games?name="+url.QueryEscape(game), nil, &r); err != nil {
-		return "", "", err
+		return Category{}, err
 	}
 	if len(r.Data) == 0 {
 		if err := t.do(ctx, cfg, "GET", "/search/categories?first=5&query="+url.QueryEscape(game), nil, &r); err != nil {
-			return "", "", err
+			return Category{}, err
 		}
-		// Only accept a search hit that is clearly the same game, so we never
-		// put the stream in a wrong category.
 		want := normalizeName(game)
+		var match []helixCategory
 		for _, d := range r.Data {
 			if normalizeName(d.Name) == want {
-				r.Data = []struct{ ID, Name string }{d}
+				match = append(match, d)
 				break
 			}
 		}
-		if len(r.Data) != 1 || normalizeName(r.Data[0].Name) != want {
-			r.Data = nil
-		}
+		r.Data = match
 	}
 	if len(r.Data) > 0 {
-		id, name = r.Data[0].ID, r.Data[0].Name
+		c = r.Data[0].category()
 	}
-	t.categories[strings.ToLower(game)] = [2]string{id, name}
-	return id, name, nil
+	t.remember(key, c)
+	return c, nil
+}
+
+// CategoryByID looks up a category's name and box art.
+func (t *Twitch) CategoryByID(ctx context.Context, cfg Config, id string) (Category, error) {
+	t.mu.Lock()
+	c, ok := t.byID[id]
+	t.mu.Unlock()
+	if ok || id == "" {
+		return c, nil
+	}
+	var r struct{ Data []helixCategory }
+	if err := t.do(ctx, cfg, "GET", "/games?id="+url.QueryEscape(id), nil, &r); err != nil {
+		return Category{}, err
+	}
+	if len(r.Data) > 0 {
+		c = r.Data[0].category()
+		t.remember("", c)
+	}
+	return c, nil
+}
+
+// SearchCategories powers the manual game picker.
+func (t *Twitch) SearchCategories(ctx context.Context, cfg Config, q string) ([]Category, error) {
+	var r struct{ Data []helixCategory }
+	if err := t.do(ctx, cfg, "GET", "/search/categories?first=12&query="+url.QueryEscape(q), nil, &r); err != nil {
+		return nil, err
+	}
+	out := []Category{}
+	for _, d := range r.Data {
+		c := d.category()
+		t.remember("", c)
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+func (t *Twitch) remember(name string, c Category) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if name != "" {
+		t.byName[name] = c
+	}
+	if c.ID != "" {
+		t.byID[c.ID] = c
+	}
 }
 
 // normalizeName ignores case, punctuation and ™/® marks: "Brotato™" == "brotato".

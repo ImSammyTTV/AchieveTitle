@@ -13,12 +13,13 @@
   .row { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap }
   button { flex:1; background:#3a3d4a; color:#fff; border:0; border-radius:4px; padding:6px 8px; font:inherit; cursor:pointer }
   button.on { background:#9147ff }
+  .top { display:flex; gap:8px; align-items:center; margin-bottom:6px } .top img { width:36px; height:48px; border-radius:3px; object-fit:cover }
   small { color:#9a9aa8 } .err { color:#ff6b6b } a { color:#bf94ff }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div id="game"><small>Loading…</small></div>
+  <div class="top"><img id="art" alt="" hidden><div id="game"><small>Loading…</small></div></div>
   <div class="bar"><i id="bar" style="width:0"></i></div>
   <div class="title" id="title">—</div>
   <div id="err" class="err"></div>
@@ -45,6 +46,8 @@ async function poll() {
     $('toggle').className = enabled ? 'on' : '';
     $('game').innerHTML = (s.game ? `<b></b>` : '<small>Not in a Steam game</small>') + (s.total ? ` <small>${s.unlocked}/${s.total}</small>` : '');
     if (s.game) $('game').querySelector('b').textContent = s.game;
+    $('art').hidden = !s.category_art;
+    if (s.category_art && $('art').src !== s.category_art) $('art').src = s.category_art;
     $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
     $('title').textContent = s.title || '—';
     $('err').textContent = !s.twitch_login ? 'Twitch not connected: open Settings.' : (s.error || '');

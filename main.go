@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -182,6 +183,7 @@ func (s *server) routes() http.Handler {
 		w.WriteHeader(204)
 		go s.quit()
 	}))
+	mux.HandleFunc("GET /api/categories", s.searchCategories)
 	mux.HandleFunc("GET /api/update", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, s.updater.Info())
 	})
@@ -221,24 +223,26 @@ func (s *server) getStatus(w http.ResponseWriter, r *http.Request) {
 
 // publicConfig never sends secrets back to the browser.
 type publicConfig struct {
-	SteamID         string   `json:"steam_id"`
-	HasSteamKey     bool     `json:"has_steam_key"`
-	CustomTitle     string   `json:"custom_title"`
-	Template        string   `json:"template"`
-	FallbackTmpl    string   `json:"fallback_template"`
-	IntervalSeconds int      `json:"interval_seconds"`
-	Enabled         bool     `json:"enabled"`
-	RestoreOnExit   bool     `json:"restore_on_exit"`
-	SetCategory     bool     `json:"set_category"`
-	ManageTags      bool     `json:"manage_tags"`
-	Tags            []string `json:"tags"`
-	CheckUpdates    bool     `json:"check_updates"`
-	TwitchClientID  string   `json:"twitch_client_id"`
-	HasBuiltinID    bool     `json:"has_builtin_client_id"`
-	TwitchLogin     string   `json:"twitch_login"`
-	Vars            []string `json:"vars"`
-	Version         string   `json:"version"`
-	RedirectURI     string   `json:"redirect_uri"`
+	SteamID         string    `json:"steam_id"`
+	HasSteamKey     bool      `json:"has_steam_key"`
+	CustomTitle     string    `json:"custom_title"`
+	Template        string    `json:"template"`
+	FallbackTmpl    string    `json:"fallback_template"`
+	IntervalSeconds int       `json:"interval_seconds"`
+	Enabled         bool      `json:"enabled"`
+	RestoreOnExit   bool      `json:"restore_on_exit"`
+	SetCategory     bool      `json:"set_category"`
+	CategoryMode    string    `json:"category_mode"`
+	ManualCategory  *Category `json:"manual_category"`
+	ManageTags      bool      `json:"manage_tags"`
+	Tags            []string  `json:"tags"`
+	CheckUpdates    bool      `json:"check_updates"`
+	TwitchClientID  string    `json:"twitch_client_id"`
+	HasBuiltinID    bool      `json:"has_builtin_client_id"`
+	TwitchLogin     string    `json:"twitch_login"`
+	Vars            []string  `json:"vars"`
+	Version         string    `json:"version"`
+	RedirectURI     string    `json:"redirect_uri"`
 }
 
 func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
@@ -247,7 +251,7 @@ func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
 		SteamID: c.SteamID, HasSteamKey: c.SteamAPIKey != "", CustomTitle: c.CustomTitle,
 		Template: c.Template, FallbackTmpl: c.FallbackTmpl, IntervalSeconds: c.IntervalSeconds,
 		Enabled: c.Enabled, RestoreOnExit: c.RestoreOnExit, TwitchClientID: c.TwitchClientID,
-		SetCategory: c.SetCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags), CheckUpdates: c.CheckUpdates,
+		SetCategory: c.SetCategory, CategoryMode: c.CategoryMode, ManualCategory: c.ManualCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags), CheckUpdates: c.CheckUpdates,
 		HasBuiltinID: DefaultTwitchClientID != "", TwitchLogin: c.TwitchLogin,
 		Vars: TemplateVars, Version: version, RedirectURI: s.base + "/auth/callback",
 	})
@@ -271,6 +275,10 @@ func (s *server) postConfig(w http.ResponseWriter, r *http.Request) {
 		c.IntervalSeconds, c.Enabled, c.RestoreOnExit = in.IntervalSeconds, in.Enabled, in.RestoreOnExit
 		c.TwitchClientID = in.TwitchClientID
 		c.SetCategory, c.ManageTags, c.Tags = in.SetCategory, in.ManageTags, CleanTags(in.Tags)
+		c.CategoryMode, c.ManualCategory = "auto", nil
+		if in.CategoryMode == "manual" && in.ManualCategory != nil && in.ManualCategory.ID != "" {
+			c.CategoryMode, c.ManualCategory = "manual", in.ManualCategory
+		}
 		c.CheckUpdates = in.CheckUpdates
 	})
 	if err != nil {
@@ -344,6 +352,26 @@ func (s *server) twitchLogout(w http.ResponseWriter, r *http.Request) {
 	s.worker.Restore()
 	s.store.Update(func(c *Config) { c.TwitchToken, c.TwitchUserID, c.TwitchLogin, c.Enabled = "", "", "", false })
 	w.WriteHeader(204)
+}
+
+// searchCategories backs the "choose my game" picker.
+func (s *server) searchCategories(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	cfg := s.store.Get()
+	if q == "" {
+		writeJSON(w, []Category{})
+		return
+	}
+	if cfg.TwitchToken == "" {
+		http.Error(w, "connect Twitch first", 400)
+		return
+	}
+	res, err := s.worker.twitch.SearchCategories(r.Context(), cfg, q)
+	if err != nil {
+		http.Error(w, err.Error(), 502)
+		return
+	}
+	writeJSON(w, res)
 }
 
 func (s *server) installUpdate(w http.ResponseWriter, r *http.Request) {

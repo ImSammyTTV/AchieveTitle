@@ -23,6 +23,8 @@ type Status struct {
 	Title        string        `json:"title"`
 	OriginalTitl string        `json:"original_title"`
 	Category     string        `json:"category"`
+	CategoryArt  string        `json:"category_art"`
+	CategoryMode string        `json:"category_mode"`
 	Tags         []string      `json:"tags"`
 	LastCheck    time.Time     `json:"last_check"`
 	LastUpdate   time.Time     `json:"last_update"`
@@ -59,6 +61,7 @@ func (w *Worker) Status() Status {
 	st := w.status
 	st.TwitchLogin = w.store.Get().TwitchLogin
 	st.Running = w.store.Get().Enabled
+	st.CategoryMode = w.store.Get().CategoryMode
 	return st
 }
 
@@ -135,6 +138,9 @@ func (w *Worker) tick(ctx context.Context) {
 			game = prog.Game
 		}
 	}
+	if game == "" && cfg.CategoryMode == "manual" && cfg.ManualCategory != nil {
+		game = cfg.ManualCategory.Name
+	}
 	title := renderTitle(tmpl, buildVars(cfg, game, prog))
 
 	w.mu.Lock()
@@ -174,16 +180,24 @@ func (w *Worker) tick(ctx context.Context) {
 		patch["title"] = title
 	}
 	var catErr error
-	if cfg.SetCategory && game != "" {
-		id, name, err := w.twitch.FindCategory(ctx, cfg, game)
+	if cfg.SetCategory {
+		var target Category
 		switch {
-		case err != nil:
-			catErr = err
-		case id == "":
-			catErr = fmt.Errorf("no Twitch category found for %q, category left unchanged", game)
-		case id != ch.GameID:
-			patch["game_id"] = id
-			ch.GameName = name
+		case cfg.CategoryMode == "manual" && cfg.ManualCategory != nil:
+			target = *cfg.ManualCategory
+		case cfg.CategoryMode != "manual" && game != "":
+			c, err := w.twitch.FindCategory(ctx, cfg, game)
+			switch {
+			case err != nil:
+				catErr = err
+			case c.ID == "":
+				catErr = fmt.Errorf("no Twitch category found for %q, category left unchanged (you can pick one yourself in settings)", game)
+			}
+			target = c
+		}
+		if target.ID != "" && target.ID != ch.GameID {
+			patch["game_id"] = target.ID
+			ch.GameID, ch.GameName = target.ID, target.Name
 		}
 	}
 	if cfg.ManageTags {
@@ -202,8 +216,12 @@ func (w *Worker) tick(ctx context.Context) {
 		w.status.LastUpdate = time.Now()
 		w.mu.Unlock()
 	}
+	art := ""
+	if c, err := w.twitch.CategoryByID(ctx, cfg, ch.GameID); err == nil {
+		art = c.BoxArt
+	}
 	w.mu.Lock()
-	w.status.Category, w.status.Tags = ch.GameName, ch.Tags
+	w.status.Category, w.status.CategoryArt, w.status.Tags = ch.GameName, art, ch.Tags
 	w.mu.Unlock()
 	w.setErr(catErr)
 }

@@ -19,9 +19,12 @@ type Config struct {
 	Enabled         bool   `json:"enabled"`
 	RestoreOnExit   bool   `json:"restore_on_exit"`
 
-	SetCategory bool     `json:"set_category"` // switch Twitch category to the Steam game
-	ManageTags  bool     `json:"manage_tags"`
-	Tags        []string `json:"tags"`
+	SetCategory bool `json:"set_category"` // let AchieveTitle set the Twitch category
+	// "auto": match the Steam game being played; "manual": always use ManualCategory.
+	CategoryMode   string    `json:"category_mode"`
+	ManualCategory *Category `json:"manual_category,omitempty"`
+	ManageTags     bool      `json:"manage_tags"`
+	Tags           []string  `json:"tags"`
 
 	CheckUpdates bool `json:"check_updates"`
 
@@ -43,6 +46,7 @@ func defaultConfig() Config {
 		IntervalSeconds: 60,
 		RestoreOnExit:   true,
 		SetCategory:     true,
+		CategoryMode:    "auto",
 		CheckUpdates:    true,
 	}
 }

@@ -22,9 +22,13 @@ func fakeAPIs(t *testing.T, channel *Channel, patches *[]map[string]any) *httpte
 		case strings.HasSuffix(r.URL.Path, "/GetGlobalAchievementPercentagesForApp/v2/"):
 			w.Write([]byte(`{"achievementpercentages":{"achievements":[{"name":"a","percent":"12.5"},{"name":"b","percent":0.4}]}}`))
 		case r.URL.Path == "/games":
-			if r.URL.Query().Get("name") == "Brotato" {
-				w.Write([]byte(`{"data":[{"id":"2222","name":"Brotato"}]}`))
-			} else {
+			q := r.URL.Query()
+			switch {
+			case q.Get("name") == "Brotato" || q.Get("id") == "2222":
+				w.Write([]byte(`{"data":[{"id":"2222","name":"Brotato","box_art_url":"https://static-cdn.jtvnw.net/ttv-boxart/2222-{width}x{height}.jpg"}]}`))
+			case q.Get("id") == "27471":
+				w.Write([]byte(`{"data":[{"id":"27471","name":"Minecraft","box_art_url":"https://static-cdn.jtvnw.net/ttv-boxart/27471_IGDB-52x72.jpg"}]}`))
+			default:
 				w.Write([]byte(`{"data":[]}`))
 			}
 		case r.URL.Path == "/channels" && r.Method == "GET":
@@ -75,7 +79,8 @@ func TestWorkerUpdatesTitleCategoryTagsAndRestores(t *testing.T) {
 		strings.Join(channel.Tags, ",") != "chillstream,AchievementHunting" {
 		t.Fatalf("channel not updated as expected: %+v", channel)
 	}
-	if st := w.Status(); st.Category != "Brotato" || st.Error != "" {
+	if st := w.Status(); st.Category != "Brotato" || st.Error != "" ||
+		st.CategoryArt != "https://static-cdn.jtvnw.net/ttv-boxart/2222-144x192.jpg" {
 		t.Fatalf("status: %+v", st)
 	}
 
@@ -87,5 +92,30 @@ func TestWorkerUpdatesTitleCategoryTagsAndRestores(t *testing.T) {
 	w.Restore()
 	if channel.Title != "My normal title" || channel.GameID != "27471" || strings.Join(channel.Tags, ",") != "chillstream" {
 		t.Fatalf("not restored: %+v", channel)
+	}
+}
+
+func TestWorkerManualCategory(t *testing.T) {
+	channel := &Channel{Title: "My normal title", GameID: "2222", GameName: "Brotato"}
+	var patches []map[string]any
+	srv := fakeAPIs(t, channel, &patches)
+	defer srv.Close()
+	steamAPI, twitchAPI = srv.URL, srv.URL
+
+	cfg := defaultConfig()
+	cfg.SteamAPIKey, cfg.SteamID, cfg.Enabled = "k", "76561198035066303", true
+	cfg.TwitchToken, cfg.TwitchUserID = "tok", "1"
+	// Steam says Brotato, but the streamer picked Minecraft themselves.
+	cfg.CategoryMode = "manual"
+	cfg.ManualCategory = &Category{ID: "27471", Name: "Minecraft"}
+	w := newWorker(&Store{path: t.TempDir() + "/c.json", cfg: cfg})
+
+	w.tick(context.Background())
+	if channel.GameID != "27471" {
+		t.Fatalf("manual category not applied: %+v (patches %v)", channel, patches)
+	}
+	st := w.Status()
+	if st.Category != "Minecraft" || st.CategoryArt != "https://static-cdn.jtvnw.net/ttv-boxart/27471_IGDB-144x192.jpg" {
+		t.Fatalf("status: category %q art %q", st.Category, st.CategoryArt)
 	}
 }

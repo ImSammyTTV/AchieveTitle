@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.0
+- Status box and OBS panel show the Twitch category's box art
+- Choose your category yourself: search Twitch categories (with box art) and pick one,
+  or keep matching the Steam game automatically
+- `{game}` uses your chosen game when Steam isn't showing one
+
 ## v0.4.0
 - Runs as a proper app: no command window on Windows, a real AchieveTitle.app on macOS
 - Tray / menu bar icon with Open settings, auto-update on/off, current title and Quit
