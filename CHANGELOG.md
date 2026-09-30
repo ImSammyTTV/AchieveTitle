@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.7.11
+- 🌈 **Multi-colour progress bars**: new 🟥🟧🟨🟩🟦🟪 rainbow and ❤️🧡💛💚💙💜 hearts styles, or type several characters into *Filled* and the bar uses them in turn (also in the OBS panel)
+- Twitch, Steam and chat bot icons on the status badges at the top
+
 ## v0.7.10
 - **Use my own Twitch app instead** (App tab → Privacy): for anyone who'd rather sign in through a Twitch app they registered themselves
 - README: new *Why trust AchieveTitle?* section

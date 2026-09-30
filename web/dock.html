@@ -117,7 +117,9 @@ const $ = id => document.getElementById(id);
 const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const post = (url, body) => fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: body && JSON.stringify(body)})
   .then(async r => { if (!r.ok) throw new Error(await r.text()); return r; });
-const BARS = [['▰','▱'],['🟪','⬛'],['🟩','⬛'],['🟨','⬛'],['🟦','⬜'],['🟥','⬛'],['█','░'],['●','○'],['★','☆']];
+// A short sample of a bar style: multi-colour styles show their colours.
+const barSample = (f, e) => { let c; try { c = [...new Intl.Segmenter().segment(f)].map(x => x.segment); } catch (x) { c = [...f]; } return c.length > 1 ? c.slice(0, 5).join('') : f.repeat(3) + e.repeat(2); };
+const BARS = [['🟥🟧🟨🟩🟦🟪','⬛'],['❤️🧡💛💚💙💜','🖤'],['▰','▱'],['🟪','⬛'],['🟩','⬛'],['🟨','⬛'],['🟦','⬜'],['🟥','⬛'],['█','░'],['●','○'],['★','☆']];
 
 // Every change applies straight away.
 async function quick(body) {
@@ -137,7 +139,7 @@ async function quick(body) {
 let bar = {filled:'▰', empty:'▱', length:10};
 function showBars() {
   $('bars').innerHTML = BARS.map(([f, e]) =>
-    `<button type="button" data-f="${f}" data-e="${e}" class="${f === bar.filled && e === bar.empty ? 'sel' : ''}">${f.repeat(3)}${e.repeat(2)}</button>`).join('');
+    `<button type="button" data-f="${f}" data-e="${e}" class="${f === bar.filled && e === bar.empty ? 'sel' : ''}">${barSample(f, e)}</button>`).join('');
   document.querySelectorAll('#bars button').forEach(b => b.onclick = () => {
     const emoji = /\p{Extended_Pictographic}/u.test(b.dataset.f);
     bar = {filled: b.dataset.f, empty: b.dataset.e, length: emoji ? Math.min(bar.length, 8) : bar.length};

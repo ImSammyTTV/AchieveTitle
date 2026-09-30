@@ -54,3 +54,16 @@ func TestNormalizeName(t *testing.T) {
 		t.Fatal("trademark sign should be ignored")
 	}
 }
+
+func TestRainbowBar(t *testing.T) {
+	st := BarStyle{Filled: "🟥🟧🟨🟩🟦🟪", Empty: "⬛", Length: 6}
+	if got := progressBar(6, 6, st); got != "🟥🟧🟨🟩🟦🟪" {
+		t.Errorf("full bar = %q", got)
+	}
+	if got := progressBar(3, 6, st); got != "🟥🟧🟨⬛⬛⬛" {
+		t.Errorf("half bar = %q", got)
+	}
+	if got := progressBar(10, 10, BarStyle{Filled: "❤️🧡", Empty: "🖤", Length: 5}); got != "❤️🧡❤️🧡❤️" {
+		t.Errorf("hearts = %q", got)
+	}
+}

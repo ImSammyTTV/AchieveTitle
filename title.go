@@ -89,7 +89,7 @@ func defaultBarStyle() BarStyle { return BarStyle{Filled: "▰", Empty: "▱", L
 // clean keeps the style usable: one character (or emoji) per segment, 5-20 segments.
 func (b BarStyle) clean() BarStyle {
 	d := defaultBarStyle()
-	b.Filled, b.Empty = firstGrapheme(b.Filled), firstGrapheme(b.Empty)
+	b.Filled, b.Empty = strings.Join(graphemes(b.Filled, maxBarColours), ""), firstGrapheme(b.Empty)
 	if b.Filled == "" {
 		b.Filled = d.Filled
 	}
@@ -101,6 +101,21 @@ func (b BarStyle) clean() BarStyle {
 	}
 	b.Length = min(max(b.Length, 5), 20)
 	return b
+}
+
+// maxBarColours is how many different filled characters a bar can run through.
+const maxBarColours = 8
+
+// graphemes splits s into up to max visible characters (see firstGrapheme).
+func graphemes(s string, max int) []string {
+	var out []string
+	s = strings.TrimSpace(s)
+	for s != "" && len(out) < max {
+		g := firstGrapheme(s)
+		out = append(out, g)
+		s = strings.TrimSpace(s[len(g):])
+	}
+	return out
 }
 
 // firstGrapheme returns the first visible character, keeping emoji that are
@@ -131,7 +146,13 @@ func progressBar(done, total int, style BarStyle) string {
 	}
 	style = style.clean()
 	n := done * style.Length / total
-	return strings.Repeat(style.Filled, n) + strings.Repeat(style.Empty, style.Length-n)
+	// Several filled characters (like 🟥🟧🟨🟩🟦🟪) are used in turn.
+	cols := graphemes(style.Filled, maxBarColours)
+	var b strings.Builder
+	for i := range n {
+		b.WriteString(cols[i%len(cols)])
+	}
+	return b.String() + strings.Repeat(style.Empty, style.Length-n)
 }
 
 func rarity(pct float64) string {

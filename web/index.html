@@ -40,6 +40,7 @@
   .presets button:hover { border-color:var(--accent) }
   .presets button.sel { border-color:var(--accent); background:rgba(145,71,255,.22) }
   .presets small { display:block; color:var(--muted); font-weight:400; font-size:11px; font-family:ui-monospace, monospace; overflow:hidden; text-overflow:ellipsis }
+  .pill-ico { width:14px; height:14px; flex:none; margin-right:-2px }
   .tab-ico { width:1.05em; height:1.05em; vertical-align:-.15em }
   .app { height:100vh; display:flex; flex-direction:column; max-width:1280px; margin:0 auto; padding:14px 20px 18px; gap:12px }
 
@@ -99,9 +100,10 @@
   .done-line { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; font-size:13px }
   .done-line a { margin-left:auto; font-size:12.5px }
   .bars { display:flex; flex-wrap:wrap; gap:6px }
-  .bars button { background:var(--field); border:1px solid var(--line2); padding:6px 9px; font-size:13px; letter-spacing:-1px; font-weight:400 }
+  .bars button { background:var(--field); border:1px solid var(--line2); padding:4px 7px; font-size:11.5px; letter-spacing:-1px; font-weight:400 }
   .bars button.sel { border-color:var(--accent); background:rgba(145,71,255,.18) }
-  .inline input.barchar { width:58px; text-align:center; font-size:16px }
+  .inline input.barchar { width:58px; text-align:center; font-size:16px } .inline input#bar_filled { width:76px; font-size:12px }
+  .barbox .inline { flex-wrap:nowrap } .barbox #bar_length { width:64px }
   .inline input#bar_length { width:70px }
   .barpreview { display:flex; align-items:center; gap:10px; margin-top:10px; padding:9px 12px; border-radius:9px; background:var(--field); border:1px solid var(--line2); font-size:17px; letter-spacing:-.5px }
   .barpreview small { margin-left:auto; letter-spacing:0; font-size:12px }
@@ -251,9 +253,9 @@
       <p>Live Steam achievements in your Twitch title · <span class="ver" id="ver"></span></p>
     </div>
     <div class="pills">
-      <span class="pill" id="pillTwitch"><i></i><span>Twitch</span></span>
-      <span class="pill" id="pillSteam"><i></i><span>Steam</span></span>
-      <span class="pill" id="pillChat"><i></i><span>Chat bot</span></span>
+      <span class="pill" id="pillTwitch"><i></i><svg class="pill-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="#a970ff" d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg><span>Twitch</span></span>
+      <span class="pill" id="pillSteam"><i></i><svg class="pill-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/></svg><span>Steam</span></span>
+      <span class="pill" id="pillChat"><i></i><svg class="pill-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a1.5 1.5 0 0 1 .75 2.8V6H17a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4.25V4.8A1.5 1.5 0 0 1 12 2zM9 10.5a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zm6 0a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zM9 16.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM1.5 11A1.5 1.5 0 0 1 3 12.5v2a1.5 1.5 0 0 1-3 0v-2A1.5 1.5 0 0 1 1.5 11zm21 0a1.5 1.5 0 0 1 1.5 1.5v2a1.5 1.5 0 0 1-3 0v-2a1.5 1.5 0 0 1 1.5-1.5z"/></svg><span>Chat bot</span></span>
     </div>
   </header>
 
@@ -384,7 +386,7 @@
             </div>
             <div>
               <div class="inline" style="margin-top:0">
-                <label for="bar_filled">Filled</label><input type="text" id="bar_filled" class="barchar" maxlength="12">
+                <label for="bar_filled">Filled</label><input type="text" id="bar_filled" class="barchar" maxlength="40">
                 <label for="bar_empty">Empty</label><input type="text" id="bar_empty" class="barchar" maxlength="12">
                 <label for="bar_length">Length</label><input type="number" id="bar_length" min="5" max="20">
               </div>
@@ -937,21 +939,26 @@ function showPresets() {
 $('template').addEventListener('input', () => document.querySelectorAll('#titlePresets button').forEach(b => b.classList.toggle('sel', TITLE_PRESETS[b.dataset.i][0] === $('template').value)));
 
 // Progress bar style for {bar}
-const BAR_PRESETS = [['▰','▱'],['🟪','⬛'],['🟩','⬛'],['🟨','⬛'],['🟦','⬜'],['🟥','⬛'],['█','░'],['●','○'],['★','☆'],['■','□']];
+const BAR_PRESETS = [['🟥🟧🟨🟩🟦🟪','⬛'],['❤️🧡💛💚💙💜','🖤'],['▰','▱'],['🟪','⬛'],['🟩','⬛'],['🟨','⬛'],['🟦','⬜'],['🟥','⬛'],['█','░'],['●','○'],['★','☆'],['■','□']];
 let barProgress = [45, 179];
+const chars = (v, max) => { v = v.trim(); if (!v) return []; let a; try { a = [...new Intl.Segmenter().segment(v)].map(x => x.segment); } catch (e) { a = [...v]; } return a.filter(c => c.trim()).slice(0, max); };
 const firstChar = v => { v = v.trim(); if (!v) return ''; try { return [...new Intl.Segmenter().segment(v)][0].segment; } catch (e) { return [...v][0]; } };
 function readBar() {
-  return { filled: firstChar($('bar_filled').value) || '▰', empty: firstChar($('bar_empty').value) || '▱',
+  return { filled: chars($('bar_filled').value, 8).join('') || '▰', empty: firstChar($('bar_empty').value) || '▱',
            length: Math.min(20, Math.max(5, parseInt($('bar_length').value) || 10)) };
 }
-function drawBar(b, done, total) { const n = Math.floor(done * b.length / total); return b.filled.repeat(n) + b.empty.repeat(b.length - n); }
+function drawBar(b, done, total) {
+  const n = Math.floor(done * b.length / total), cols = chars(b.filled, 8);
+  let out = ''; for (let i = 0; i < n; i++) out += cols[i % cols.length];
+  return out + b.empty.repeat(b.length - n);
+}
 function showBar() {
   const b = readBar(), text = drawBar(b, barProgress[0], barProgress[1]);
   $('barPreview').textContent = text;
   $('barChars').textContent = `${text.length} characters · ${barProgress[0]}/${barProgress[1]}`;
   document.querySelectorAll('#barPresets button').forEach(x => x.classList.toggle('sel', x.dataset.f === b.filled && x.dataset.e === b.empty));
 }
-$('barPresets').innerHTML = BAR_PRESETS.map(([f, e]) => `<button type="button" data-f="${f}" data-e="${e}" title="Use this style">${f.repeat(3)}${e.repeat(2)}</button>`).join('');
+$('barPresets').innerHTML = BAR_PRESETS.map(([f, e]) => `<button type="button" data-f="${f}" data-e="${e}" title="Use this style">${drawBar({filled: f, empty: e, length: 5}, 3, 5)}</button>`).join('');
 document.querySelectorAll('#barPresets button').forEach(btn => btn.onclick = () => {
   $('bar_filled').value = btn.dataset.f; $('bar_empty').value = btn.dataset.e;
   // Emoji are wide: a shorter bar keeps the title readable.
