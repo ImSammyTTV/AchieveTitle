@@ -222,6 +222,10 @@ func (s *server) routes() http.Handler {
 		s.overlayTest.Add(1)
 		w.WriteHeader(204)
 	}))
+	mux.HandleFunc("GET /api/icons", func(w http.ResponseWriter, r *http.Request) {
+		appID, icons := s.worker.Icons()
+		writeJSON(w, map[string]any{"app_id": appID, "icons": icons})
+	})
 	mux.HandleFunc("GET /api/achievements", func(w http.ResponseWriter, r *http.Request) {
 		appID, list := s.worker.Locked()
 		writeJSON(w, map[string]any{"app_id": appID, "locked": list, "chasing": s.store.Get().Chasing[appID]})

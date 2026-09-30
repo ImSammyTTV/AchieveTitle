@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.5
+- The drifting background now uses the art of every achievement in your game, shuffled, not just your last few unlocks
+
 ## v0.7.4
 - Real OBS, Twitch and Steam logos in the settings page instead of emoji
 - Your Twitch profile picture (and your bot's) now shows next to the connected accounts, like Steam's does

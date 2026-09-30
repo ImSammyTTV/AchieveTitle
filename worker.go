@@ -383,6 +383,21 @@ func (w *Worker) ChatVars() map[string]string {
 
 // Locked lists the current game's still-locked achievements, rarest first,
 // for the "Chasing" picker.
+// Icons returns the art of every achievement in the current game.
+func (w *Worker) Icons() (appID string, icons []string) {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	if w.prog == nil {
+		return "", nil
+	}
+	for _, a := range w.prog.Achievements {
+		if a.Icon != "" {
+			icons = append(icons, a.Icon)
+		}
+	}
+	return w.status.AppID, icons
+}
+
 func (w *Worker) Locked() (appID string, list []Achievement) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()

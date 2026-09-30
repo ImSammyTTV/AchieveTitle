@@ -664,7 +664,7 @@ async function poll() {
   $('checked').textContent = s.last_check && !s.last_check.startsWith('0001') ? 'Last checked ' + new Date(s.last_check).toLocaleTimeString() : 'Not checked yet';
   $('status').innerHTML = s.error ? `<span class="err">⚠ ${esc(s.error)}</span>` : '';
   const recent = (s.recent || []).slice(0, 6);
-  drawDrift((s.recent || []).map(a => a.icon).filter(Boolean));
+  loadDriftIcons(s.app_id);
   $('recentBox').hidden = !recent.length;
   $('recent').innerHTML = recent.map(a => {
     const pct = a.global_percent ? (a.global_percent < 10 ? a.global_percent.toFixed(1) : Math.round(a.global_percent)) + '% of players' : '';
@@ -1012,11 +1012,21 @@ function drawDrift(icons) {
   const tile = i => icons.length ? `<img src="${esc(icons[i % icons.length])}" alt="">` : '<div>🏆</div>';
   $('drift').innerHTML = Array.from({length: 7}, (_, r) => {
     // Each row is its tiles twice over, so sliding by half loops seamlessly.
-    const tiles = Array.from({length: 16}, (_, i) => tile(i + r * 3)).join('');
+    const tiles = Array.from({length: 16}, (_, i) => tile(i + r * 16)).join('');
     return `<div class="drift-row" style="--t:${80 + r * 13}s">${tiles}${tiles}</div>`;
   }).join('');
 }
 drawDrift([]);
+// Fetch every achievement's art for the current game (once per game), shuffled.
+let driftApp;
+async function loadDriftIcons(appID) {
+  if ((appID || '') === driftApp) return;
+  driftApp = appID || '';
+  let icons = [];
+  if (appID) try { icons = (await (await fetch('/api/icons')).json()).icons || []; } catch (e) { driftApp = undefined; return; }
+  for (let i = icons.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [icons[i], icons[j]] = [icons[j], icons[i]]; }
+  drawDrift(icons.slice(0, 112));
+}
 
 // A connected Twitch account's profile picture (a Twitch-purple square until it loads).
 const twitchPic = url => url ? `<img src="${esc(url)}" alt="">` : '<span class="acct-ph"></span>';
