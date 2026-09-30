@@ -110,9 +110,9 @@ No accounts, no servers, no tracking. Everything runs on your own computer.
 
    | System | Download |
    |---|---|
-   | <img src="assets/os-windows.svg" width="16" alt=""> **Windows** | `AchieveTitle-…-windows-amd64.zip` |
-   | <img src="assets/os-apple.svg" width="16" alt=""> **Mac** | use the [one-line installer](#-mac) (recommended) or `AchieveTitle-…-darwin-arm64.zip` (Apple Silicon) / `darwin-amd64.zip` (Intel) |
-   | <img src="assets/os-linux.svg" width="16" alt=""> **Linux** | see [Linux](#-linux) below |
+   | <img src="assets/os-windows.svg" width="16" alt="">&nbsp;**Windows** | `AchieveTitle-…-windows-amd64.zip` |
+   | <img src="assets/os-apple.svg" width="16" alt="">&nbsp;**Mac** | use the [one-line installer](#-mac) (recommended) or `AchieveTitle-…-darwin-arm64.zip` (Apple Silicon) / `darwin-amd64.zip` (Intel) |
+   | <img src="assets/os-linux.svg" width="16" alt="">&nbsp;**Linux** | see [Linux](#-linux) below |
 
 2. **Unzip and run AchieveTitle.** The settings page opens in your browser and a 🏆 appears in your tray / menu bar.
 3. Click **Connect Twitch**.
