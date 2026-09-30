@@ -1,6 +1,8 @@
 # Changelog
 
 ## v0.6.0
+- ✨ Redesigned settings page: everything on one screen, with tabs, a live status card and recent unlocks
+- 🎮 **Sign in with Steam** instead of typing your Steam ID, plus a guided API key step that checks your key instantly
 - 💬 Chat commands: `!achievements`, `!last`, `!next`, `!rarest` and `!progress`
   - Each can be switched on or off, renamed and given your own reply
   - Replies come from **your own bot account** (or your channel account if you prefer)

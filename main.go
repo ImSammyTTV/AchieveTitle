@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html"
 	"io"
 	"io/fs"
 	"log"
@@ -109,7 +110,7 @@ func startApp(port int, restarted bool) (*app, bool) {
 
 	a := &app{store: store, worker: newWorker(store), updater: newUpdater(), port: port}
 	a.ctx, a.stop = signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	a.srv = &server{store: store, worker: a.worker, updater: a.updater, base: fmt.Sprintf("http://localhost:%d", port), state: randHex(), botState: randHex(), quit: a.stop}
+	a.srv = &server{store: store, worker: a.worker, updater: a.updater, base: fmt.Sprintf("http://localhost:%d", port), state: randHex(), botState: randHex(), steamNonce: randHex(), quit: a.stop}
 	a.chat = newChat(store, a.worker)
 	a.srv.chat = a.chat
 	a.worker.onUnlock = a.chat.Announce
@@ -149,13 +150,14 @@ func (a *app) wait() {
 }
 
 type server struct {
-	store    *Store
-	worker   *Worker
-	base     string
-	state    string // OAuth CSRF state for the channel login
-	botState string // and for the chat bot login
-	chat     *Chat
-	quit     func()
+	store      *Store
+	worker     *Worker
+	base       string
+	state      string // OAuth CSRF state for the channel login
+	botState   string // and for the chat bot login
+	steamNonce string // ties a Steam sign-in response to this app run
+	chat       *Chat
+	quit       func()
 
 	updater    *Updater
 	restarting atomic.Bool
@@ -202,6 +204,11 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/twitch/login", s.twitchLogin)
 	mux.HandleFunc("POST /api/twitch/token", s.sameOrigin(s.twitchToken))
 	mux.HandleFunc("POST /api/twitch/logout", s.sameOrigin(s.twitchLogout))
+	mux.HandleFunc("GET /api/steam/login", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, steamLoginURL(s.base, s.steamReturnTo()), http.StatusFound)
+	})
+	mux.HandleFunc("GET /auth/steam", s.steamCallback)
+	mux.HandleFunc("POST /api/steam/check", s.sameOrigin(s.steamCheck))
 	mux.HandleFunc("GET /api/bot/login", s.botLogin)
 	mux.HandleFunc("POST /api/bot/logout", s.sameOrigin(s.botLogout))
 	return mux
@@ -355,6 +362,71 @@ func (s *server) botLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, twitchAuthURL(id, s.base+"/auth/callback", s.botState, botScope), http.StatusFound)
+}
+
+func (s *server) steamReturnTo() string { return s.base + "/auth/steam?n=" + s.steamNonce }
+
+// steamCallback is where "Sign in with Steam" comes back to.
+func (s *server) steamCallback(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	id := ""
+	err := fmt.Errorf("Steam sign-in expired, please try again")
+	if q.Get("n") == s.steamNonce {
+		id, err = s.worker.steam.VerifySteamLogin(r.Context(), q, s.steamReturnTo())
+	}
+	if err != nil {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprintf(w, `<!doctype html><meta charset="utf-8"><body style="background:#0b0a10;color:#f1eff7;font:16px system-ui;display:grid;place-items:center;height:100vh;margin:0"><div style="text-align:center"><p>%s</p><p><a style="color:#bf94ff" href="/">Back to AchieveTitle</a></p></div>`, html.EscapeString(err.Error()))
+		return
+	}
+	s.store.Update(func(c *Config) { c.SteamID = id })
+	s.worker.Kick()
+	http.Redirect(w, r, "/#steam-linked", http.StatusFound)
+}
+
+// steamCheck tells the settings page whether the Steam key works and which account is linked.
+func (s *server) steamCheck(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Key string `json:"key"`
+		ID  string `json:"steam_id"`
+	}
+	json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&in)
+	cfg := s.store.Get()
+	key, id := strings.TrimSpace(in.Key), strings.TrimSpace(in.ID)
+	if key == "" {
+		key = cfg.SteamAPIKey
+	}
+	if id == "" {
+		id = cfg.SteamID
+	}
+	type result struct {
+		KeyOK   bool          `json:"key_ok"`
+		Profile *SteamProfile `json:"profile,omitempty"`
+		Error   string        `json:"error,omitempty"`
+	}
+	if key == "" {
+		writeJSON(w, result{Error: "Add your Steam Web API key"})
+		return
+	}
+	lookup := id
+	if lookup == "" {
+		lookup = "76561197960287930" // a known public account, just to test the key
+	} else if resolved, err := s.worker.steam.ResolveID(r.Context(), key, id); err == nil {
+		lookup = resolved
+	} else {
+		writeJSON(w, result{KeyOK: !strings.Contains(err.Error(), "API key"), Error: err.Error()})
+		return
+	}
+	p, err := s.worker.steam.Profile(r.Context(), key, lookup)
+	if err != nil {
+		writeJSON(w, result{Error: err.Error()})
+		return
+	}
+	res := result{KeyOK: true}
+	if id != "" {
+		res.Profile = &p
+	}
+	writeJSON(w, res)
 }
 
 func (s *server) botLogout(w http.ResponseWriter, r *http.Request) {

@@ -115,7 +115,8 @@ No accounts, no servers, no tracking. Everything runs on your own computer.
 
 2. **Unzip and run AchieveTitle.** The settings page opens in your browser and a 🏆 appears in your tray / menu bar.
 3. Click **Connect Twitch**.
-4. Paste your **Steam Web API key** ([get one here](https://steamcommunity.com/dev/apikey), use `localhost` as the domain) and your **Steam profile link**.
+4. Click **Sign in with Steam**, then **Get my key**: type `localhost` as the domain, click *Register* and paste the key back in.
+   AchieveTitle checks it straight away and shows your Steam name when it works.
 5. Set your Steam **profile** and **Game details** to *Public*: Steam → Profile → Edit Profile → Privacy Settings.
 6. Tick **Update my Twitch title automatically** and click **Save**. Done!
 
@@ -318,6 +319,9 @@ AUR and Flatpak packaging files are in [`packaging/`](packaging).
 
 ## 🔏 Code signing policy
 
+<details>
+<summary>How Windows downloads are signed</summary>
+
 Windows releases will be signed once the project's application to SignPath Foundation is approved.
 When they are:
 
@@ -325,6 +329,7 @@ When they are:
 - Only builds made by this repository's [GitHub Actions release workflow](.github/workflows/release.yml) from its public source code are signed.
 - **Committers and reviewers:** [ImSammyTTV](https://github.com/ImSammyTTV)
 - **Approver:** [ImSammyTTV](https://github.com/ImSammyTTV). Every signing request is approved manually.
+</details>
 
 ## 🔒 Privacy
 

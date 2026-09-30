@@ -64,6 +64,12 @@
   .switch-row b { font-size:13.5px } .switch-row span { display:block; color:var(--muted); font-size:12px }
   .status .actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:auto }
   .status .actions button { padding:9px 8px; white-space:nowrap }
+  .step { display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; margin:4px 0 8px }
+  .num { width:20px; height:20px; border-radius:50%; background:var(--accent); display:grid; place-items:center; font-size:11.5px; flex:none }
+  .acct { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; background:var(--field); border:1px solid var(--line2) }
+  .acct img { width:36px; height:36px; border-radius:8px }
+  .acct b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  .btn.steam-btn { background:linear-gradient(90deg,#1b2838,#2a475e); border:1px solid #66c0f4; color:#fff }
   details summary { cursor:pointer; color:var(--accent2); font-size:12.5px; font-weight:600 }
   .inline { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap } .inline label { margin:0; white-space:nowrap } .inline input[type=number] { width:90px } .inline input { width:90px }
   .status .msg { font-size:12.5px }
@@ -269,11 +275,18 @@
             </div>
             <div class="box">
               <h3>🎮 Steam</h3>
-              <label>Steam Web API key <span class="hint">· <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener">get one here</a> (use <code>localhost</code> as the domain)</span></label>
-              <input type="password" id="steam_api_key" autocomplete="off">
-              <label>Steam ID <span class="hint">· SteamID64, custom URL name or profile link</span></label>
-              <input type="text" id="steam_id">
-              <p class="hint">Set your Steam profile and <b>Game details</b> to Public (Steam → Profile → Edit Profile → Privacy Settings).</p>
+              <div class="step"><span class="num">1</span>Your Steam account</div>
+              <div id="steamAccount"></div>
+              <details id="steamManual" style="margin-top:8px"><summary>or type your Steam profile link or name</summary>
+                <input type="text" id="steam_id" placeholder="steamcommunity.com/id/yourname" style="margin-top:6px">
+              </details>
+              <div class="step" style="margin-top:14px"><span class="num">2</span>Your Steam Web API key</div>
+              <div class="row" style="flex-wrap:nowrap; align-items:flex-start">
+                <a class="btn ghost" style="white-space:nowrap" href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener">Get my key ↗</a>
+                <span class="hint">On that page type <code>localhost</code> as the domain, tick the box, click <b>Register</b> and copy the key.</span>
+              </div>
+              <input type="password" id="steam_api_key" autocomplete="off" placeholder="Paste your key here" style="margin-top:8px">
+              <div class="hint" id="steamKeyStatus" style="margin-top:6px"></div>
             </div>
           </div>
         </div>
@@ -416,7 +429,7 @@ const $ = id => document.getElementById(id);
 const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fields = ['steam_id','custom_title','template','fallback_template','interval_seconds','twitch_client_id'];
 const checks = ['enabled','restore_on_exit','set_category','manage_tags','check_updates'];
-let currentTags = [], manualCat = null, lastFocus = 'template', chatCfg = {}, hasSteam = false;
+let currentTags = [], manualCat = null, lastFocus = 'template', chatCfg = {}, keySaved = false;
 
 function post(url, body) {
   return fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : undefined})
@@ -446,8 +459,9 @@ async function load() {
   manualCat = c.manual_category;
   document.querySelector(`[name=category_mode][value=${c.category_mode === 'manual' ? 'manual' : 'auto'}]`).checked = true;
   showCategory(); showTags();
-  hasSteam = c.has_steam_key && c.steam_id;
-  $('steam_api_key').placeholder = c.has_steam_key ? '•••••••• saved (leave blank to keep)' : '';
+  keySaved = c.has_steam_key;
+  $('steam_api_key').placeholder = c.has_steam_key ? '•••••••• saved (paste a new one to replace it)' : 'Paste your key here';
+  steamCheck();
   $('redir').textContent = c.redirect_uri;
   $('ver').textContent = c.version;
   $('clientIdBox').style.display = c.has_builtin_client_id && !c.twitch_client_id ? 'none' : '';
@@ -458,7 +472,6 @@ async function load() {
        <button class="ghost" onclick="post('/api/twitch/logout').then(load)">Disconnect</button></div>`
     : `<a class="btn primary" href="/api/twitch/login" onclick="return saveFirst(event)">Connect Twitch</a>`;
   setPill('pillTwitch', c.twitch_login ? 'on' : 'bad', c.twitch_login ? 'Twitch · ' + c.twitch_login : 'Twitch not connected');
-  setPill('pillSteam', hasSteam ? 'on' : 'bad', hasSteam ? 'Steam' : 'Steam not set up');
   renderChat(c);
   $('vars').innerHTML = c.vars.map(v => `<code data-v="${v}">{${v}}</code>`).join('');
   document.querySelectorAll('[data-v]').forEach(el => el.onclick = () => { const i = $(lastFocus); i.value += '{' + el.dataset.v + '}'; i.focus(); });
@@ -622,6 +635,28 @@ function showTags() {
 $('tags').addEventListener('input', showTags);
 $('manage_tags').addEventListener('change', showTags);
 $('copyTags').onclick = e => { e.preventDefault(); $('tags').value = currentTags.join(', '); showTags(); };
+
+// Steam: sign-in button, linked account card and a live check of the API key
+let steamTimer;
+async function steamCheck() {
+  const key = $('steam_api_key').value.trim(), id = $('steam_id').value.trim();
+  const signIn = `<a class="btn steam-btn" href="/api/steam/login" onclick="return steamSignIn(event)">🎮 Sign in with Steam</a>
+    <p class="hint">Steam only tells AchieveTitle which account is yours. Your password stays with Steam.</p>`;
+  let r = {};
+  try { r = await (await fetch('/api/steam/check', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key, steam_id: id})})).json(); } catch (e) {}
+  const p = r.profile;
+  $('steamAccount').innerHTML = p
+    ? `<div class="acct"><img src="${esc(p.avatar)}" alt=""><b>${esc(p.name)}</b>
+         <a class="btn ghost" href="/api/steam/login" onclick="return steamSignIn(event)">Change</a></div>
+       ${p.public ? '' : '<p class="hint warn">⚠ Your Steam profile is private. Set it and <b>Game details</b> to Public in Steam → Profile → Edit Profile → Privacy Settings.</p>'}`
+    : id ? `<p class="hint">Account set to <b>${esc(id)}</b>. Add your key below to check it.</p>` + signIn : signIn;
+  $('steamKeyStatus').innerHTML = r.key_ok ? '<span class="ok">✔ Key works</span>'
+    : (key || keySaved) && r.error ? `<span class="err">✖ ${esc(r.error)}</span>` : '';
+  setPill('pillSteam', r.key_ok && (p || id) ? 'on' : 'bad', r.key_ok && p ? 'Steam · ' + p.name : 'Steam not set up');
+}
+['steam_api_key','steam_id'].forEach(f => $(f).addEventListener('input', () => { clearTimeout(steamTimer); steamTimer = setTimeout(steamCheck, 600); }));
+async function steamSignIn(e) { e.preventDefault(); await save(); location.href = '/api/steam/login'; }
+if (location.hash === '#steam-linked') { showTab('connect'); history.replaceState(null, '', '/'); }
 
 function copy(id, btn) {
   navigator.clipboard?.writeText($(id).textContent).then(() => { btn.textContent = 'Copied ✔'; setTimeout(() => btn.textContent = 'Copy', 1500); });
