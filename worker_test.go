@@ -19,6 +19,10 @@ func fakeAPIs(t *testing.T, channel *Channel, patches *[]map[string]any) *httpte
 			w.Write([]byte(`{"playerstats":{"success":true,"gameName":"Brotato","achievements":[
 				{"apiname":"a","achieved":1,"unlocktime":10,"name":"Hoarder"},
 				{"apiname":"b","achieved":0,"unlocktime":0,"name":"Speedrun"}]}}`))
+		case strings.HasSuffix(r.URL.Path, "/GetSchemaForGame/v2/"):
+			w.Write([]byte(`{"game":{"availableGameStats":{"achievements":[
+				{"name":"a","icon":"https://cdn.example/a.jpg","icongray":"https://cdn.example/a_gray.jpg"},
+				{"name":"b","icon":"https://cdn.example/b.jpg","icongray":"https://cdn.example/b_gray.jpg"}]}}}`))
 		case strings.HasSuffix(r.URL.Path, "/GetGlobalAchievementPercentagesForApp/v2/"):
 			w.Write([]byte(`{"achievementpercentages":{"achievements":[{"name":"a","percent":"12.5"},{"name":"b","percent":0.4}]}}`))
 		case r.URL.Path == "/games":
@@ -117,5 +121,39 @@ func TestWorkerManualCategory(t *testing.T) {
 	st := w.Status()
 	if st.Category != "Minecraft" || st.CategoryArt != "https://static-cdn.jtvnw.net/ttv-boxart/27471_IGDB-144x192.jpg" {
 		t.Fatalf("status: category %q art %q", st.Category, st.CategoryArt)
+	}
+}
+
+func TestChasing(t *testing.T) {
+	channel := &Channel{Title: "t", GameID: "2222"}
+	var patches []map[string]any
+	srv := fakeAPIs(t, channel, &patches)
+	defer srv.Close()
+	steamAPI, twitchAPI = srv.URL, srv.URL
+
+	cfg := defaultConfig()
+	cfg.SteamAPIKey, cfg.SteamID, cfg.Enabled = "k", "76561198035066303", true
+	cfg.TwitchToken, cfg.TwitchUserID = "tok", "1"
+	cfg.Template = "{game} 🎯 {chasing} ({chasing_rarity})"
+	cfg.Chasing = map[string]string{"1942280": "b"} // "Speedrun", still locked in the fake data
+	store := &Store{path: t.TempDir() + "/c.json", cfg: cfg}
+	w := newWorker(store)
+
+	w.tick(context.Background())
+	if st := w.Status(); st.Chasing == nil || st.Chasing.Name != "Speedrun" || st.Title != "Brotato 🎯 Speedrun (0.4%)" {
+		t.Fatalf("chasing not shown: %+v title %q", st.Chasing, st.Title)
+	}
+	if st := w.Status(); st.Chasing.Icon != "https://cdn.example/b.jpg" || st.Latest == nil || st.Latest.Icon != "https://cdn.example/a.jpg" {
+		t.Fatalf("achievement art missing: chasing %q latest %+v", st.Chasing.Icon, st.Latest)
+	}
+	if _, list := w.Locked(); len(list) != 1 || list[0].APIName != "b" {
+		t.Fatalf("locked list: %+v", list)
+	}
+
+	// An achievement that's no longer locked (or doesn't exist) stops being chased.
+	store.Update(func(c *Config) { c.Chasing["1942280"] = "a" }) // Hoarder is already unlocked
+	w.tick(context.Background())
+	if store.Get().Chasing["1942280"] != "" || w.Status().Chasing != nil {
+		t.Fatalf("unlocked achievement still chased: %v", store.Get().Chasing)
 	}
 }

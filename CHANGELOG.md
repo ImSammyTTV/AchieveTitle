@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.6.9
+- 🎯 **Chasing:** pick the achievement you're going for. It shows on your overlay, in your title (`{chasing}`) and with the new `!chasing` chat command, and clears itself when you unlock it
+- 🖼️ Real **achievement art** from Steam in the unlock popup, recent unlocks, the chasing picker and the OBS panel
+- README brought up to date, with new screenshots and proper Windows, Apple and Linux logos
+
 ## v0.6.8
 - 🎉 Unlock celebrations on the OBS overlay: **Confetti**, **Glow** or **Simple**, with a gold shine and a progress-bar pulse
 - 🔔 Unlock sounds: built-in **Chime** or **Fanfare**, or **your own** MP3/WAV/OGG, with a volume slider and preview

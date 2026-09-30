@@ -219,6 +219,10 @@ func (s *server) routes() http.Handler {
 		s.overlayTest.Add(1)
 		w.WriteHeader(204)
 	}))
+	mux.HandleFunc("GET /api/achievements", func(w http.ResponseWriter, r *http.Request) {
+		appID, list := s.worker.Locked()
+		writeJSON(w, map[string]any{"app_id": appID, "locked": list, "chasing": s.store.Get().Chasing[appID]})
+	})
 	mux.HandleFunc("GET /api/obs", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, s.obsStatus()) })
 	mux.HandleFunc("POST /api/obs/setup", s.sameOrigin(func(w http.ResponseWriter, r *http.Request) {
 		if err := s.setupOBS(); err != nil {
@@ -375,6 +379,7 @@ func (s *server) quickSettings(w http.ResponseWriter, r *http.Request) {
 		Template    *string        `json:"template"`
 		Bar         *BarStyle      `json:"bar"`
 		Overlay     *OverlayConfig `json:"overlay"`
+		Chasing     *string        `json:"chasing"` // API name of an achievement in the current game; "" stops chasing
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&in); err != nil {
 		http.Error(w, err.Error(), 400)
@@ -401,6 +406,18 @@ func (s *server) quickSettings(w http.ResponseWriter, r *http.Request) {
 		}
 		if in.Bar != nil {
 			c.Bar = in.Bar.clean()
+		}
+		if in.Chasing != nil {
+			if appID, _ := s.worker.Locked(); appID != "" {
+				if c.Chasing == nil {
+					c.Chasing = map[string]string{}
+				}
+				if *in.Chasing == "" {
+					delete(c.Chasing, appID)
+				} else {
+					c.Chasing[appID] = *in.Chasing
+				}
+			}
 		}
 		if in.Overlay != nil {
 			ov := *in.Overlay

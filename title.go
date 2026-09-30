@@ -17,10 +17,10 @@ func titleLen(s string) int { return len(utf16.Encode([]rune(s))) }
 var placeholderRe = regexp.MustCompile(`\{(\w+)\}`)
 
 // TemplateVars documents the placeholders shown in the settings page.
-var TemplateVars = []string{"custom", "game", "unlocked", "total", "percent", "remaining", "latest", "latest_rarity", "next", "next_rarity", "rarest", "rarest_rarity", "bar"}
+var TemplateVars = []string{"custom", "game", "unlocked", "total", "percent", "remaining", "latest", "latest_rarity", "next", "next_rarity", "rarest", "rarest_rarity", "bar", "chasing", "chasing_rarity"}
 
 // ChatVars are the extra placeholders only chat replies can use.
-var ChatVars = []string{"channel", "user", "recent"}
+var ChatVars = []string{"channel", "user", "recent", "chasing_desc"}
 
 func buildVars(cfg Config, game string, p *Progress) map[string]string {
 	v := map[string]string{"custom": cfg.CustomTitle, "game": game}
@@ -57,7 +57,23 @@ func buildVars(cfg Config, game string, p *Progress) map[string]string {
 		}
 	}
 	v["recent"] = strings.Join(recent, ", ")
+	if a := chasingIn(cfg, p); a != nil {
+		v["chasing"], v["chasing_rarity"], v["chasing_desc"] = a.Name, rarity(a.Percent), a.Desc
+	}
 	return v
+}
+
+// chasingIn returns the still-locked achievement the streamer picked for this game.
+func chasingIn(cfg Config, p *Progress) *Achievement {
+	if p == nil || cfg.Chasing[p.AppID] == "" {
+		return nil
+	}
+	for i := range p.Achievements {
+		if a := &p.Achievements[i]; a.APIName == cfg.Chasing[p.AppID] && !a.Achieved {
+			return a
+		}
+	}
+	return nil
 }
 
 // BarStyle is how {bar} is drawn. Twitch titles are plain text, so colour

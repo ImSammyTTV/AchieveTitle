@@ -43,8 +43,10 @@
   .bars button { background:var(--field); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-size:11px; letter-spacing:-1px; cursor:pointer; color:var(--text) }
   .bars button.sel { border-color:var(--accent); background:rgba(145,71,255,.2) }
 
+  select { width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--line); background:var(--field); color:var(--text); font:inherit }
   .recent { list-style:none; margin:0; padding:0; display:grid; gap:4px }
   .recent li { display:flex; gap:6px; align-items:center; font-size:12.5px; min-width:0 }
+  .recent img.ach { width:20px; height:20px; border-radius:4px; flex:none }
   .recent li b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600 }
   .recent li span { color:var(--muted); font-size:11.5px; white-space:nowrap } .rare { color:var(--gold) !important; font-weight:700 }
 
@@ -87,6 +89,12 @@
     <div class="field"><label for="custom_title">Custom text</label><input type="text" id="custom_title" placeholder="Chill stream"></div>
     <div class="field"><label for="template">Template</label><input type="text" id="template"></div>
     <div class="field"><label>Bar style</label><div class="bars" id="bars"></div></div>
+  </div>
+
+  <!-- Chasing -->
+  <div class="sec" id="chaseSec" hidden>
+    <div class="label">🎯 Chasing</div>
+    <select id="chase"></select>
   </div>
 
   <!-- Recent unlocks -->
@@ -137,6 +145,24 @@ function showBars() {
   });
 }
 
+// Chasing picker: locked achievements of the current game, rarest first.
+let chaseKey = '';
+async function loadChase() {
+  try {
+    const r = await (await fetch('/api/achievements')).json();
+    const list = r.locked || [];
+    $('chaseSec').hidden = !r.app_id;
+    const key = r.app_id + '|' + (r.chasing || '') + '|' + list.length;
+    if (key === chaseKey || document.activeElement === $('chase')) return;
+    chaseKey = key;
+    $('chase').innerHTML = '<option value="">Nothing in particular</option>' + list.map(a => {
+      const p = a.global_percent, pct = p ? ` (${p < 10 ? p.toFixed(1) : Math.round(p)}%)` : '';
+      return `<option value="${esc(a.api_name)}" ${a.api_name === r.chasing ? 'selected' : ''}>${esc(a.name)}${pct}</option>`;
+    }).join('');
+  } catch (e) {}
+}
+$('chase').addEventListener('change', () => { chaseKey = ''; quick({chasing: $('chase').value}); });
+
 async function loadSettings() {
   try {
     const c = await (await fetch('/api/config')).json();
@@ -169,7 +195,7 @@ async function poll() {
   $('recent').innerHTML = recent.map(a => {
     const p = a.global_percent;
     const pct = p ? (p < 10 ? p.toFixed(1) : Math.round(p)) + '%' : '';
-    return `<li>🏆 <b title="${esc(a.name)}">${esc(a.name)}</b><span class="${p && p < 5 ? 'rare' : ''}">${pct}</span></li>`;
+    return `<li>${a.icon ? `<img class="ach" src="${esc(a.icon)}" alt="">` : '🏆'} <b title="${esc(a.name)}">${esc(a.name)}</b><span class="${p && p < 5 ? 'rare' : ''}">${pct}</span></li>`;
   }).join('');
 }
 
@@ -179,7 +205,8 @@ async function testPopup() {
 }
 async function upd() { try { $('upd').hidden = !(await (await fetch('/api/update')).json()).available; } catch (e) {} }
 
-loadSettings(); poll(); upd();
+loadSettings(); loadChase(); poll(); upd();
+setInterval(loadChase, 15000);
 setInterval(poll, 5000); setInterval(loadSettings, 15000); setInterval(upd, 10 * 60 * 1000);
 </script>
 </body>

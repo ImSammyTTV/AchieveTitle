@@ -31,6 +31,9 @@ type Config struct {
 	Bar     BarStyle      `json:"bar"`     // how {bar} looks
 	Overlay OverlayConfig `json:"overlay"` // unlock animation and sound
 
+	// Chasing is the achievement the streamer is going for, per Steam app ID.
+	Chasing map[string]string `json:"chasing,omitempty"`
+
 	// Chat commands are answered by a separate bot account the streamer connects.
 	Chat         ChatConfig `json:"chat"`
 	TwitchScopes []string   `json:"twitch_scopes,omitempty"` // granted to the channel login
@@ -73,6 +76,7 @@ var defaultChatCommands = []ChatCommand{
 	{ID: "next", Enabled: true, Trigger: "!next", Reply: "Next hunt: {next} (only {next_rarity} of players have it)"},
 	{ID: "rarest", Enabled: true, Trigger: "!rarest", Reply: "Rarest unlock so far: {rarest} (only {rarest_rarity} of players have it)"},
 	{ID: "progress", Enabled: true, Trigger: "!progress", Reply: "{game}: {bar} {percent} ({unlocked}/{total})"},
+	{ID: "chasing", Enabled: true, Trigger: "!chasing", Reply: "🎯 Currently chasing {chasing} (only {chasing_rarity} of players have it). {chasing_desc}"},
 }
 
 func defaultChat() ChatConfig {

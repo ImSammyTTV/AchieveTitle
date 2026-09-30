@@ -21,6 +21,7 @@ type Steam struct {
 	// Cached per app: global unlock percentages rarely change.
 	rarity   map[string]map[string]float64
 	rarityAt map[string]time.Time
+	icons    map[string]map[string][2]string // app -> achievement -> [icon, grey icon]
 }
 
 func newSteam() *Steam {
@@ -28,6 +29,7 @@ func newSteam() *Steam {
 		http:     &http.Client{Timeout: 15 * time.Second},
 		rarity:   map[string]map[string]float64{},
 		rarityAt: map[string]time.Time{},
+		icons:    map[string]map[string][2]string{},
 	}
 }
 
@@ -99,6 +101,8 @@ type Achievement struct {
 	Achieved   bool    `json:"achieved"`
 	UnlockTime int64   `json:"unlock_time"`
 	Percent    float64 `json:"global_percent"`
+	Icon       string  `json:"icon,omitempty"`      // Steam's achievement art
+	IconGray   string  `json:"icon_gray,omitempty"` // the greyed-out "locked" version
 }
 
 type Progress struct {
@@ -137,11 +141,13 @@ func (s *Steam) Achievements(ctx context.Context, key, steamID, appID string) (*
 		return nil, nil
 	}
 	rarity := s.globalRarity(ctx, appID)
+	icons := s.achievementIcons(ctx, key, appID)
 	p := &Progress{AppID: appID, Game: r.PlayerStats.GameName}
 	for _, a := range r.PlayerStats.Achievements {
 		p.Achievements = append(p.Achievements, Achievement{
 			APIName: a.APIName, Name: a.Name, Desc: a.Desc,
 			Achieved: a.Achieved == 1, UnlockTime: a.UnlockTime, Percent: rarity[a.APIName],
+			Icon: icons[a.APIName][0], IconGray: icons[a.APIName][1],
 		})
 	}
 	p.Total = len(p.Achievements)
@@ -165,6 +171,34 @@ func (s *Steam) Achievements(ctx context.Context, key, steamID, appID string) (*
 		}
 	}
 	return p, nil
+}
+
+// achievementIcons fetches each achievement's art from the game's schema.
+// Icons never change, so they're fetched once per game while the app runs.
+func (s *Steam) achievementIcons(ctx context.Context, key, appID string) map[string][2]string {
+	if m, ok := s.icons[appID]; ok {
+		return m
+	}
+	var r struct {
+		Game struct {
+			Stats struct {
+				Achievements []struct {
+					Name     string `json:"name"`
+					Icon     string `json:"icon"`
+					IconGray string `json:"icongray"`
+				} `json:"achievements"`
+			} `json:"availableGameStats"`
+		} `json:"game"`
+	}
+	if err := s.get(ctx, "/ISteamUserStats/GetSchemaForGame/v2/", url.Values{"key": {key}, "appid": {appID}}, &r); err != nil {
+		return nil // art is optional; try again next check
+	}
+	m := map[string][2]string{}
+	for _, a := range r.Game.Stats.Achievements {
+		m[a.Name] = [2]string{a.Icon, a.IconGray}
+	}
+	s.icons[appID] = m
+	return m
 }
 
 func (s *Steam) globalRarity(ctx context.Context, appID string) map[string]float64 {

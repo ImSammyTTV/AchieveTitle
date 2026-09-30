@@ -19,8 +19,8 @@
   <a href="#-quick-start"><b>🚀 Quick start</b></a> ·
   <a href="#-chat-commands"><b>💬 Chat</b></a> ·
   <a href="#-obs"><b>🎥 OBS</b></a> ·
-  <a href="#-mac"><b>🍎 Mac</b></a> ·
-  <a href="#-linux"><b>🐧 Linux</b></a> ·
+  <a href="#-mac"><img src="assets/os-apple.svg" width="16" alt=""> <b>Mac</b></a> ·
+  <a href="#-linux"><img src="assets/os-linux.svg" width="16" alt=""> <b>Linux</b></a> ·
   <a href="#-help"><b>❓ Help</b></a>
 </p>
 
@@ -49,23 +49,24 @@ search with box art. Great for non-Steam games.
 <td valign="top">
 
 ### ✏️ Your title, your way
-Templates with placeholders for progress, percentage, latest unlock, rarity and your rarest missing
-achievement. Titles are shortened automatically to fit Twitch's 140-character limit.
+Templates with placeholders for progress, rarity and more, plus a progress bar in the style you like
+(🟩🟩⬛⬛ or ▰▰▱▱). Titles are shortened automatically to fit Twitch's 140-character limit.
 
 </td>
 <td valign="top">
 
 ### 🎥 Built for OBS
-A control panel dock inside OBS, an overlay with unlock popups, and an OBS script that updates your title
-only while you're live.
+One-click OBS setup, a control panel dock, and an overlay with **animated unlock celebrations**, sounds
+and the real **achievement art**.
 
 </td>
 </tr>
 <tr>
 <td valign="top">
 
-### ↩️ Puts things back
-Restores your original title, category and tags when you stop, even after a crash or restart.
+### 🎯 Chasing
+Pick the achievement you're going for. It shows on your overlay, in your title and with `!chasing`,
+and clears itself when you get it.
 
 </td>
 <td valign="top">
@@ -80,8 +81,8 @@ unlock announcements in chat.
 <td valign="top">
 
 ### ⬆️ Updates itself
-Sits quietly in your system tray / menu bar and installs new versions with one click. Your settings
-are always kept.
+Sits quietly in your system tray / menu bar, checks for new versions and installs them with one click.
+Puts your original title back when you stop.
 
 </td>
 <td valign="top">
@@ -94,7 +95,7 @@ No accounts, no servers, no tracking. Everything runs on your own computer.
 </table>
 
 <p align="center">
-  <img src="assets/screenshot-app.png" alt="The AchieveTitle app: live status with box art, progress and recent unlocks next to tabbed settings" width="100%">
+  <img src="assets/screenshot-app-v3.png" alt="The AchieveTitle app: live status with box art, the achievement being chased and recent unlocks, next to tabbed settings" width="100%">
 </p>
 
 > [!NOTE]
@@ -109,16 +110,16 @@ No accounts, no servers, no tracking. Everything runs on your own computer.
 
    | System | Download |
    |---|---|
-   | 🪟 **Windows** | `AchieveTitle-…-windows-amd64.zip` |
-   | 🍎 **Mac** | use the [one-line installer](#-mac) (recommended) or `AchieveTitle-…-darwin-arm64.zip` (Apple Silicon) / `darwin-amd64.zip` (Intel) |
-   | 🐧 **Linux** | see [Linux](#-linux) below |
+   | <img src="assets/os-windows.svg" width="16" alt=""> **Windows** | `AchieveTitle-…-windows-amd64.zip` |
+   | <img src="assets/os-apple.svg" width="16" alt=""> **Mac** | use the [one-line installer](#-mac) (recommended) or `AchieveTitle-…-darwin-arm64.zip` (Apple Silicon) / `darwin-amd64.zip` (Intel) |
+   | <img src="assets/os-linux.svg" width="16" alt=""> **Linux** | see [Linux](#-linux) below |
 
 2. **Unzip and run AchieveTitle.** The settings page opens in your browser and a 🏆 appears in your tray / menu bar.
 3. Click **Connect Twitch**.
 4. Click **Sign in with Steam**, then **Get my key**: type `localhost` as the domain, click *Register* and paste the key back in.
    AchieveTitle checks it straight away and shows your Steam name when it works.
 5. Set your Steam **profile** and **Game details** to *Public*: Steam → Profile → Edit Profile → Privacy Settings.
-6. Tick **Update my Twitch title automatically** and click **Save**. Done!
+6. Switch on **Update my Twitch title automatically** in the status card. Done!
 
 > [!TIP]
 > **Windows** may say *"Windows protected your PC"*: click **More info → Run anyway**.
@@ -138,22 +139,42 @@ Build your title from any text plus these placeholders:
 | `{percent}` | Completion | `76%` |
 | `{latest}` · `{latest_rarity}` | Your latest unlock and how rare it is | `Dragon Slayer` · `4.2%` |
 | `{next}` · `{next_rarity}` | Rarest achievement you're still missing | `Speedrunner` · `0.8%` |
+| `{rarest}` · `{rarest_rarity}` | Rarest achievement you've unlocked | `Dragon Slayer` · `4.2%` |
+| `{chasing}` · `{chasing_rarity}` | The achievement you're [chasing](#-chasing) | `Speedrunner` · `0.8%` |
+| `{bar}` | A progress bar, in the style you pick | `🟩🟩🟩🟩🟩🟩⬛⬛` or `▰▰▰▰▰▰▰▱▱▱` |
 
 **Examples**
 
 ```text
 {custom} [{unlocked}/{total} Achievements] 🏆 {latest}   →  Chill stream [38/50 Achievements] 🏆 Dragon Slayer
 {game} 100% run: {percent} done, {remaining} to go         →  Elden Ring 100% run: 76% done, 12 to go
-Hunting {next} ({next_rarity} of players!)                 →  Hunting Speedrunner (0.8% of players!)
+{game} {bar} 🎯 {chasing}                                  →  Elden Ring 🟩🟩🟩🟩🟩🟩⬛⬛ 🎯 Speedrunner
 ```
 
 A **fallback template** is used when you're not in a Steam game or the game has no achievements.
+
+**Progress bar style:** in the *Title* tab, pick how `{bar}` looks: coloured emoji squares (🟪⬛, 🟩⬛, 🟨⬛, 🟦⬜, 🟥⬛),
+text styles (▰▱, █░, ●○, ★☆) or your own characters, 5 to 20 segments long. Twitch titles are plain text, so the colour
+comes from the emoji themselves.
+
+---
+
+## 🎯 Chasing
+
+Going for one achievement in particular? Click **Pick** next to *Chasing* in the status card (or use the OBS panel)
+and choose from your locked achievements, rarest first. It then shows:
+
+- on your **overlay**: *🎯 Chasing: Speedrunner · only 0.8% of players*
+- in your **title** with `{chasing}` and `{chasing_rarity}`
+- in **chat** with `!chasing`
+
+It's remembered for each game, and clears itself the moment you unlock it (with the usual celebration).
 
 ---
 
 ## 💬 Chat commands
 
-Let viewers check your progress in chat. Switch it on under **4. Chat commands** in the settings page.
+Let viewers check your progress in chat. Switch it on in the **Chat** tab (or from the OBS panel).
 
 | Command | Example reply |
 |---|---|
@@ -162,6 +183,7 @@ Let viewers check your progress in chat. Switch it on under **4. Chat commands**
 | `!next` | Next hunt: Speedrunner (only 0.8% of players have it) |
 | `!rarest` | Rarest unlock so far: Dragon Slayer (only 4.2% of players have it) |
 | `!progress` | Elden Ring: ▰▰▰▰▰▰▰▱▱▱ 76% (38/50) |
+| `!chasing` | 🎯 Currently chasing Speedrunner (only 0.8% of players have it). Win a run in under 10 minutes |
 
 - Turn each command **on or off**, **rename** it (e.g. `!ach`) and **write your own reply** with placeholders.
 - Optional **unlock announcements**: *"🎉 yourchannel just unlocked Dragon Slayer (only 4.2% of players have it)!"*
@@ -176,25 +198,40 @@ Let viewers check your progress in chat. Switch it on under **4. Chat commands**
 
 ## 🎥 OBS
 
-<img src="assets/screenshot-dock.png" alt="AchieveTitle control panel inside OBS" width="300" align="right">
+### One-click setup
+Close OBS, open AchieveTitle's **OBS** tab and click **Set up OBS for me**. It adds the **AchieveTitle script**
+(starts AchieveTitle with OBS and only updates your title while you're live) and the **control panel** under
+*View → Docks*. Your OBS settings are backed up first, as `.achievetitle-backup` files next to the originals.
 
-**One click:** close OBS, open AchieveTitle's **OBS** tab and click **Set up OBS for me**. It adds:
-- the **AchieveTitle script**, which starts AchieveTitle with OBS and only updates your title while you're live
-- the **control panel dock** (under *View → Docks*), with your game, progress, title and an on/off switch
+<img src="assets/screenshot-dock-v2.png" alt="AchieveTitle control panel inside OBS" width="280" align="right">
 
-Your OBS settings are backed up first (as `.achievetitle-backup` files next to the originals).
+### Control panel
+Change the things you touch mid-stream without leaving OBS: switch title updates, chat commands and category on
+or off, edit your custom text and template, pick a bar style, choose what you're chasing, see recent unlocks,
+and send a test popup. Changes apply instantly.
 
-<details>
-<summary>Setting it up by hand instead</summary>
+### Overlay
+<p>
+  <img src="assets/screenshot-overlay.png" alt="The overlay: game art, progress and the achievement being chased" width="420"><br>
+  <img src="assets/screenshot-popup.png" alt="The achievement unlocked popup with the achievement's art" width="420">
+</p>
 
-- **Dock:** *View → Docks → Custom Browser Docks*, name `AchieveTitle`, URL `http://localhost:7878/dock`.
-- **Script:** *Tools → Scripts → +* and choose `obs/achievetitle.lua` from the download, then pick the AchieveTitle app in its settings.
-</details>
+Shows your game, progress and what you're chasing, and celebrates every unlock with the **achievement's art**,
+an animation (**Confetti**, **Glow** or **Simple**) and a sound (**Chime**, **Fanfare**, **your own file** or none).
+The **OBS** tab has a live preview, a **Test popup** button and these steps:
 
-**Overlay:** add a *Browser Source* with URL `http://localhost:7878/overlay` (600 × 160) for a progress
-bar and an *"Achievement unlocked"* popup.
+1. In OBS, **Sources → + → Browser**, name it *AchieveTitle overlay*.
+2. URL `http://localhost:7878/overlay`, **Width 600**, **Height 160**.
+3. Tick **Control audio via OBS** so the unlock sound shows up in your audio mixer, then click **OK**.
 
 <br clear="right">
+
+<details>
+<summary>Setting up the script and control panel by hand instead</summary>
+
+- **Control panel:** *View → Docks → Custom Browser Docks*, name `AchieveTitle`, URL `http://localhost:7878/dock`.
+- **Script:** *Tools → Scripts → +* and choose `obs/achievetitle.lua` from the download, then pick the AchieveTitle app in its settings.
+</details>
 
 > [!WARNING]
 > OBS's own *Stream Information* panel also sets your title. If you press *Update* there, it overwrites
@@ -275,8 +312,23 @@ Twitch logins last about 60 days. Click **Connect Twitch** again in the settings
 <details>
 <summary><b>How do I update?</b></summary>
 
-AchieveTitle tells you when a new version is out: click **Update now** in the settings page. Linux package
-installs (.deb, .rpm, Arch) update through your package manager as usual.
+AchieveTitle checks once a day and tells you when a new version is out: click **Update now**. To check straight
+away, use **App → Check for updates** or the tray / menu bar icon. Linux package installs (.deb, .rpm, Arch) update
+through your package manager as usual.
+</details>
+
+<details>
+<summary><b>My browser says the settings page is "not secure"</b></summary>
+
+That's Chrome's standard message for any page without HTTPS, and it doesn't apply here: the settings page only
+runs on your own computer (`localhost`), so nothing between your browser and AchieveTitle travels over the internet.
+AchieveTitle's connections to Twitch, Steam and GitHub all use HTTPS.
+</details>
+
+<details>
+<summary><b>The overlay in OBS still looks old after an update</b></summary>
+
+OBS keeps a copy of web pages. Right-click the Browser Source → **Properties** → **Refresh cache of current page**.
 </details>
 
 <details>
@@ -288,7 +340,8 @@ installs (.deb, .rpm, Arch) update through your package manager as usual.
 | Mac | `~/Library/Application Support/AchieveTitle` |
 | Linux | `~/.config/AchieveTitle` |
 
-`config.json` holds your settings and `achievetitle.log` the log. Updating or reinstalling never removes them.
+`config.json` holds your settings, `achievetitle.log` the log and `overlay-sound.*` your own unlock sound, if you added one.
+Updating or reinstalling never removes them.
 </details>
 
 Still stuck? [Open an issue](https://github.com/ImSammyTTV/AchieveTitle/issues) and include your `achievetitle.log`.
@@ -342,7 +395,7 @@ When they are:
 
 AchieveTitle has no servers of its own and collects no data. It only talks to:
 
-- **Steam** (`api.steampowered.com`), to read your current game and achievements
+- **Steam** (`api.steampowered.com`, `steamcommunity.com` and Steam's image servers), to sign in and read your current game, achievements and their art
 - **Twitch** (`id.twitch.tv`, `api.twitch.tv`, `eventsub.wss.twitch.tv`), to log in, update your stream info and, if you turn on chat commands, read and reply in your chat
 - **GitHub** (`api.github.com`, `github.com`), to check for and download new versions of AchieveTitle (can be switched off in settings)
 

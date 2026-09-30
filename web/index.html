@@ -92,11 +92,23 @@
   .steps .copy { margin-top:5px }
   .barbox { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start }
   .steps-row { display:grid; grid-template-columns:1fr 1.7fr 1fr 1fr; gap:14px; padding-left:18px }
+  .chase { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; background:linear-gradient(90deg, rgba(245,180,0,.12), rgba(145,71,255,.08)); border:1px solid rgba(245,180,0,.35) }
+  .chase-icon { font-size:22px; display:flex }
+  img.ach { width:28px; height:28px; border-radius:6px; flex:none; object-fit:cover; box-shadow:0 2px 6px rgba(0,0,0,.4) }
+  .chase-icon img.ach, .chase-item img.ach { width:40px; height:40px; border-radius:8px }
+  .ach-emoji { width:28px; text-align:center; flex:none } .chase b { font-size:14px } .chase button { padding:6px 10px }
+  .modal { position:fixed; inset:0; background:rgba(5,4,10,.7); display:grid; place-items:center; z-index:10; padding:20px }
+  .modal-box { width:min(620px, 100%); max-height:80vh; display:flex; flex-direction:column; gap:10px; padding:18px; border-radius:16px; background:var(--panel2); border:1px solid var(--line2) }
+  .chase-list { overflow:auto; display:grid; gap:6px }
+  .chase-item { display:flex; gap:10px; align-items:center; text-align:left; background:var(--field); border:1px solid var(--line); border-radius:10px; padding:8px 11px; font-weight:400 }
+  .chase-item:hover, .chase-item.sel { border-color:var(--gold); filter:none }
+  .chase-item b { display:block; font-size:13.5px } .chase-item small { display:block }
+  .chase-item .pct { margin-left:auto; white-space:nowrap; font-weight:700; color:var(--muted) } .chase-item .pct.rare { color:var(--gold2) }
   details summary { cursor:pointer; color:var(--accent2); font-size:12.5px; font-weight:600 }
   .inline { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap } .inline label { margin:0; white-space:nowrap } .inline input[type=number] { width:90px } .inline input { width:90px }
   .status .msg { font-size:12.5px }
   .recent { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:minmax(0,1fr); gap:6px }
-  .recent li { min-width:0; display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:10px; background:var(--field); border:1px solid var(--line); font-size:13px }
+  .recent li { min-width:0; display:flex; align-items:center; gap:10px; padding:5px 10px 5px 6px; border-radius:10px; background:var(--field); border:1px solid var(--line); font-size:13px }
   .recent li b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600 }
   .recent li span { color:var(--muted); font-size:12px; white-space:nowrap }
   .rare { color:var(--gold2) !important; font-weight:700 }
@@ -248,6 +260,13 @@
           <div class="meta" id="latest"></div>
         </div>
         <div class="bar" style="margin-top:8px"><i id="bar"></i></div>
+      </div>
+
+      <div class="chase" id="chaseRow" hidden>
+        <span class="chase-icon" id="chaseIcon">🎯</span>
+        <div style="flex:1; min-width:0"><div class="label" style="margin:0">Chasing</div><b id="chaseName"></b> <small id="chaseRare"></small></div>
+        <button class="ghost" id="chaseBtn" onclick="openChase()">Pick</button>
+        <button class="ghost" id="chaseClear" title="Stop chasing" onclick="setChase('')" hidden>✕</button>
       </div>
 
       <div>
@@ -508,6 +527,14 @@
   </div>
 </div>
 
+<div class="modal" id="chaseModal" hidden onclick="if (event.target === this) closeChase()">
+  <div class="modal-box">
+    <div class="row" style="justify-content:space-between"><h3 style="margin:0">🎯 Which achievement are you chasing?</h3><button class="ghost" onclick="closeChase()">Close</button></div>
+    <p class="hint">Your locked achievements for this game, rarest first. It shows on your overlay, in <code>{chasing}</code> and in <code>!chasing</code>, and clears itself once you unlock it.</p>
+    <input type="text" id="chaseSearch" placeholder="Search achievements…" autocomplete="off">
+    <div class="chase-list" id="chaseList"></div>
+  </div>
+</div>
 <script src="/sounds.js"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -607,6 +634,12 @@ async function poll() {
   $('meta').innerHTML = s.category ? `Twitch category: <b>${esc(s.category)}</b>${s.category_mode === 'manual' ? ' <small>(your pick)</small>' : ''}` : '';
   $('progress').innerHTML = s.total ? `${s.unlocked}<small> / ${s.total} achievements · ${Math.floor(100 * s.unlocked / s.total)}%</small>` : '<small>No achievements to track</small>';
   $('latest').innerHTML = s.latest ? `Latest: <b>${esc(s.latest.name)}</b>` : '';
+  $('chaseRow').hidden = !s.total;
+  const ch = s.chasing;
+  $('chaseName').textContent = ch ? ch.name : 'Nothing yet';
+  $('chaseIcon').innerHTML = achIcon(ch, '🎯');
+  $('chaseRare').textContent = ch && ch.global_percent ? (ch.global_percent < 10 ? ch.global_percent.toFixed(1) : Math.round(ch.global_percent)) + '% of players' : '';
+  $('chaseBtn').textContent = ch ? 'Change' : 'Pick'; $('chaseClear').hidden = !ch;
   $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
   if (s.total) { barProgress = [s.unlocked, s.total]; showBar(); }
   $('enabled').checked = s.running;
@@ -617,7 +650,7 @@ async function poll() {
   $('recent').innerHTML = recent.map(a => {
     const pct = a.global_percent ? (a.global_percent < 10 ? a.global_percent.toFixed(1) : Math.round(a.global_percent)) + '% of players' : '';
     const when = a.unlock_time ? new Date(a.unlock_time * 1000).toLocaleDateString(undefined, {day:'numeric', month:'short'}) : '';
-    return `<li>🏆 <b title="${esc(a.name)}">${esc(a.name)}</b><span class="${a.global_percent && a.global_percent < 5 ? 'rare' : ''}">${pct}</span><span>${when}</span></li>`;
+    return `<li>${achIcon(a)} <b title="${esc(a.name)}">${esc(a.name)}</b><span class="${a.global_percent && a.global_percent < 5 ? 'rare' : ''}">${pct}</span><span>${when}</span></li>`;
   }).join('');
   currentTags = s.tags || [];
   $('copyTags').hidden = !currentTags.length;
@@ -805,6 +838,39 @@ async function testOverlay(btn) {
   previewSound(); // the preview itself stays silent, so play the sound here
   btn.textContent = '🏆 Sent!'; setTimeout(() => btn.textContent = '🏆 Test popup', 2000);
 }
+
+// Steam's achievement art, with the old emoji as a fallback.
+const achIcon = (a, fallback = '🏆') => a && a.icon ? `<img class="ach" src="${esc(a.icon)}" alt="">` : `<span class="ach-emoji">${fallback}</span>`;
+
+// 🎯 Chasing: the achievement the streamer is going for right now
+let chaseAll = [], chaseCurrent = '';
+async function openChase() {
+  $('chaseModal').hidden = false; $('chaseSearch').value = ''; $('chaseList').innerHTML = '<small>Loading…</small>';
+  try {
+    const r = await (await fetch('/api/achievements')).json();
+    chaseAll = r.locked || []; chaseCurrent = r.chasing || '';
+    drawChase();
+    $('chaseSearch').focus();
+  } catch (e) { $('chaseList').innerHTML = '<span class="err">Couldn\'t load your achievements.</span>'; }
+}
+function closeChase() { $('chaseModal').hidden = true; }
+function drawChase() {
+  const q = $('chaseSearch').value.trim().toLowerCase();
+  const list = chaseAll.filter(a => !q || (a.name + ' ' + a.description).toLowerCase().includes(q));
+  $('chaseList').innerHTML = !chaseAll.length ? '<small>No locked achievements in this game. Nice!</small>'
+    : !list.length ? '<small>No achievements match.</small>' : '';
+  list.forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chase-item' + (a.api_name === chaseCurrent ? ' sel' : '');
+    const p = a.global_percent, pct = p ? (p < 10 ? p.toFixed(1) : Math.round(p)) + '%' : '';
+    b.innerHTML = `${achIcon(a, '🎯')}<span style="min-width:0"><b>${esc(a.name)}</b><small>${esc(a.description || '')}</small></span><span class="pct ${p && p < 5 ? 'rare' : ''}">${pct}</span>`;
+    b.onclick = () => { setChase(a.api_name); closeChase(); };
+    $('chaseList').appendChild(b);
+  });
+}
+$('chaseSearch').addEventListener('input', drawChase);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeChase(); });
+async function setChase(apiName) { await post('/api/quick', {chasing: apiName}).catch(() => {}); setTimeout(poll, 1200); }
 
 // Progress bar style for {bar}
 const BAR_PRESETS = [['▰','▱'],['🟪','⬛'],['🟩','⬛'],['🟨','⬛'],['🟦','⬜'],['🟥','⬛'],['█','░'],['●','○'],['★','☆'],['■','□']];

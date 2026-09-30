@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +33,7 @@ type Status struct {
 	Error        string        `json:"error"`
 	TwitchLogin  string        `json:"twitch_login"`
 	Chat         string        `json:"chat"`
+	Chasing      *Achievement  `json:"chasing"`      // the achievement being chased, if any
 	OverlayTest  int64         `json:"overlay_test"` // bumped by the "Test popup" button
 }
 
@@ -142,6 +144,11 @@ func (w *Worker) tick(ctx context.Context) {
 	}
 
 	w.trackUnlocks(appID, prog)
+	// Stop chasing an achievement once it's unlocked (the unlock itself is celebrated as usual).
+	if prog != nil && cfg.Chasing[appID] != "" && chasingIn(cfg, prog) == nil {
+		w.store.Update(func(c *Config) { delete(c.Chasing, appID) })
+		cfg = w.store.Get()
+	}
 
 	tmpl := cfg.FallbackTmpl
 	if prog != nil {
@@ -160,6 +167,7 @@ func (w *Worker) tick(ctx context.Context) {
 
 	w.mu.Lock()
 	w.game, w.prog = game, prog
+	w.status.Chasing = chasingIn(cfg, prog)
 	w.status.Game, w.status.AppID, w.status.Title = steamGame, appID, title
 	w.status.Unlocked, w.status.Total, w.status.Latest, w.status.Next, w.status.Recent = 0, 0, nil, nil, nil
 	if prog != nil {
@@ -313,4 +321,27 @@ func (w *Worker) ChatVars() map[string]string {
 	game, prog := w.game, w.prog
 	w.mu.RUnlock()
 	return buildVars(w.store.Get(), game, prog)
+}
+
+// Locked lists the current game's still-locked achievements, rarest first,
+// for the "Chasing" picker.
+func (w *Worker) Locked() (appID string, list []Achievement) {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	if w.prog == nil {
+		return "", nil
+	}
+	for _, a := range w.prog.Achievements {
+		if !a.Achieved {
+			list = append(list, a)
+		}
+	}
+	sort.SliceStable(list, func(i, j int) bool {
+		pi, pj := list[i].Percent, list[j].Percent
+		if pi == 0 || pj == 0 { // unknown rarity goes last
+			return pj == 0 && pi != 0
+		}
+		return pi < pj
+	})
+	return w.prog.AppID, list
 }
