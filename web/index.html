@@ -74,6 +74,13 @@
   .btn.steam-btn { background:linear-gradient(90deg,#1b2838,#2a475e); border:1px solid #66c0f4; color:#fff }
   .done-line { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; font-size:13px }
   .done-line a { margin-left:auto; font-size:12.5px }
+  .bars { display:flex; flex-wrap:wrap; gap:6px }
+  .bars button { background:var(--field); border:1px solid var(--line2); padding:6px 9px; font-size:13px; letter-spacing:-1px; font-weight:400 }
+  .bars button.sel { border-color:var(--accent); background:rgba(145,71,255,.18) }
+  .inline input.barchar { width:58px; text-align:center; font-size:16px }
+  .inline input#bar_length { width:70px }
+  .barpreview { display:flex; align-items:center; gap:10px; margin-top:10px; padding:9px 12px; border-radius:9px; background:var(--field); border:1px solid var(--line2); font-size:17px; letter-spacing:-.5px }
+  .barpreview small { margin-left:auto; letter-spacing:0; font-size:12px }
   details summary { cursor:pointer; color:var(--accent2); font-size:12.5px; font-weight:600 }
   .inline { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap } .inline label { margin:0; white-space:nowrap } .inline input[type=number] { width:90px } .inline input { width:90px }
   .status .msg { font-size:12.5px }
@@ -305,6 +312,18 @@
               <input type="text" id="template">
               <label>Fallback template <span class="hint">· no game, or no achievements</span></label>
               <input type="text" id="fallback_template">
+
+              <div class="box" style="margin-top:14px">
+                <h3>📊 Progress bar style <span class="hint" style="font-weight:400">· how <code>{bar}</code> looks</span></h3>
+                <div class="bars" id="barPresets"></div>
+                <div class="inline" style="margin-top:10px">
+                  <label for="bar_filled">Filled</label><input type="text" id="bar_filled" class="barchar" maxlength="12">
+                  <label for="bar_empty">Empty</label><input type="text" id="bar_empty" class="barchar" maxlength="12">
+                  <label for="bar_length">Length</label><input type="number" id="bar_length" min="5" max="20">
+                </div>
+                <div class="barpreview"><span id="barPreview"></span><small id="barChars"></small></div>
+                <p class="hint">Twitch titles are plain text, so colour comes from the characters: coloured emoji squares work well. Emoji count as 2 characters towards Twitch's limit.</p>
+              </div>
             </div>
             <div class="box">
               <h3>🧩 Placeholders</h3>
@@ -467,6 +486,8 @@ async function load() {
   fields.forEach(f => $(f).value = c[f] ?? '');
   checks.forEach(f => $(f).checked = !!c[f]);
   $('tags').value = (c.tags || []).join(', ');
+  const bar = c.bar || {filled:'▰', empty:'▱', length:10};
+  $('bar_filled').value = bar.filled; $('bar_empty').value = bar.empty; $('bar_length').value = bar.length; showBar();
   manualCat = c.manual_category;
   document.querySelector(`[name=category_mode][value=${c.category_mode === 'manual' ? 'manual' : 'auto'}]`).checked = true;
   showCategory(); showTags();
@@ -498,6 +519,7 @@ async function save() {
   body.interval_seconds = parseInt(body.interval_seconds) || 60;
   checks.forEach(f => body[f] = $(f).checked);
   body.tags = cleanTags($('tags').value);
+  body.bar = readBar();
   body.category_mode = document.querySelector('[name=category_mode]:checked').value;
   body.manual_category = manualCat;
   if (body.set_category && body.category_mode === 'manual' && !manualCat) {
@@ -530,6 +552,7 @@ async function poll() {
   $('progress').innerHTML = s.total ? `${s.unlocked}<small> / ${s.total} achievements · ${Math.floor(100 * s.unlocked / s.total)}%</small>` : '<small>No achievements to track</small>';
   $('latest').innerHTML = s.latest ? `Latest: <b>${esc(s.latest.name)}</b>` : '';
   $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
+  if (s.total) { barProgress = [s.unlocked, s.total]; showBar(); }
   $('enabled').checked = s.running;
   $('checked').textContent = s.last_check && !s.last_check.startsWith('0001') ? 'Last checked ' + new Date(s.last_check).toLocaleTimeString() : 'Not checked yet';
   $('status').innerHTML = s.error ? `<span class="err">⚠ ${esc(s.error)}</span>` : '';
@@ -683,6 +706,30 @@ async function testOverlay(btn) {
   await post('/api/overlay/test').catch(() => {});
   btn.textContent = '🏆 Sent!'; setTimeout(() => btn.textContent = '🏆 Test popup', 2000);
 }
+
+// Progress bar style for {bar}
+const BAR_PRESETS = [['▰','▱'],['🟪','⬛'],['🟩','⬛'],['🟨','⬛'],['🟦','⬜'],['🟥','⬛'],['█','░'],['●','○'],['★','☆'],['■','□']];
+let barProgress = [45, 179];
+const firstChar = v => { v = v.trim(); if (!v) return ''; try { return [...new Intl.Segmenter().segment(v)][0].segment; } catch (e) { return [...v][0]; } };
+function readBar() {
+  return { filled: firstChar($('bar_filled').value) || '▰', empty: firstChar($('bar_empty').value) || '▱',
+           length: Math.min(20, Math.max(5, parseInt($('bar_length').value) || 10)) };
+}
+function drawBar(b, done, total) { const n = Math.floor(done * b.length / total); return b.filled.repeat(n) + b.empty.repeat(b.length - n); }
+function showBar() {
+  const b = readBar(), text = drawBar(b, barProgress[0], barProgress[1]);
+  $('barPreview').textContent = text;
+  $('barChars').textContent = `${text.length} characters · ${barProgress[0]}/${barProgress[1]}`;
+  document.querySelectorAll('#barPresets button').forEach(x => x.classList.toggle('sel', x.dataset.f === b.filled && x.dataset.e === b.empty));
+}
+$('barPresets').innerHTML = BAR_PRESETS.map(([f, e]) => `<button type="button" data-f="${f}" data-e="${e}" title="Use this style">${f.repeat(3)}${e.repeat(2)}</button>`).join('');
+document.querySelectorAll('#barPresets button').forEach(btn => btn.onclick = () => {
+  $('bar_filled').value = btn.dataset.f; $('bar_empty').value = btn.dataset.e;
+  // Emoji are wide: a shorter bar keeps the title readable.
+  if (/\p{Extended_Pictographic}/u.test(btn.dataset.f) && parseInt($('bar_length').value) > 8) $('bar_length').value = 8;
+  showBar();
+});
+['bar_filled','bar_empty','bar_length'].forEach(f => $(f).addEventListener('input', showBar));
 
 // One-click OBS setup
 async function obsStatus() {

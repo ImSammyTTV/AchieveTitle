@@ -30,8 +30,14 @@ func TestRenderChatDropsEmptyGroups(t *testing.T) {
 }
 
 func TestProgressBar(t *testing.T) {
-	if got := progressBar(45, 179); got != "▰▰▱▱▱▱▱▱▱▱" {
-		t.Fatalf("got %q", got)
+	if got := progressBar(45, 179, BarStyle{}); got != "▰▰▱▱▱▱▱▱▱▱" {
+		t.Fatalf("default: got %q", got)
+	}
+	if got := progressBar(45, 179, BarStyle{Filled: "🟪", Empty: "⬛", Length: 8}); got != "🟪🟪⬛⬛⬛⬛⬛⬛" {
+		t.Fatalf("emoji: got %q", got)
+	}
+	if got := progressBar(1, 2, BarStyle{Filled: "⭐️★", Empty: "", Length: 99}); got != strings.Repeat("⭐️", 10)+strings.Repeat("▱", 10) {
+		t.Fatalf("cleaned: got %q", got)
 	}
 }
 

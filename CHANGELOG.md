@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.6.4
+- 📊 Choose how `{bar}` looks: coloured emoji styles (🟪⬛, 🟩⬛, 🟨⬛, 🟦⬜, 🟥⬛), text styles (▰▱, █░, ●○, ★☆, ■□) or your own characters, 5 to 20 segments long, with a live preview
+
 ## v0.6.3
 - 🖥️ The settings page now scales to fill your window: bigger and easier to read on large screens, still one screen with no scrolling
 - ✨ Redesigned OBS overlay: a clear card with box art, progress and your latest unlock, plus a bigger "Achievement unlocked" popup

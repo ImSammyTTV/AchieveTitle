@@ -28,6 +28,8 @@ type Config struct {
 
 	CheckUpdates bool `json:"check_updates"`
 
+	Bar BarStyle `json:"bar"` // how {bar} looks
+
 	// Chat commands are answered by a separate bot account the streamer connects.
 	Chat         ChatConfig `json:"chat"`
 	TwitchScopes []string   `json:"twitch_scopes,omitempty"` // granted to the channel login
@@ -112,6 +114,7 @@ func defaultConfig() Config {
 		SetCategory:     true,
 		CategoryMode:    "auto",
 		CheckUpdates:    true,
+		Bar:             defaultBarStyle(),
 	}
 }
 

@@ -274,6 +274,7 @@ type publicConfig struct {
 	ManageTags      bool       `json:"manage_tags"`
 	Tags            []string   `json:"tags"`
 	CheckUpdates    bool       `json:"check_updates"`
+	Bar             BarStyle   `json:"bar"`
 	TwitchClientID  string     `json:"twitch_client_id"`
 	HasBuiltinID    bool       `json:"has_builtin_client_id"`
 	TwitchLogin     string     `json:"twitch_login"`
@@ -292,7 +293,7 @@ func (s *server) getConfig(w http.ResponseWriter, r *http.Request) {
 		SteamID: c.SteamID, HasSteamKey: c.SteamAPIKey != "", CustomTitle: c.CustomTitle,
 		Template: c.Template, FallbackTmpl: c.FallbackTmpl, IntervalSeconds: c.IntervalSeconds,
 		Enabled: c.Enabled, RestoreOnExit: c.RestoreOnExit, TwitchClientID: c.TwitchClientID,
-		SetCategory: c.SetCategory, CategoryMode: c.CategoryMode, ManualCategory: c.ManualCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags), CheckUpdates: c.CheckUpdates,
+		SetCategory: c.SetCategory, CategoryMode: c.CategoryMode, ManualCategory: c.ManualCategory, ManageTags: c.ManageTags, Tags: CleanTags(c.Tags), CheckUpdates: c.CheckUpdates, Bar: c.Bar.clean(),
 		HasBuiltinID: DefaultTwitchClientID != "", TwitchLogin: c.TwitchLogin,
 		BotLogin: c.BotLogin, Chat: c.Chat, ChatVars: ChatVars, ChannelCanChat: hasScopes(c.TwitchScopes, botScope),
 		Vars: TemplateVars, Version: version, RedirectURI: s.base + "/auth/callback",
@@ -322,6 +323,7 @@ func (s *server) postConfig(w http.ResponseWriter, r *http.Request) {
 			c.CategoryMode, c.ManualCategory = "manual", in.ManualCategory
 		}
 		c.CheckUpdates = in.CheckUpdates
+		c.Bar = in.Bar.clean()
 		c.Chat = cleanChatConfig(in.Chat)
 	})
 	if err != nil {

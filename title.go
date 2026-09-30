@@ -44,7 +44,7 @@ func buildVars(cfg Config, game string, p *Progress) map[string]string {
 		v["rarest"] = p.RarestUnlocked.Name
 		v["rarest_rarity"] = rarity(p.RarestUnlocked.Percent)
 	}
-	v["bar"] = progressBar(p.Unlocked, p.Total)
+	v["bar"] = progressBar(p.Unlocked, p.Total, cfg.Bar)
 	var recent []string
 	for _, a := range p.Achievements { // newest first
 		if !a.Achieved || len(recent) == 3 {
@@ -60,13 +60,62 @@ func buildVars(cfg Config, game string, p *Progress) map[string]string {
 	return v
 }
 
-// progressBar draws a 10-segment bar like ▰▰▰▱▱▱▱▱▱▱.
-func progressBar(done, total int) string {
+// BarStyle is how {bar} is drawn. Twitch titles are plain text, so colour
+// comes from the characters themselves (e.g. 🟪 and ⬛).
+type BarStyle struct {
+	Filled string `json:"filled"`
+	Empty  string `json:"empty"`
+	Length int    `json:"length"`
+}
+
+func defaultBarStyle() BarStyle { return BarStyle{Filled: "▰", Empty: "▱", Length: 10} }
+
+// clean keeps the style usable: one character (or emoji) per segment, 5-20 segments.
+func (b BarStyle) clean() BarStyle {
+	d := defaultBarStyle()
+	b.Filled, b.Empty = firstGrapheme(b.Filled), firstGrapheme(b.Empty)
+	if b.Filled == "" {
+		b.Filled = d.Filled
+	}
+	if b.Empty == "" {
+		b.Empty = d.Empty
+	}
+	if b.Length == 0 {
+		b.Length = d.Length
+	}
+	b.Length = min(max(b.Length, 5), 20)
+	return b
+}
+
+// firstGrapheme returns the first visible character, keeping emoji that are
+// built from several code points (skin tones, variation selectors, ZWJ).
+func firstGrapheme(s string) string {
+	r := []rune(strings.TrimSpace(s))
+	if len(r) == 0 {
+		return ""
+	}
+	n := 1
+	for n < len(r) {
+		c := r[n]
+		if c == 0xFE0F || c == 0x20E3 || (c >= 0x1F3FB && c <= 0x1F3FF) {
+			n++
+		} else if c == 0x200D && n+1 < len(r) {
+			n += 2
+		} else {
+			break
+		}
+	}
+	return string(r[:n])
+}
+
+// progressBar draws a bar like ▰▰▰▱▱▱▱▱▱▱ in the chosen style.
+func progressBar(done, total int, style BarStyle) string {
 	if total <= 0 {
 		return ""
 	}
-	n := done * 10 / total
-	return strings.Repeat("▰", n) + strings.Repeat("▱", 10-n)
+	style = style.clean()
+	n := done * style.Length / total
+	return strings.Repeat(style.Filled, n) + strings.Repeat(style.Empty, style.Length-n)
 }
 
 func rarity(pct float64) string {
