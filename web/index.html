@@ -453,6 +453,8 @@
                 <div class="row" style="margin-top:10px">
                   <button class="primary" onclick="testOverlay(this)">🏆 Test popup</button>
                   <label class="check" style="margin:0"><input type="checkbox" id="overlayHideIdle"> Hide it when I'm not in a Steam game</label>
+              <div style="margin-top:14px"><b>🕒 Recent unlocks list</b> <span class="hint" style="margin:0">· its own Browser source, 480 × 420</span>
+                <div class="copy" style="margin-top:6px"><code id="recentUrl"></code><button class="ghost" onclick="copy('recentUrl', this)">Copy</button></div></div>
                 </div>
               </div>
             <div class="box">
@@ -821,6 +823,7 @@ function previewSound() { playUnlockSound(overlayCfg.sound, overlayCfg.volume, '
 function showOverlayUrl() {
   const idle = $('overlayHideIdle').checked;
   $('overlayUrl').textContent = location.origin + '/overlay' + (idle ? '?hideidle=1' : '');
+  $('recentUrl').textContent = location.origin + '/overlay/recent?count=5' + (idle ? '&hideidle=1' : '');
   const src = '/overlay?preview=1' + (idle ? '&hideidle=1' : '');
   if (!$('ovPreview').src.endsWith(src)) $('ovPreview').src = src;
 }

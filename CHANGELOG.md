@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.1
+- 🕒 New **Recent unlocks** OBS overlay: your latest achievements with their art, rarity and date, as its own Browser source (`/overlay/recent`). New unlocks slide in with a gold flash. Copy the link from the OBS tab
+
 ## v0.7.0
 - 🍺 **Homebrew** on Mac: `brew tap imsammyttv/achievetitle https://github.com/ImSammyTTV/AchieveTitle`, then `brew install --cask achievetitle`
 

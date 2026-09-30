@@ -175,6 +175,9 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /overlay", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFileFS(w, r, static, "overlay.html")
 	})
+	mux.HandleFunc("GET /overlay/recent", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFileFS(w, r, static, "recent.html")
+	})
 	mux.HandleFunc("GET /overlay/sound", serveSound)
 	mux.HandleFunc("POST /api/overlay/sound", s.sameOrigin(s.uploadSound))
 	mux.HandleFunc("GET /sounds.js", func(w http.ResponseWriter, r *http.Request) {

@@ -224,6 +224,11 @@ The **OBS** tab has a live preview, a **Test popup** button and these steps:
 2. URL `http://localhost:7878/overlay`, **Width 600**, **Height 160**.
 3. Tick **Control audio via OBS** so the unlock sound shows up in your audio mixer, then click **OK**.
 
+**Recent unlocks list:** add another Browser source with URL `http://localhost:7878/overlay/recent`,
+**Width 480**, **Height 420**. It shows your latest unlocks with their art and rarity, and new ones slide in with a gold flash.
+Add `?count=3` for fewer rows (up to 6), `?heading=0` to hide the heading or `?hideidle=1` to hide it outside a Steam game
+(join several with `&`).
+
 <br clear="right">
 
 <details>
@@ -239,7 +244,7 @@ The **OBS** tab has a live preview, a **Test popup** button and these steps:
 
 ---
 
-## 🍎 Mac
+## <img src="assets/os-apple.svg" width="26" alt=""> Mac
 
 Open **Terminal** (press ⌘ Space, type *Terminal*, press Enter), paste this and press Enter:
 
@@ -272,7 +277,7 @@ Uninstall: `curl -fsSL …/install-mac.sh | sh -s -- --uninstall` (your settings
 
 ---
 
-## 🐧 Linux
+## <img src="assets/os-linux.svg" width="26" alt=""> Linux
 
 Works on every distro, including **Steam Deck**. The quickest way (no admin password needed):
 
