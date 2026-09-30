@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.14
+- The chat badge at the top no longer says *"Chat bot: needs setup"* when replies come from your own channel. It shows *Chat · yourname*, or exactly what's missing (e.g. *Chat: reconnect Twitch*)
+
 ## v0.7.13
 - Fixed (Windows): a command prompt window flashed up after saving settings or opening the OBS tab
 

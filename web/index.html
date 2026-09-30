@@ -732,6 +732,7 @@ function renderChat(c) {
   const ch = c.chat;
   $('chat_enabled').checked = ch.enabled;
   document.querySelector(`[name=reply_as][value=${ch.reply_as === 'channel' ? 'channel' : 'bot'}]`).checked = true;
+  showChatStatus(lastChatSt);
   $('chat_cooldown').value = ch.cooldown_seconds;
   $('chat_announce').checked = ch.announce_unlocks;
   $('chat_announce_template').value = ch.announce_template;
@@ -772,12 +773,22 @@ function readChat() {
 function showChatBox() { $('chatBox').style.opacity = $('chat_enabled').checked ? 1 : .45; }
 $('chat_enabled').addEventListener('change', showChatBox);
 async function connectBot(e) { e.preventDefault(); await save(); location.href = '/api/bot/login'; }
+let lastChatSt;
 function showChatStatus(st) {
   if (!st) return;
+  lastChatSt = st;
   const good = st.startsWith('connected'), bad = st.startsWith('error') || st.startsWith('needs');
   const text = st === 'off' ? 'Chat commands are off.' : st.charAt(0).toUpperCase() + st.slice(1);
   $('chatStatus').innerHTML = `<span class="${good ? 'ok' : bad ? 'err' : ''}">${esc(text)}</span>`;
-  setPill('pillChat', good ? 'on' : bad ? 'bad' : '', st === 'off' ? 'Chat bot off' : good ? 'Chat bot on' : 'Chat bot: needs setup');
+  // Name the badge after who replies, and say exactly what's missing.
+  const asChannel = (document.querySelector('[name=reply_as]:checked') || {}).value === 'channel';
+  const who = asChannel ? 'Chat' : 'Chat bot';
+  let label = st === 'off' ? who + ' off' : good ? (asChannel ? 'Chat · ' + st.replace(/^connected as /, '') : 'Chat bot on')
+    : /reconnect your Twitch/.test(st) ? 'Chat: reconnect Twitch'
+    : /connect your Twitch channel/.test(st) ? 'Chat: connect Twitch'
+    : /connect a bot account/.test(st) ? 'Chat bot: not connected'
+    : bad ? who + ': problem' : who + ' connecting…';
+  setPill('pillChat', good ? 'on' : bad ? 'bad' : '', label);
 }
 
 // Category picker
