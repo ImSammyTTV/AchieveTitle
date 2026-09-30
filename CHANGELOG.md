@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.7.7
+- The drifting background moves about half as fast
+- New **Background** choice in the App tab: moving icons, still icons, or plain
+- README screenshots updated
+
 ## v0.7.6
 - The drifting achievement icons now fill the whole window evenly (they were bunched on the left), and fade in and out at the top and bottom
 

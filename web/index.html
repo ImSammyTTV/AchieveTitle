@@ -33,6 +33,7 @@
                    font-size:30px; background:rgba(255,255,255,.08); filter:grayscale(.2) }
   @keyframes drift { to { transform:translateX(-50%) } }
   @media (prefers-reduced-motion: reduce) { .drift-row { animation:none } }
+  body.bg-still .drift-row { animation:none } body.bg-off .drift { display:none }
   .app { position:relative; z-index:1 }
   .tab-ico { width:1.05em; height:1.05em; vertical-align:-.15em }
   .app { height:100vh; display:flex; flex-direction:column; max-width:1280px; margin:0 auto; padding:14px 20px 18px; gap:12px }
@@ -525,6 +526,12 @@
               <input type="number" id="interval_seconds" min="30" step="10">
               <label class="check"><input type="checkbox" id="restore_on_exit"> Restore my original title, category and tags when I stop or quit</label>
               <label class="check"><input type="checkbox" id="check_updates"> Tell me when a new version is available</label>
+              <label style="margin-top:10px">Background</label>
+              <div class="seg" id="bgSeg">
+                <button type="button" data-bg="moving">✨ Moving icons</button>
+                <button type="button" data-bg="still">🖼️ Still icons</button>
+                <button type="button" data-bg="off">⬛ Plain</button>
+              </div>
             </div>
             <div class="box">
               <h3>🔒 Privacy</h3>
@@ -1015,10 +1022,21 @@ function drawDrift(icons) {
   $('drift').innerHTML = '<div class="drift-in">' + Array.from({length: 20}, (_, r) => {
     // Each row is its tiles twice over, so sliding by half loops seamlessly.
     const tiles = Array.from({length: 40}, (_, i) => tile(i + r * 17)).join('');
-    return `<div class="drift-row" style="--t:${160 + r % 4 * 25}s">${tiles}${tiles}</div>`;
+    return `<div class="drift-row" style="--t:${360 + r % 4 * 60}s">${tiles}${tiles}</div>`;
   }).join('') + '</div>';
 }
 drawDrift([]);
+// Background choice (moving, still or plain), remembered in this browser.
+function setBg(v) {
+  document.body.classList.toggle('bg-still', v === 'still');
+  document.body.classList.toggle('bg-off', v === 'off');
+  document.querySelectorAll('#bgSeg button').forEach(b => b.classList.toggle('sel', b.dataset.bg === v));
+  try { localStorage.setItem('bg', v); } catch (e) {}
+}
+document.querySelectorAll('#bgSeg button').forEach(b => b.onclick = () => setBg(b.dataset.bg));
+let bgPref = 'moving';
+try { bgPref = localStorage.getItem('bg') || 'moving'; } catch (e) {}
+setBg(bgPref);
 // Fetch every achievement's art for the current game (once per game), shuffled.
 let driftApp;
 async function loadDriftIcons(appID) {
