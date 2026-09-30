@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ImSammyTTV/AchieveTitle/releases/latest"><img src="https://img.shields.io/badge/Download-Latest%20release-9147ff?style=for-the-badge" alt="Latest release"></a>
+  <a href="https://github.com/ImSammyTTV/AchieveTitle/releases/latest"><img src="https://img.shields.io/github/v/release/ImSammyTTV/AchieveTitle?style=for-the-badge&color=9147ff&label=Download" alt="Latest release"></a>
   <a href="https://github.com/ImSammyTTV/AchieveTitle/releases"><img src="https://img.shields.io/github/downloads/ImSammyTTV/AchieveTitle/total?style=for-the-badge&color=f5b400&label=Downloads" alt="Downloads"></a>
   <img src="https://img.shields.io/badge/Windows%20%7C%20macOS%20%7C%20Linux-2f2f35?style=for-the-badge" alt="Windows, macOS, Linux">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-00c46a?style=for-the-badge" alt="MIT license"></a>
