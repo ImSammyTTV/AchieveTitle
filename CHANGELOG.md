@@ -1,6 +1,7 @@
 # Changelog
 
 ## v0.6.0
+- 🎥 **Set up OBS for me**: one click adds the AchieveTitle script and control panel to OBS (settings backed up first)
 - ✨ Redesigned settings page: everything on one screen, with tabs, a live status card and recent unlocks
 - 🎮 **Sign in with Steam** instead of typing your Steam ID, plus a guided API key step that checks your key instantly
 - 💬 Chat commands: `!achievements`, `!last`, `!next`, `!rarest` and `!progress`

@@ -115,6 +115,10 @@ func startApp(port int, restarted bool) (*app, bool) {
 	a.srv.chat = a.chat
 	a.worker.onUnlock = a.chat.Announce
 
+	// Keep the OBS script's copy of the app location current (it moves on updates).
+	if p, err := scriptPath(); err == nil && fileExists(p) {
+		writeOBSScript()
+	}
 	go a.worker.Run(a.ctx)
 	go a.chat.Run(a.ctx)
 	go a.updater.Run(a.ctx, func() bool { return store.Get().CheckUpdates })
@@ -204,6 +208,15 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/twitch/login", s.twitchLogin)
 	mux.HandleFunc("POST /api/twitch/token", s.sameOrigin(s.twitchToken))
 	mux.HandleFunc("POST /api/twitch/logout", s.sameOrigin(s.twitchLogout))
+	mux.HandleFunc("GET /api/obs", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, s.obsStatus()) })
+	mux.HandleFunc("POST /api/obs/setup", s.sameOrigin(func(w http.ResponseWriter, r *http.Request) {
+		if err := s.setupOBS(); err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		log.Println("OBS set up: script and control panel dock added")
+		writeJSON(w, s.obsStatus())
+	}))
 	mux.HandleFunc("GET /api/steam/login", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, steamLoginURL(s.base, s.steamReturnTo()), http.StatusFound)
 	})

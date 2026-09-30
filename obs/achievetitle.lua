@@ -13,6 +13,8 @@ Install: OBS -> Tools -> Scripts -> "+" -> pick this file.
 obs = obslua
 
 local exe_path = ""
+-- Filled in when AchieveTitle installs this script for you ("Set up OBS for me").
+local default_exe = ""
 local port = 7878
 local launch_with_obs = true
 local follow_stream = true
@@ -96,6 +98,7 @@ function script_properties()
 end
 
 function script_defaults(s)
+  if default_exe ~= "" then obs.obs_data_set_default_string(s, "exe_path", default_exe) end
   obs.obs_data_set_default_bool(s, "launch_with_obs", true)
   obs.obs_data_set_default_bool(s, "follow_stream", true)
   obs.obs_data_set_default_bool(s, "quit_with_obs", false)

@@ -178,11 +178,18 @@ Let viewers check your progress in chat. Switch it on under **4. Chat commands**
 
 <img src="assets/screenshot-dock.png" alt="AchieveTitle control panel inside OBS" width="300" align="right">
 
-**Control panel dock:** *View → Docks → Custom Browser Docks*, name `AchieveTitle`,
-URL `http://localhost:7878/dock`. It shows your game, progress and title, with an on/off switch.
+**One click:** close OBS, open AchieveTitle's **OBS** tab and click **Set up OBS for me**. It adds:
+- the **AchieveTitle script**, which starts AchieveTitle with OBS and only updates your title while you're live
+- the **control panel dock** (under *View → Docks*), with your game, progress, title and an on/off switch
 
-**OBS script:** *Tools → Scripts → +* and choose `obs/achievetitle.lua` (included in every download).
-It starts AchieveTitle with OBS and only updates your title while you're live.
+Your OBS settings are backed up first (as `.achievetitle-backup` files next to the originals).
+
+<details>
+<summary>Setting it up by hand instead</summary>
+
+- **Dock:** *View → Docks → Custom Browser Docks*, name `AchieveTitle`, URL `http://localhost:7878/dock`.
+- **Script:** *Tools → Scripts → +* and choose `obs/achievetitle.lua` from the download, then pick the AchieveTitle app in its settings.
+</details>
 
 **Overlay:** add a *Browser Source* with URL `http://localhost:7878/overlay` (600 × 160) for a progress
 bar and an *"Achievement unlocked"* popup.

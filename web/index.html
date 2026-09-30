@@ -374,21 +374,22 @@
 
         <!-- OBS -->
         <div class="pane" data-pane="obs">
+          <div class="box" style="margin-bottom:14px; border-color:rgba(191,148,255,.45); background:linear-gradient(90deg, rgba(145,71,255,.14), rgba(245,180,0,.05))">
+            <h3>⚡ One-click OBS setup</h3>
+            <p class="hint" style="margin:0 0 10px">Adds the AchieveTitle script (starts AchieveTitle with OBS and only updates your title while you're live)
+              and the AchieveTitle control panel to OBS. Your OBS settings are backed up first.</p>
+            <div class="row"><button class="primary" id="obsBtn" onclick="setupOBS()">Set up OBS for me</button><span id="obsMsg" class="hint"></span></div>
+          </div>
           <div class="grid2">
             <div class="box">
               <h3>🧭 Control panel dock</h3>
-              <p class="hint" style="margin:0">OBS → <b>View → Docks → Custom Browser Docks</b>. Name it <i>AchieveTitle</i> and paste:</p>
+              <p class="hint" style="margin:0">Added by the button above. To add it yourself: OBS → <b>View → Docks → Custom Browser Docks</b>, name it <i>AchieveTitle</i>:</p>
               <div class="copy"><code id="dockUrl"></code><button class="ghost" onclick="copy('dockUrl', this)">Copy</button></div>
             </div>
             <div class="box">
               <h3>✨ Overlay</h3>
-              <p class="hint" style="margin:0">Add a <b>Browser Source</b> (600 × 160). Progress bar plus an "Achievement unlocked" popup.</p>
+              <p class="hint" style="margin:0">Add a <b>Browser Source</b> (600 × 160) for a progress bar and an "Achievement unlocked" popup.</p>
               <div class="copy"><code id="overlayUrl"></code><button class="ghost" onclick="copy('overlayUrl', this)">Copy</button></div>
-            </div>
-            <div class="box" style="grid-column:1 / -1">
-              <h3>📜 OBS script</h3>
-              <p class="hint" style="margin:0">OBS → <b>Tools → Scripts → +</b> and choose <code>obs/achievetitle.lua</code> from the AchieveTitle download.
-                It starts AchieveTitle with OBS and only updates your title while you're live.</p>
             </div>
           </div>
         </div>
@@ -657,6 +658,32 @@ async function steamCheck() {
 ['steam_api_key','steam_id'].forEach(f => $(f).addEventListener('input', () => { clearTimeout(steamTimer); steamTimer = setTimeout(steamCheck, 600); }));
 async function steamSignIn(e) { e.preventDefault(); await save(); location.href = '/api/steam/login'; }
 if (location.hash === '#steam-linked') { showTab('connect'); history.replaceState(null, '', '/'); }
+
+// One-click OBS setup
+async function obsStatus() {
+  let st;
+  try { st = await (await fetch('/api/obs')).json(); } catch (e) { return; }
+  const done = st.script_added && st.dock_added;
+  $('obsBtn').textContent = done ? 'Set up again' : 'Set up OBS for me';
+  $('obsBtn').className = done ? 'ghost' : 'primary';
+  $('obsMsg').innerHTML = !st.found ? '<span class="warn">OBS wasn\'t found. Open OBS once and close it, then try.</span>'
+    : done ? '<span class="ok">✔ Set up. Open OBS and the AchieveTitle panel is under Docks.</span>'
+    : st.running ? '<span class="warn">Close OBS first, then click the button.</span>'
+    : 'OBS found' + (st.scene_collection ? ` (scene collection "${esc(st.scene_collection)}")` : '') + '.';
+}
+async function setupOBS() {
+  $('obsBtn').disabled = true; $('obsMsg').textContent = 'Setting up…';
+  try {
+    await post('/api/obs/setup');
+    await obsStatus();
+    $('obsMsg').innerHTML = '<span class="ok">✔ Done! Open OBS: the script is loaded and the AchieveTitle panel is under View → Docks.</span>';
+  } catch (e) {
+    $('obsMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`;
+  }
+  $('obsBtn').disabled = false;
+}
+document.querySelector('.tab[data-tab=obs]').addEventListener('click', obsStatus);
+if (startTab === 'obs') obsStatus();
 
 function copy(id, btn) {
   navigator.clipboard?.writeText($(id).textContent).then(() => { btn.textContent = 'Copied ✔'; setTimeout(() => btn.textContent = 'Copy', 1500); });
