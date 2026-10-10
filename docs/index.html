@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>AchieveTitle</title>
+<meta name="description" content="Live Steam achievement progress in your Twitch stream title. Windows, macOS and Linux.">
+<style>
+:root{color-scheme:dark;--bg:#0d0a15;--panel:#15101f;--card:#1c1629;--field:#0f0b18;--line:rgba(255,255,255,.08);--text:#f4f1fa;--muted:#9a92ad;--accent:#9147ff;--accent2:#a855f7;--gold:#ffc933;--green:#3ddc84;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-align:center;overflow-x:hidden}
+a{color:#b794ff;text-decoration:none}a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid rgba(168,85,247,.7);outline-offset:3px;border-radius:8px}
+.bg{position:absolute;inset:0 0 auto 0;height:780px;z-index:-1;overflow:hidden;background:radial-gradient(760px 440px at 50% 0,rgba(145,71,255,.42),transparent 70%);-webkit-mask-image:linear-gradient(#000 35%,transparent);mask-image:linear-gradient(#000 35%,transparent)}
+.bg:before{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27320%27%20height%3D%27320%27%3E%3Crect%20x%3D%276%27%20y%3D%276%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%2840%2040%29%20scale%28.9%29%27%20fill%3D%27%23ffd34d%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M-9-14h18v8c0%206-4%2010-9%2010s-9-4-9-10z%22%2F%3E%3Cpath%20d%3D%22M-9-11h-6c0%206%203%208%206%209M9-11h6c0%206-3%208-6%209%22%20fill%3D%27none%27%20stroke%3D%27%23ffd34d%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%2F%3E%3Crect%20x%3D%27-2%27%20y%3D%274%27%20width%3D%274%27%20height%3D%277%27%2F%3E%3Crect%20x%3D%27-8%27%20y%3D%2711%27%20width%3D%2716%27%20height%3D%273.5%27%20rx%3D%271%27%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2786%27%20y%3D%276%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28120%2040%29%20scale%28.9%29%27%20fill%3D%27%235da8ff%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cg%20transform%3D%27rotate%2845%29%27%3E%3Crect%20x%3D%27-2.5%27%20y%3D%27-18%27%20width%3D%275%27%20height%3D%2726%27%20rx%3D%271%27%2F%3E%3Crect%20x%3D%27-9%27%20y%3D%278%27%20width%3D%2718%27%20height%3D%273.5%27%20rx%3D%271%27%2F%3E%3Crect%20x%3D%27-2%27%20y%3D%2711%27%20width%3D%274%27%20height%3D%277%27%20rx%3D%271%27%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3Crect%20x%3D%27166%27%20y%3D%276%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28200%2040%29%20scale%28.9%29%27%20fill%3D%27%23e8e4f5%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Ccircle%20cx%3D%270%27%20cy%3D%27-3%27%20r%3D%2712%27%2F%3E%3Crect%20x%3D%27-7%27%20y%3D%276%27%20width%3D%2714%27%20height%3D%279%27%20rx%3D%272.5%27%2F%3E%3Ccircle%20cx%3D%27-4.5%27%20cy%3D%27-3%27%20r%3D%273%27%20fill%3D%27%231b0f33%27%20fill-opacity%3D%27.9%27%2F%3E%3Ccircle%20cx%3D%274.5%27%20cy%3D%27-3%27%20r%3D%273%27%20fill%3D%27%231b0f33%27%20fill-opacity%3D%27.9%27%2F%3E%3C%2Fg%3E%3Crect%20x%3D%27246%27%20y%3D%276%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28280%2040%29%20scale%28.9%29%27%20fill%3D%27%235da8ff%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M0-17L14-12v10c0%208-6%2014-14%2017C-8%2012-14%206-14-2v-10z%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%276%27%20y%3D%2786%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%2840%20120%29%20scale%28.9%29%27%20fill%3D%27%23ffd34d%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M-15%2010V-9l8%208%207-12%207%2012%208-8V10z%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2786%27%20y%3D%2786%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28120%20120%29%20scale%28.9%29%27%20fill%3D%27%23ff9a3c%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M1-18C3-10%2012-6%2012%204A12%2012%200%200%201-12%204C-12-1-8-4-6-8-5-5-3-4-2-5-3-9-1-14%201-18z%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%27166%27%20y%3D%2786%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28200%20120%29%20scale%28.9%29%27%20fill%3D%27%23ff5d5d%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M0%2014C-20%201-13-14%200-6%2013-14%2020%201%200%2014z%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%27246%27%20y%3D%2786%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28280%20120%29%20scale%28.9%29%27%20fill%3D%27%234fe3e8%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M-13-5L-7-14h14l6%209L0%2015z%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%276%27%20y%3D%27166%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%2840%20200%29%20scale%28.9%29%27%20fill%3D%27%23ffd34d%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Ccircle%20cx%3D%27-8%27%20cy%3D%27-5%27%20r%3D%277%27%20fill%3D%27none%27%20stroke%3D%27%23ffd34d%27%20stroke-width%3D%274%27%2F%3E%3Crect%20x%3D%27-3%27%20y%3D%27-7%27%20width%3D%2719%27%20height%3D%274%27%20rx%3D%271%27%2F%3E%3Crect%20x%3D%279%27%20y%3D%27-4%27%20width%3D%273.5%27%20height%3D%278%27%2F%3E%3Crect%20x%3D%2714%27%20y%3D%27-4%27%20width%3D%273%27%20height%3D%276%27%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2786%27%20y%3D%27166%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28120%20200%29%20scale%28.9%29%27%20fill%3D%27%23c49bff%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Crect%20x%3D%27-16%27%20y%3D%27-9%27%20width%3D%2732%27%20height%3D%2718%27%20rx%3D%279%27%2F%3E%3Crect%20x%3D%27-10%27%20y%3D%27-1%27%20width%3D%278%27%20height%3D%272.2%27%20rx%3D%271%27%20fill%3D%27%231b0f33%27%2F%3E%3Crect%20x%3D%27-7%27%20y%3D%27-4%27%20width%3D%272.2%27%20height%3D%278%27%20rx%3D%271%27%20fill%3D%27%231b0f33%27%2F%3E%3Ccircle%20cx%3D%277%27%20cy%3D%27-2%27%20r%3D%272%27%20fill%3D%27%231b0f33%27%2F%3E%3Ccircle%20cx%3D%2711%27%20cy%3D%272%27%20r%3D%272%27%20fill%3D%27%231b0f33%27%2F%3E%3C%2Fg%3E%3Crect%20x%3D%27166%27%20y%3D%27166%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28200%20200%29%20scale%28.9%29%27%20fill%3D%27%23ffe14d%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M3-18L-10%203h9l-3%2015L12-4H3z%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%27246%27%20y%3D%27166%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28280%20200%29%20scale%28.9%29%27%20fill%3D%27%2346e08a%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Ccircle%20r%3D%2713%27%20fill%3D%27none%27%20stroke%3D%27%2346e08a%27%20stroke-width%3D%273.5%27%2F%3E%3Ccircle%20r%3D%276.5%27%2F%3E%3Ccircle%20r%3D%271.8%27%20fill%3D%27%231b0f33%27%2F%3E%3C%2Fg%3E%3Crect%20x%3D%276%27%20y%3D%27246%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%2840%20280%29%20scale%28.9%29%27%20fill%3D%27%23ffd34d%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M0-16l5.2%2010.6%2011.8%201.7-8.5%208.3%202%2011.7L0%2010.7-10.5%2016.3l2-11.7-8.5-8.3%2011.8-1.7z%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2786%27%20y%3D%27246%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28120%20280%29%20scale%28.9%29%27%20fill%3D%27%23ff7ac8%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M-4-15H4v3H3v8L12%2011Q14%2015%2010%2015H-10Q-14%2015-12%2011L-3-4v-8h-1z%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%27166%27%20y%3D%27246%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28200%20280%29%20scale%28.9%29%27%20fill%3D%27%2346e08a%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Cpath%20d%3D%22M-17%2013L-5-8l5%208%204-5.5L17%2013z%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%27246%27%20y%3D%27246%27%20width%3D%2768%27%20height%3D%2768%27%20rx%3D%2714%27%20fill%3D%27%23fff%27%20fill-opacity%3D%27.045%27%20stroke%3D%27%23fff%27%20stroke-opacity%3D%27.09%27%2F%3E%3Cg%20transform%3D%27translate%28280%20280%29%20scale%28.9%29%27%20fill%3D%27%23ffe14d%27%20fill-opacity%3D%27.26%27%20stroke-opacity%3D%27.26%27%3E%3Ccircle%20r%3D%276%27%2F%3E%3Cg%20stroke%3D%27%23ffe14d%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%3E%3Cpath%20d%3D%27M0-17v-3M0%2017v3M-17%200h-3M17%200h3M-12-12l-2-2M12%2012l2%202M12-12l2-2M-12%2012l-2%202%27%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E") 0 0/320px 320px}
+.bg .sh{position:absolute;top:0;bottom:0;left:0;width:260px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);transform:translateX(-400px) skewX(-18deg)}
+.bg .sp{position:absolute;width:5px;height:5px;border-radius:50%;background:#ffe27a;opacity:.2}
+@keyframes drift{to{background-position:320px 320px}}
+@keyframes sweep{0%,55%{transform:translateX(-400px) skewX(-18deg)}100%{transform:translateX(115vw) skewX(-18deg)}}
+@keyframes tw{0%,100%{opacity:.12}50%{opacity:.95}}
+@media(prefers-reduced-motion:no-preference){.bg:before{animation:drift 56s linear infinite}.bg .sh{animation:sweep 7s ease-in-out infinite}.bg .sp{animation:tw 3s ease-in-out infinite}}
+main{max-width:900px;margin:0 auto;padding:64px 22px 40px;position:relative}
+.icon{display:block;width:96px;height:96px;margin:0 auto 22px;filter:drop-shadow(0 14px 30px rgba(145,71,255,.55))}
+h1{font-size:clamp(40px,7vw,64px);letter-spacing:-.03em;line-height:1.05;margin:0 0 12px;font-weight:800}
+.tag{font-size:clamp(18px,2.5vw,23px);color:var(--muted);max-width:25em;text-wrap:balance;margin:0 auto 28px;line-height:1.35}
+.btn{display:inline-block;background:linear-gradient(180deg,var(--accent2),#7c3aed);color:#fff;border-radius:12px;padding:12px 28px;font-size:17px;font-weight:600;box-shadow:0 8px 24px rgba(124,58,237,.45)}.btn:hover{text-decoration:none;filter:brightness(1.1)}
+.fine{font-size:14px;color:var(--muted);margin:14px 0 0}
+/* app window */
+.win{position:relative;margin:52px auto 0;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 40px 90px -20px rgba(124,58,237,.4),0 0 0 1px rgba(0,0,0,.4);font-size:13px}
+.hd{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.hd .mini{width:28px;height:28px;flex:none}
+.hd b{font-size:14px}.hd small{display:block;color:var(--muted);font-size:11px;line-height:1.2}
+.pills{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.pills span{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:11px;color:#d8d2e6}
+.pills span:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:6px}
+.cols{display:grid;grid-template-columns:300px 1fr;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.lab{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:12px 0 6px}
+.now{display:flex;gap:10px;align-items:center}
+.art{width:46px;height:62px;border-radius:6px;background:linear-gradient(160deg,#e8b84a,#8a5a10);display:grid;place-items:center;font-size:7px;font-weight:800;color:#2b1a00;text-align:center;line-height:1.1;flex:none}
+.now b{font-size:15px;display:block}.now small{color:var(--muted);font-size:11px}
+.big{font-size:22px;font-weight:700;margin:10px 0 0}.big span{font-size:12px;font-weight:400;color:var(--muted)}
+.sw{display:inline-grid}.sw>*{grid-area:1/1}.sw .o{opacity:0}
+.bar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin:8px 0;overflow:hidden}.bar i{display:block;height:100%;width:76%;border-radius:3px;background:linear-gradient(90deg,var(--accent),#d6b8ff)}
+.chase{display:flex;align-items:center;gap:10px;background:var(--field);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.ci{width:30px;height:30px;border-radius:8px;background:#7a1e2a;display:grid;place-items:center;flex:none;font-size:15px}
+.chase b{display:block;font-size:13px}.chase small{color:var(--muted);font-size:11px}
+.chase .b{margin-left:auto;display:flex;gap:6px}.chase .b span{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:3px 9px;font-size:11px}
+.ttl{background:var(--field);border:1px solid var(--line);border-radius:10px;padding:9px 10px;line-height:1.45}
+.rec{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:7px}.rec .ri{width:20px;height:20px;border-radius:5px;display:grid;place-items:center;font-size:11px;flex:none}
+.rec em{margin-left:auto;font-style:normal;color:var(--muted);font-size:11px}.rec em.g{color:var(--gold);font-weight:600}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--field);border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-top:10px}
+.sw2{width:34px;height:20px;border-radius:10px;background:var(--accent);position:relative;flex:none}.sw2:after{content:"";position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tabs{display:flex;gap:16px;border-bottom:1px solid var(--line);margin:0 0 14px;overflow-x:auto;white-space:nowrap;color:var(--muted);font-size:12px}.tabs span{padding:2px 0 9px}.tabs .on{color:var(--text);border-bottom:2px solid var(--accent2)}
+.fld{margin-bottom:12px}.fld small{color:var(--muted);font-size:11px}.fld .in{margin-top:5px;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.chip{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:6px 8px;display:flex;gap:2px}.chip.on{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2)}.chip i{width:11px;height:11px;border-radius:3px;display:block}
+.save{display:flex;align-items:center;justify-content:space-between;margin-top:16px;color:var(--muted);font-size:11px}.save b{background:linear-gradient(180deg,var(--accent2),#7c3aed);color:#fff;border-radius:9px;padding:7px 14px;font-size:12px}
+.pop{position:absolute;left:50%;top:50%;transform:translate(-50%,-170%);opacity:0;width:88%;max-width:340px;border-radius:14px;padding:11px;display:flex;gap:12px;align-items:center;background:linear-gradient(120deg,#6d2fe0,#a35cff 70%,#c9a8ff);border:1px solid rgba(255,255,255,.35);box-shadow:0 14px 34px rgba(60,10,160,.55)}
+.pop .pi{width:44px;height:44px;border-radius:10px;background:linear-gradient(160deg,#ffd75e,#b87400);display:grid;place-items:center;font-size:22px;flex:none;border:1px solid rgba(255,255,255,.4)}
+.pop small{display:block;font-size:10px;letter-spacing:.08em;color:var(--gold);font-weight:700;text-transform:uppercase}.pop b{display:block;font-size:17px;line-height:1.2}.pop span{font-size:12px;color:#f0e6ff}
+@keyframes o{0%,38%{opacity:1}42%,92%{opacity:0}96%,100%{opacity:1}}
+@keyframes n{0%,38%{opacity:0}42%,92%{opacity:1}96%,100%{opacity:0}}
+@keyframes bar{0%,38%{width:74%}42%,92%{width:76%}96%,100%{width:74%}}
+@keyframes pop{0%,16%{opacity:0;transform:translate(-50%,-170%)}22%,38%{opacity:1;transform:translate(-50%,-50%)}44%,100%{opacity:0;transform:translate(-50%,-170%)}}
+@keyframes flash{0%,38%{background:transparent}42%,62%{background:rgba(255,201,51,.18)}72%,100%{background:transparent}}
+@media(prefers-reduced-motion:no-preference){.sw .o{animation:o 9s infinite}.sw .n{animation:n 9s infinite}.bar i{animation:bar 9s ease-in-out infinite}.pop{animation:pop 9s infinite}.rec.new{animation:flash 9s infinite}}
+.rc{display:flex;flex-direction:column}.rc .ovw{margin-top:auto;padding-top:6px}
+.ov{position:relative;height:128px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#2f9e62,#7a3fd1 55%,#d9a21a);border:1px solid var(--line)}
+.ovc{position:absolute;inset:14px;display:flex;gap:12px;align-items:center;background:rgba(14,10,24,.8);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px 12px}
+.ovc .art{width:40px;height:54px}.ovt{flex:1;min-width:0}.ovt b{font-size:14px}.ovt .oc,.ovt small{font-size:11.5px;color:#e6dcff;display:block}.ovc .bar{margin:6px 0}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin:64px 0 0;text-align:left}
+.three h2{font-size:17px;margin:0 0 4px}.three p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(255,255,255,.08);padding:1px 6px;border-radius:5px}
+footer{padding:28px 22px 44px;font-size:13px;color:var(--muted)}footer a{color:var(--muted);margin:0 8px}
+@media(max-width:760px){.cols{grid-template-columns:1fr}.three{grid-template-columns:1fr;gap:22px;text-align:center}main{padding-top:44px}.pills{margin-left:0}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="logo" viewBox="0 0 150 150"><defs><linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f5b400"/></linearGradient></defs><rect x="1" y="1" width="148" height="148" rx="34" fill="#9147ff" stroke="#fff" stroke-opacity=".25" stroke-width="2"/><path d="M47 33h56v21c0 19-12 33-28 33S47 73 47 54z" fill="url(#gold)"/><path d="M47 40H30c0 16 8 26 21 28M103 40h17c0 16-8 26-21 28" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linecap="round"/><rect x="68" y="85" width="14" height="19" fill="#f5b400"/><rect x="52" y="104" width="46" height="14" rx="4" fill="url(#gold)"/></symbol></svg>
+<div class="bg" aria-hidden="true"><i class="sh"></i><b class="sp" style="left:14%;top:150px"></b><b class="sp" style="left:84%;top:210px;animation-delay:1s"></b><b class="sp" style="left:24%;top:430px;animation-delay:2s"></b><b class="sp" style="left:72%;top:520px;animation-delay:.5s"></b><b class="sp" style="left:50%;top:90px;animation-delay:1.5s"></b></div>
+<main>
+<svg class="icon" width="96" height="96" aria-hidden="true"><use href="#logo"/></svg>
+<h1>AchieveTitle</h1>
+<p class="tag">Live Steam achievement progress in your Twitch stream title.</p>
+<a class="btn" id="dl" href="https://github.com/ImSammyTTV/AchieveTitle/releases/latest">Download</a>
+<p class="fine" id="alt">Available for Windows, macOS and Linux. Free and open source.</p>
+
+<div class="win" aria-label="The AchieveTitle app showing live progress and an achievement unlock">
+<div class="hd"><svg class="mini" width="28" height="28" aria-hidden="true"><use href="#logo"/></svg><div><b>AchieveTitle</b><small>Live Steam achievements in your Twitch title</small></div>
+<div class="pills"><span>Twitch · yourchannel</span><span>Steam · YourName</span><span>Chat bot on</span></div></div>
+<div class="cols">
+<div class="card">
+<div class="lab" style="margin-top:0">Now playing</div>
+<div class="now"><div class="art">ELDEN<br>RING</div><div><b>Elden Ring</b><small>Twitch category: Elden Ring</small></div></div>
+<div class="big"><span class="sw"><span class="o">37</span><span class="n">38</span></span> <span>/ 50 achievements · <span class="sw"><span class="o">74%</span><span class="n">76%</span></span></span></div>
+<small style="color:var(--muted)">Latest: <span class="sw" style="color:var(--text);font-weight:600"><span class="o">Elden Lord</span><span class="n">Dragon Slayer</span></span></small>
+<div class="bar"><i></i></div>
+<div class="chase"><span class="ci">⚡</span><div><small>Chasing</small><b>Speedrunner</b><small>0.8% of players</small></div><div class="b"><span>Change</span></div></div>
+<div class="lab">Current Twitch title</div>
+<div class="ttl">Chill stream [<span class="sw"><span class="o">37</span><span class="n">38</span></span>/50 Achievements] 🟪🟪🟪🟪🟪🟪⬛⬛ 🎯 Speedrunner</div>
+<div class="lab">Recent unlocks</div>
+<div class="rec new"><span class="ri" style="background:#2e7d4f">🐉</span>Dragon Slayer<em class="g">4.2% of players</em></div>
+<div class="rec"><span class="ri" style="background:#a63a1e">🔥</span>Lord of Frenzied Flame<em>9.1%</em></div>
+<div class="rec"><span class="ri" style="background:#b8860b">👑</span>Elden Lord<em>31%</em></div>
+<div class="tog"><span>Update my Twitch title automatically</span><span class="sw2"></span></div>
+</div>
+<div class="card rc">
+<div class="tabs"><span>Connections</span><span class="on">Title</span><span>Category &amp; tags</span><span>Chat</span><span>OBS</span><span>App</span></div>
+<div class="fld"><small>Custom text · used as {custom}</small><div class="in">Chill stream</div></div>
+<div class="fld"><small>Title template · when the game has achievements</small><div class="in">{custom} [{unlocked}/{total} Achievements] {bar}</div></div>
+<div class="fld"><small>Progress bar style · how {bar} looks</small>
+<div class="chips">
+<div class="chip on"><i style="background:#a855f7"></i><i style="background:#a855f7"></i><i style="background:#a855f7"></i><i style="background:#444"></i></div>
+<div class="chip"><i style="background:#3ddc84"></i><i style="background:#3ddc84"></i><i style="background:#3ddc84"></i><i style="background:#444"></i></div>
+<div class="chip"><i style="background:#ffc933"></i><i style="background:#ffc933"></i><i style="background:#ffc933"></i><i style="background:#444"></i></div>
+<div class="chip"><i style="background:#3b82f6"></i><i style="background:#3b82f6"></i><i style="background:#3b82f6"></i><i style="background:#ddd"></i></div>
+<div class="chip"><i style="background:#ef4444"></i><i style="background:#ef4444"></i><i style="background:#ef4444"></i><i style="background:#444"></i></div>
+</div></div>
+<div class="save"><b>Save changes</b><span>Changes apply within a minute</span></div>
+<div class="ovw"><div class="lab">Overlay preview</div><div class="ov"><div class="ovc"><div class="art">ELDEN<br>RING</div><div class="ovt"><b>Elden Ring</b><span class="oc"><span class="sw"><span class="o">37</span><span class="n">38</span></span> / 50 achievements · <span class="sw"><span class="o">74%</span><span class="n">76%</span></span></span><div class="bar"><i></i></div><small>⚡ Chasing: Speedrunner · only 0.8% of players</small></div></div><div class="pop"><div class="pi">🐉</div><div><small>Achievement unlocked</small><b>Dragon Slayer</b><span>Only 4.2% of players have this</span></div></div></div></div>
+</div>
+</div>
+</div>
+
+<div class="three">
+<div><h2>Live achievement titles</h2><p>Your title updates as you unlock achievements, and only when something changed.</p></div>
+<div><h2>Made for OBS</h2><p>One-click setup, a control panel, and an overlay that celebrates every unlock. Chat commands like <code>!next</code> too.</p></div>
+<div><h2>Private by design</h2><p>No accounts, no servers, no tracking. Everything runs on your own computer.</p></div>
+</div>
+</main>
+<footer><a href="https://github.com/ImSammyTTV/AchieveTitle">GitHub</a><a href="https://github.com/ImSammyTTV/AchieveTitle#readme">Docs</a><a href="https://github.com/ImSammyTTV/AchieveTitle/issues/new">Report a bug</a></footer>
+<script>
+(function(){
+var u=navigator.userAgent,p=(navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||"",
+mobile=/iphone|ipad|ipod|android/i.test(u)||(/mac/i.test(p)&&navigator.maxTouchPoints>1),
+b=document.getElementById("dl"),a=document.getElementById("alt"),
+r="https://github.com/ImSammyTTV/AchieveTitle/releases/latest";
+function l(n){return '<a href="'+r+'">'+n+'</a>'}
+if(mobile)return;
+if(/win/i.test(p)||/windows/i.test(u)){b.textContent="Download for Windows";a.innerHTML="Also for "+l("Mac")+" and "+l("Linux")+". Free and open source."}
+else if(/mac/i.test(p)){b.textContent="Download for Mac";a.innerHTML="Also for "+l("Windows")+" and "+l("Linux")+". Free and open source."}
+else if(/linux|x11/i.test(p)||/linux/i.test(u)){b.textContent="Download for Linux";a.innerHTML="Also for "+l("Windows")+" and "+l("Mac")+". Free and open source."}
+})();
+</script>
+</body>
+</html>
