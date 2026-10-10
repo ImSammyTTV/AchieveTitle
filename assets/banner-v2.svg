@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b0f33"/>
+      <stop offset="0.55" stop-color="#3a1a78"/>
+      <stop offset="1" stop-color="#9147ff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.2" cy="0.3" r="0.6">
+      <stop offset="0" stop-color="#bf94ff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#bf94ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe27a"/>
+      <stop offset="1" stop-color="#f5b400"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="400" rx="24" fill="url(#bg)"/>
+  <rect width="1280" height="400" rx="24" fill="url(#glow)"/>
+
+  <!-- trophy logo -->
+  <g transform="translate(96 92)">
+    <rect width="150" height="150" rx="34" fill="#9147ff" stroke="#ffffff" stroke-opacity="0.25" stroke-width="2"/>
+    <g>
+      <path d="M47 33h56v21c0 19-12 33-28 33S47 73 47 54z" fill="url(#gold)"/>
+      <path d="M47 40H30c0 16 8 26 21 28M103 40h17c0 16-8 26-21 28" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linecap="round"/>
+      <rect x="68" y="85" width="14" height="19" fill="#f5b400"/>
+      <rect x="52" y="104" width="46" height="14" rx="4" fill="url(#gold)"/>
+    </g>
+  </g>
+
+  <g font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif">
+    <text x="284" y="160" fill="#ffffff" font-size="76" font-weight="800" letter-spacing="-1">AchieveTitle</text>
+    <text x="288" y="212" fill="#e3d7ff" font-size="28">Live Steam achievement progress in your Twitch stream title</text>
+
+    <!-- example title, styled like a Twitch stream card -->
+    <g transform="translate(288 250)">
+      <rect width="640" height="72" rx="14" fill="#0e0e10" fill-opacity="0.75" stroke="#bf94ff" stroke-opacity="0.5"/>
+      <circle cx="40" cy="36" r="20" fill="#9147ff"/>
+      <path d="M34 25 L34 47 L52 36 Z" fill="#fff"/>
+      <text x="76" y="30" fill="#adadb8" font-size="16" font-weight="600">LIVE · YourChannel</text>
+      <text x="76" y="56" fill="#ffffff" font-size="21" font-weight="700">Chill stream [38/50 Achievements] 🏆 Dragon Slayer</text>
+    </g>
+  </g>
+
+  <!-- platform chips -->
+  <g font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#ffffff">
+    <g transform="translate(968 262)"><rect width="240" height="36" rx="18" fill="#ffffff" fill-opacity="0.12"/><text x="120" y="24" text-anchor="middle">Windows · macOS · Linux</text></g>
+    <g transform="translate(968 306)"><rect width="240" height="36" rx="18" fill="#ffffff" fill-opacity="0.12"/><text x="120" y="24" text-anchor="middle">Free &amp; open source</text></g>
+  </g>
+</svg>

@@ -1,0 +1,73 @@
+# Push a tag like v0.4.0 (or publish a release) to build downloads for
+# Windows, macOS and Linux, plus .deb/.rpm/.apk/Arch packages.
+name: Release
+# Or run it from the Actions tab ("Run workflow") with a version: it tags main and releases.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. v0.5.0 (add -beta.1 for a pre-release)"
+        required: true
+permissions:
+  contents: write
+env:
+  TAG: ${{ inputs.version || github.ref_name }}
+jobs:
+  mac:
+    # The menu bar icon needs cgo, so macOS builds on a Mac.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - name: Check version
+        run: echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$' || { echo "Bad version '$TAG'" >&2; exit 1; }
+      - run: packaging/build-mac.sh "$TAG"
+      - uses: actions/upload-artifact@v4
+        with: { name: mac, path: dist/*.zip }
+
+  build:
+    needs: mac
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - run: go test ./...
+      - run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.41.1
+          go install github.com/tc-hib/go-winres@v0.3.3
+      - uses: actions/download-artifact@v4
+        with: { name: mac, path: dist }
+      - name: Build
+        env:
+          CGO_ENABLED: "0"
+        run: packaging/build-release.sh "$TAG"
+      - name: Release notes from CHANGELOG.md
+        # Uses the "## vX.Y.Z" section matching this tag (without any -beta suffix).
+        run: |
+          v="${TAG%%-*}"
+          awk -v h="## $v" '$0==h{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "No '## $v' section in CHANGELOG.md" >&2; exit 1; fi
+          cat notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          name: AchieveTitle ${{ env.TAG }}
+          files: dist/*
+          body_path: notes.md
+          # Tags like v0.5.0-beta.1 become pre-releases; plain tags become Latest.
+          prerelease: ${{ contains(env.TAG, '-') }}
+      - name: Update the Homebrew cask
+        # Casks/achievetitle.rb in this repo is the Homebrew tap; keep it on the new version.
+        if: ${{ !contains(env.TAG, '-') }}
+        run: |
+          git fetch -q origin main && git checkout -q -B main origin/main
+          packaging/homebrew/make-cask.sh "$TAG" dist/SHA256SUMS.txt > Casks/achievetitle.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/achievetitle.rb
+          git diff --cached --quiet || { git commit -m "Homebrew: AchieveTitle $TAG"; git push origin main; }

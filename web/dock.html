@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AchieveTitle</title>
+<style>
+  /* Compact control panel for an OBS Custom Browser Dock, in OBS's dark style. */
+  :root { --bg:#1d1f26; --field:#13141a; --line:#34374a; --text:#e9e8ef; --muted:#9a9aa8; --accent:#9147ff; --accent2:#bf94ff; --ok:#2fd58a; --err:#ff6b7a; --gold:#ffe27a }
+  * { box-sizing:border-box }
+  [hidden] { display:none !important }
+  body { margin:0; background:var(--bg); color:var(--text); font:13px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif }
+  .wrap { padding:10px; display:flex; flex-direction:column; gap:10px }
+  .sec { background:rgba(255,255,255,.025); border:1px solid var(--line); border-radius:8px; padding:9px 10px }
+  .label { font-size:10.5px; font-weight:700; letter-spacing:.7px; text-transform:uppercase; color:var(--muted); margin-bottom:6px }
+
+  .now { display:flex; gap:10px; align-items:center }
+  .art { width:42px; height:56px; border-radius:5px; object-fit:cover; flex:none; background:var(--field) }
+  .art-empty { display:grid; place-items:center; font-size:22px }
+  .game { font-weight:700; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .sub { color:var(--muted); font-size:12px }
+  .bar { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:8px }
+  .bar i { display:block; height:100%; width:0; background:linear-gradient(90deg, var(--accent), var(--accent2) 70%, var(--gold)); transition:width .8s }
+  .title { background:var(--field); border:1px solid var(--line); border-radius:6px; padding:7px 9px; word-break:break-word; font-size:13.5px }
+  .count { color:var(--muted); font-size:11px; margin-top:4px }
+
+  .switch-row { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:4px 0 }
+  .switch-row + .switch-row { border-top:1px solid rgba(255,255,255,.05) }
+  .switch { position:relative; width:34px; height:19px; flex:none }
+  .switch input { opacity:0; width:0; height:0 }
+  .switch span { position:absolute; inset:0; background:var(--line); border-radius:999px; cursor:pointer; transition:.2s }
+  .switch span::after { content:""; position:absolute; width:15px; height:15px; left:2px; top:2px; background:#fff; border-radius:50%; transition:.2s }
+  .switch input:checked + span { background:var(--accent) }
+  .switch input:checked + span::after { transform:translateX(15px) }
+
+  input[type=text] { width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--line); background:var(--field); color:var(--text); font:inherit }
+  input[type=text]:focus { outline:none; border-color:var(--accent) }
+  .field + .field { margin-top:7px }
+  .field label { display:block; font-size:11.5px; color:var(--muted); margin-bottom:3px }
+  .saved { color:var(--ok); font-size:11px; margin-left:6px; opacity:0; transition:opacity .3s } .saved.show { opacity:1 }
+
+  .bars { display:flex; flex-wrap:wrap; gap:5px }
+  .bars button { background:var(--field); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-size:11px; letter-spacing:-1px; cursor:pointer; color:var(--text) }
+  .bars button.sel { border-color:var(--accent); background:rgba(145,71,255,.2) }
+
+  select { width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--line); background:var(--field); color:var(--text); font:inherit }
+  .recent { list-style:none; margin:0; padding:0; display:grid; gap:4px }
+  .recent li { display:flex; gap:6px; align-items:center; font-size:12.5px; min-width:0 }
+  .recent img.ach { width:20px; height:20px; border-radius:4px; flex:none }
+  .recent li b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600 }
+  .recent li span { color:var(--muted); font-size:11.5px; white-space:nowrap } .rare { color:var(--gold) !important; font-weight:700 }
+
+  .buttons { display:grid; grid-template-columns:1fr 1fr; gap:6px }
+  button.act { background:#3a3d4a; color:#fff; border:0; border-radius:6px; padding:7px 8px; font:inherit; font-weight:600; cursor:pointer }
+  button.act:hover { filter:brightness(1.15) }
+  .err { color:var(--err); font-size:12px } a { color:var(--accent2) }
+
+  /* Optional progress bar animation: a light sweeping along it, or its colours flowing */
+  .bar > i, .bar i { position:relative; overflow:hidden }
+  body.bar-shimmer .bar i::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+                                   transform:translateX(-100%); animation:barshim 2.6s ease-in-out infinite }
+  body.bar-flow .bar i { background:linear-gradient(90deg, var(--ba1), var(--ba2), var(--ba3), var(--ba2), var(--ba1)) !important; background-size:200% 100% !important; animation:barflow 3s linear infinite }
+  @keyframes barshim { to { transform:translateX(100%) } }
+  @keyframes barflow { to { background-position:-200% 0 } }
+  @media (prefers-reduced-motion: reduce) { body.bar-shimmer .bar i::after, body.bar-flow .bar i { animation:none } }
+  body { --ba1:#9147ff; --ba2:#bf94ff; --ba3:#ffe27a }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- Now playing -->
+  <div>
+    <div class="now">
+      <img class="art" id="art" alt="" hidden><div class="art art-empty" id="artEmpty">🏆</div>
+      <div style="min-width:0">
+        <div class="game" id="game">Loading…</div>
+        <div class="sub" id="progress"></div>
+      </div>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+  </div>
+
+  <div>
+    <div class="title" id="title">—</div>
+    <div class="count" id="count"></div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <!-- Most-used switches -->
+  <div class="sec">
+    <div class="switch-row"><span>Update my title</span><label class="switch"><input type="checkbox" id="enabled"><span></span></label></div>
+    <div class="switch-row"><span>Chat commands</span><label class="switch"><input type="checkbox" id="chat_enabled"><span></span></label></div>
+    <div class="switch-row"><span>Set my category</span><label class="switch"><input type="checkbox" id="set_category"><span></span></label></div>
+  </div>
+
+  <!-- Title -->
+  <div class="sec">
+    <div class="label">Title <span class="saved" id="savedMsg">✔ Saved</span></div>
+    <div class="field"><label for="custom_title">Custom text</label><input type="text" id="custom_title" placeholder="Chill stream"></div>
+    <div class="field"><label for="template">Template</label><input type="text" id="template"></div>
+    <div class="field"><label>Bar style</label><div class="bars" id="bars"></div></div>
+  </div>
+
+  <!-- Chasing -->
+  <div class="sec" id="chaseSec" hidden>
+    <div class="label">🎯 Chasing</div>
+    <select id="chase"></select>
+  </div>
+
+  <!-- Recent unlocks -->
+  <div class="sec" id="recentSec" hidden>
+    <div class="label">Recent unlocks</div>
+    <ul class="recent" id="recent"></ul>
+  </div>
+
+  <div class="buttons">
+    <button class="act" onclick="post('/api/refresh').then(() => setTimeout(poll, 1500))">↻ Check now</button>
+    <button class="act" onclick="post('/api/restore')">↩ Restore title</button>
+    <button class="act" id="testBtn" onclick="testPopup()">🏆 Test popup</button>
+    <button class="act" onclick="window.open('/', '_blank')">⚙ Settings</button>
+  </div>
+  <div id="upd" hidden><a href="/#updates" target="_blank">⬆ Update available: open Settings</a></div>
+</div>
+
+<script>
+// Progress bar animation (none, shimmer or flow), from the overlay settings.
+function setBarAnim(v) { document.body.classList.toggle('bar-shimmer', v === 'shimmer'); document.body.classList.toggle('bar-flow', v === 'flow'); }
+
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const post = (url, body) => fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: body && JSON.stringify(body)})
+  .then(async r => { if (!r.ok) throw new Error(await r.text()); return r; });
+// A short sample of a bar style: multi-colour styles show their colours.
+const barSample = (f, e) => { let c; try { c = [...new Intl.Segmenter().segment(f)].map(x => x.segment); } catch (x) { c = [...f]; } return c.length > 1 ? c.slice(0, 5).join('') : f.repeat(3) + e.repeat(2); };
+const BARS = [['🟥🟧🟨🟩🟦🟪','⬛'],['❤️🧡💛💚💙💜','🖤'],['▰','▱'],['🟪','⬛'],['🟩','⬛'],['🟨','⬛'],['🟦','⬜'],['🟥','⬛'],['█','░'],['●','○'],['★','☆']];
+
+// Every change applies straight away.
+async function quick(body) {
+  try {
+    await post('/api/quick', body);
+    $('savedMsg').classList.add('show'); setTimeout(() => $('savedMsg').classList.remove('show'), 1500);
+    setTimeout(poll, 1200);
+  } catch (e) { $('err').textContent = e.message; }
+}
+['enabled','chat_enabled','set_category'].forEach(id => $(id).addEventListener('change', () => quick({[id]: $(id).checked})));
+// Text fields save when you press Enter or click away (not on every key press).
+['custom_title','template'].forEach(id => {
+  $(id).addEventListener('change', () => quick({[id]: $(id).value}));
+  $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $(id).blur(); });
+});
+
+let bar = {filled:'▰', empty:'▱', length:10};
+function showBars() {
+  $('bars').innerHTML = BARS.map(([f, e]) =>
+    `<button type="button" data-f="${f}" data-e="${e}" class="${f === bar.filled && e === bar.empty ? 'sel' : ''}">${barSample(f, e)}</button>`).join('');
+  document.querySelectorAll('#bars button').forEach(b => b.onclick = () => {
+    const emoji = /\p{Extended_Pictographic}/u.test(b.dataset.f);
+    bar = {filled: b.dataset.f, empty: b.dataset.e, length: emoji ? Math.min(bar.length, 8) : bar.length};
+    showBars(); quick({bar});
+  });
+}
+
+// Chasing picker: locked achievements of the current game, rarest first.
+let chaseKey = '';
+async function loadChase() {
+  try {
+    const r = await (await fetch('/api/achievements')).json();
+    const list = r.locked || [];
+    $('chaseSec').hidden = !r.app_id;
+    const key = r.app_id + '|' + (r.chasing || '') + '|' + list.length;
+    if (key === chaseKey || document.activeElement === $('chase')) return;
+    chaseKey = key;
+    $('chase').innerHTML = '<option value="">Nothing in particular</option>' + list.map(a => {
+      const p = a.global_percent, pct = p ? ` (${p < 10 ? p.toFixed(1) : Math.round(p)}%)` : '';
+      return `<option value="${esc(a.api_name)}" ${a.api_name === r.chasing ? 'selected' : ''}>${esc(a.name)}${pct}</option>`;
+    }).join('');
+  } catch (e) {}
+}
+$('chase').addEventListener('change', () => { chaseKey = ''; quick({chasing: $('chase').value}); });
+
+async function loadSettings() {
+  try {
+    const c = await (await fetch('/api/config')).json();
+    // Don't overwrite a field while it's being typed in.
+    if (document.activeElement !== $('custom_title')) $('custom_title').value = c.custom_title || '';
+    if (document.activeElement !== $('template')) $('template').value = c.template || '';
+    $('chat_enabled').checked = !!(c.chat && c.chat.enabled);
+    $('set_category').checked = !!c.set_category;
+    if (c.bar) bar = c.bar;
+    if (c.overlay) setBarAnim(c.overlay.bar_anim);
+    showBars();
+  } catch (e) {}
+}
+
+async function poll() {
+  let s;
+  try { s = await (await fetch('/api/status')).json(); $('err').textContent = ''; }
+  catch (e) { $('err').textContent = "AchieveTitle isn't running."; return; }
+  $('art').hidden = !s.category_art; $('artEmpty').hidden = !!s.category_art;
+  if (s.category_art && $('art').src !== s.category_art) $('art').src = s.category_art;
+  $('game').textContent = s.game || (s.category || 'Not in a Steam game');
+  $('progress').textContent = s.total ? `${s.unlocked}/${s.total} achievements · ${Math.floor(100 * s.unlocked / s.total)}%` : 'No achievements to track';
+  $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
+  $('title').textContent = s.title || '—';
+  $('count').textContent = s.title ? `${s.title.length} / 140 characters` : '';
+  $('enabled').checked = s.running;
+  if (!s.twitch_login) $('err').innerHTML = 'Twitch isn\'t connected: <a href="/" target="_blank">open Settings</a>.';
+  else if (s.error) $('err').textContent = s.error;
+  const recent = (s.recent || []).slice(0, 3);
+  $('recentSec').hidden = !recent.length;
+  $('recent').innerHTML = recent.map(a => {
+    const p = a.global_percent;
+    const pct = p ? (p < 10 ? p.toFixed(1) : Math.round(p)) + '%' : '';
+    return `<li>${a.icon ? `<img class="ach" src="${esc(a.icon)}" alt="">` : '🏆'} <b title="${esc(a.name)}">${esc(a.name)}</b><span class="${p && p < 5 ? 'rare' : ''}">${pct}</span></li>`;
+  }).join('');
+}
+
+async function testPopup() {
+  await post('/api/overlay/test').catch(() => {});
+  $('testBtn').textContent = '🏆 Sent!'; setTimeout(() => $('testBtn').textContent = '🏆 Test popup', 1500);
+}
+async function upd() { try { $('upd').hidden = !(await (await fetch('/api/update')).json()).available; } catch (e) {} }
+
+loadSettings(); loadChase(); poll(); upd();
+setInterval(loadChase, 15000);
+setInterval(poll, 5000); setInterval(loadSettings, 15000); setInterval(upd, 10 * 60 * 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Optional: run AchieveTitle in the background at login.
+#   systemctl --user enable --now achievetitle
+[Unit]
+Description=AchieveTitle - Steam achievements in your Twitch title
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/achievetitle -no-browser -no-tray
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

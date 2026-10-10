@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AchieveTitle overlay</title>
+<style>
+  /* OBS Browser Source: 600 × 160, transparent background. */
+  [hidden] { display:none !important }
+  html, body { margin:0; background:transparent; overflow:hidden }
+  body { font:600 16px/1.3 "Segoe UI", system-ui, -apple-system, sans-serif; color:#fff; width:600px; height:160px; position:relative }
+  .card { position:absolute; left:8px; top:8px; right:8px; display:flex; gap:14px; align-items:center; padding:12px 14px;
+          border-radius:16px; background:linear-gradient(135deg, rgba(29,20,48,.92), rgba(16,12,26,.92));
+          border:1px solid rgba(191,148,255,.35); box-shadow:0 10px 30px rgba(0,0,0,.45); transition:opacity .4s, transform .4s }
+  .card.hide { opacity:0; transform:translateY(8px) }
+  .art { width:60px; height:80px; border-radius:9px; object-fit:cover; flex:none; background:#26222f; box-shadow:0 4px 12px rgba(0,0,0,.4) }
+  .art-empty { display:grid; place-items:center; font-size:30px }
+  .info { flex:1; min-width:0 }
+  .game { font-size:19px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .row { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-top:2px }
+  .count { font-size:15px; color:#e3d7ff } .count b { font-size:20px; color:#fff }
+  .latest { font-size:13px; color:#b9b1cc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55% }
+  .bar { height:10px; margin-top:8px; background:rgba(255,255,255,.12); border-radius:999px; overflow:hidden }
+  .bar i { display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,#9147ff,#bf94ff 70%,#ffe27a); transition:width 1.2s ease }
+  .chase { margin-top:6px; font-size:13.5px; font-weight:700; color:#ffe27a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .idle .game { font-size:16px; color:#d7cfe8 } .idle .count { font-size:13px; color:#a9a3bb }
+
+  /* Unlock popup, slides over the card */
+  .toast { position:absolute; left:8px; right:8px; top:8px; display:flex; gap:14px; align-items:center; padding:12px 16px; min-height:104px;
+           border-radius:16px; background:linear-gradient(120deg, #6a2ee8, #9147ff 55%, #c38bff); box-shadow:0 12px 34px rgba(145,71,255,.55);
+           border:1px solid rgba(255,226,122,.7); opacity:0; transform:translateY(-14px) scale(.97); transition:all .45s cubic-bezier(.2,.9,.3,1.2) }
+  .toast.show { opacity:1; transform:none }
+  .toast .trophy { font-size:44px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.35)); animation:none }
+  .toast.show .trophy { animation:pop .7s ease }
+  .toast .trophy img { width:80px; height:80px; border-radius:12px; display:block; border:2px solid rgba(255,226,122,.85); box-shadow:0 6px 18px rgba(0,0,0,.4) }
+  .chase img { width:18px; height:18px; border-radius:4px; vertical-align:-4px; margin-right:5px }
+  .toast .kicker { font-size:12px; letter-spacing:1.2px; text-transform:uppercase; color:#ffe27a; font-weight:800 }
+  .toast .name { font-size:21px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .toast .rare { font-size:13.5px; color:#f3ecff; font-weight:600 }
+  .toast { overflow:hidden }
+  .toast::after { content:""; position:absolute; inset:0; background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,.55) 50%, transparent 62%);
+                  transform:translateX(-120%); pointer-events:none }
+  .toast.shine::after { animation:shine 1.3s .25s ease-out }
+  .toast.glow { animation:glow 1.3s ease-in-out 3 }
+  .bar.pulse { animation:barpulse 1s ease-in-out 2 }
+  #fx { position:absolute; inset:0; pointer-events:none }
+  @keyframes shine { to { transform:translateX(120%) } }
+  @keyframes glow { 0%,100% { box-shadow:0 12px 34px rgba(145,71,255,.55) } 50% { box-shadow:0 0 38px 8px rgba(255,214,90,.85) } }
+  @keyframes barpulse { 0%,100% { box-shadow:none } 50% { box-shadow:0 0 14px 3px rgba(255,226,122,.8) } }
+  @keyframes pop { 0% { transform:scale(.4) rotate(-20deg) } 60% { transform:scale(1.2) rotate(8deg) } 100% { transform:none } }
+
+  /* Optional progress bar animation: a light sweeping along it, or its colours flowing */
+  .bar > i, .bar i { position:relative; overflow:hidden }
+  body.bar-shimmer .bar i::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+                                   transform:translateX(-100%); animation:barshim 2.6s ease-in-out infinite }
+  body.bar-flow .bar i { background:linear-gradient(90deg, var(--ba1), var(--ba2), var(--ba3), var(--ba2), var(--ba1)) !important; background-size:200% 100% !important; animation:barflow 3s linear infinite }
+  @keyframes barshim { to { transform:translateX(100%) } }
+  @keyframes barflow { to { background-position:-200% 0 } }
+  @media (prefers-reduced-motion: reduce) { body.bar-shimmer .bar i::after, body.bar-flow .bar i { animation:none } }
+  body { --ba1:#9147ff; --ba2:#bf94ff; --ba3:#ffe27a }
+</style>
+</head>
+<body>
+<canvas id="fx" width="600" height="160"></canvas>
+<div class="card hide" id="card">
+  <img class="art" id="art" alt="" hidden>
+  <div class="art art-empty" id="artEmpty">🏆</div>
+  <div class="info">
+    <div class="game" id="game">AchieveTitle</div>
+    <div class="row"><div class="count" id="count"></div><div class="latest" id="latest"></div></div>
+    <div class="bar" id="barWrap"><i id="bar"></i></div>
+    <div class="chase" id="chase" hidden></div>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <div class="trophy" id="tIcon">🏆</div>
+  <div style="min-width:0">
+    <div class="kicker">Achievement unlocked</div>
+    <div class="name" id="tName"></div>
+    <div class="rare" id="tRare"></div>
+  </div>
+</div>
+<script src="/sounds.js"></script>
+<script>
+// Progress bar animation (none, shimmer or flow), from the overlay settings.
+function setBarAnim(v) { document.body.classList.toggle('bar-shimmer', v === 'shimmer'); document.body.classList.toggle('bar-flow', v === 'flow'); }
+
+// ?hideidle=1 hides the card when you're not in a Steam game with achievements.
+const hideIdle = new URLSearchParams(location.search).get('hideidle') === '1';
+const $ = id => document.getElementById(id);
+let seen = null, appId = null, testSeq = null;
+
+// Celebration settings come from AchieveTitle. ?preview=1 is the settings-page
+// preview: it shows the animation but leaves the sound to the page itself.
+const preview = new URLSearchParams(location.search).get('preview') === '1';
+let fxCfg = {animation:'confetti', sound:'chime', volume:70, sound_ver:0};
+async function loadCfg() { try { const c = await (await fetch('/api/config')).json(); if (c.overlay) { fxCfg = c.overlay; setBarAnim(fxCfg.bar_anim); } } catch (e) {} }
+
+function popup(name, pct, icon) {
+  const t = $('toast');
+  // The achievement's own art when Steam has it, otherwise the trophy.
+  $('tIcon').innerHTML = icon ? `<img src="${icon.replace(/"/g, '&quot;')}" alt="">` : '🏆';
+  $('tName').textContent = name;
+  $('tRare').textContent = pct ? `Only ${pct < 10 ? pct.toFixed(1) : Math.round(pct)}% of players have this` : '';
+  t.classList.remove('show', 'shine', 'glow'); void t.offsetWidth; // restart the animations
+  t.classList.add('show');
+  if (fxCfg.animation !== 'simple') t.classList.add('shine');
+  if (fxCfg.animation === 'glow') t.classList.add('glow');
+  if (fxCfg.animation === 'confetti') confetti();
+  if (!preview) playUnlockSound(fxCfg.sound, fxCfg.volume, '/overlay/sound?v=' + fxCfg.sound_ver);
+  clearTimeout(popup.t);
+  popup.t = setTimeout(() => t.classList.remove('show', 'shine', 'glow'), 7000);
+}
+
+// A short confetti burst from the trophy, drawn on a canvas inside the overlay.
+function confetti() {
+  const cv = $('fx'), g = cv.getContext('2d');
+  const colours = ['#ffe27a', '#f5b400', '#bf94ff', '#9147ff', '#ffffff', '#6fe3b0'];
+  const bits = Array.from({length: 90}, () => ({
+    x: 60, y: 60, vx: 2 + Math.random() * 9, vy: -5 + Math.random() * 7, r: Math.random() * 6.28,
+    vr: -0.3 + Math.random() * 0.6, w: 4 + Math.random() * 5, h: 3 + Math.random() * 4, c: colours[Math.floor(Math.random() * colours.length)],
+  }));
+  const start = performance.now();
+  cancelAnimationFrame(confetti.raf);
+  (function frame(now) {
+    const age = (now - start) / 1000;
+    g.clearRect(0, 0, cv.width, cv.height);
+    if (age > 2.6) return;
+    g.globalAlpha = Math.min(1, 2.6 - age);
+    for (const b of bits) {
+      b.vy += 0.22; b.vx *= 0.985; b.x += b.vx; b.y += b.vy; b.r += b.vr;
+      g.save(); g.translate(b.x, b.y); g.rotate(b.r); g.fillStyle = b.c; g.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); g.restore();
+    }
+    confetti.raf = requestAnimationFrame(frame);
+  })(start);
+}
+
+let lastUnlocked = null;
+async function tick() {
+  let s;
+  try { s = await (await fetch('/api/status')).json(); } catch (e) { return; }
+  const playing = !!s.total;
+  $('card').classList.toggle('idle', !playing);
+  $('card').classList.toggle('hide', !playing && hideIdle);
+  $('art').hidden = !s.category_art; $('artEmpty').hidden = !!s.category_art;
+  if (s.category_art && $('art').src !== s.category_art) $('art').src = s.category_art;
+  if (playing) {
+    $('game').textContent = s.game;
+    $('count').innerHTML = `<b>${s.unlocked}</b> / ${s.total} achievements · ${Math.floor(100 * s.unlocked / s.total)}%`;
+    $('latest').textContent = s.latest ? '🏆 ' + s.latest.name : '';
+    // The achievement being chased gets its own line under the bar.
+    const ch = s.chasing, pc = ch && ch.global_percent;
+    $('chase').hidden = !ch;
+    if (ch) {
+      $('chase').textContent = `Chasing: ${ch.name}` + (pc ? ` · only ${pc < 10 ? pc.toFixed(1) : Math.round(pc)}% of players` : '');
+      $('chase').insertAdjacentHTML('afterbegin', ch.icon ? `<img src="${ch.icon.replace(/"/g, '&quot;')}" alt="">` : '🎯 ');
+    }
+    $('bar').style.width = (100 * s.unlocked / s.total) + '%';
+    if (lastUnlocked !== null && s.unlocked > lastUnlocked) { $('barWrap').classList.remove('pulse'); void $('barWrap').offsetWidth; $('barWrap').classList.add('pulse'); }
+    lastUnlocked = s.unlocked;
+    $('barWrap').hidden = false;
+  } else {
+    $('game').textContent = 'Waiting for a Steam game…';
+    $('count').textContent = 'Achievement progress appears here when you play';
+    $('latest').textContent = '';
+    $('barWrap').hidden = true; $('chase').hidden = true;
+  }
+
+  // Celebrate unlocks that happen while the overlay is open (not on first load or a game switch).
+  const key = s.latest ? s.latest.api_name + s.latest.unlock_time : '';
+  if (seen !== null && appId === s.app_id && key && key !== seen) popup(s.latest.name, s.latest.global_percent, s.latest.icon);
+  seen = key; appId = s.app_id;
+
+  // "Test popup" button in the settings page.
+  if (testSeq !== null && s.overlay_test !== testSeq) {
+    const [n, p, ic] = s.latest ? [s.latest.name, s.latest.global_percent, s.latest.icon] : ['Dragon Slayer', 4.2, ''];
+    loadCfg().then(() => popup(n, p, ic)); // use the celebration settings just chosen
+  }
+  testSeq = s.overlay_test;
+}
+loadCfg().then(tick); setInterval(tick, 2000); setInterval(loadCfg, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Flatpak manifest. Test locally:
+#   flatpak-builder --user --install --force-clean build packaging/flatpak/io.github.imsammyttv.AchieveTitle.yml
+# To publish on Flathub, see https://docs.flathub.org/docs/for-app-authors/submission
+app-id: io.github.imsammyttv.AchieveTitle
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.golang
+command: achievetitle
+finish-args:
+  - --share=network   # Steam + Twitch APIs, and the local settings page
+build-options:
+  append-path: /usr/lib/sdk/golang/bin
+  env:
+    CGO_ENABLED: '0'
+    GOFLAGS: -mod=mod
+modules:
+  - name: achievetitle
+    buildsystem: simple
+    build-commands:
+      - go build -trimpath -ldflags "-s -w -X main.version=v0.1.0" -o achievetitle .
+      - install -Dm755 achievetitle /app/bin/achievetitle
+      - install -Dm644 packaging/linux/io.github.imsammyttv.AchieveTitle.desktop /app/share/applications/io.github.imsammyttv.AchieveTitle.desktop
+      - install -Dm644 packaging/linux/achievetitle.svg /app/share/icons/hicolor/scalable/apps/io.github.imsammyttv.AchieveTitle.svg
+      - install -Dm644 packaging/linux/io.github.imsammyttv.AchieveTitle.metainfo.xml /app/share/metainfo/io.github.imsammyttv.AchieveTitle.metainfo.xml
+    sources:
+      - type: git
+        url: https://github.com/ImSammyTTV/AchieveTitle.git
+        tag: v0.1.0

@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AchieveTitle</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='28' fill='%239147ff'/%3E%3Cpath d='M40 28h48v18c0 16-10 28-24 28S40 62 40 46z' fill='%23ffd54a'/%3E%3Crect x='58' y='72' width='12' height='16' fill='%23ffd54a'/%3E%3Crect x='44' y='88' width='40' height='12' rx='3' fill='%23ffd54a'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg:#0b0a10; --panel:#16141d; --panel2:#1d1a27; --field:#0f0d15; --line:#2c2839; --line2:#3a3450;
+    --text:#f1eff7; --muted:#a9a3bb; --dim:#7d778f;
+    --accent:#9147ff; --accent2:#bf94ff; --gold:#f5b400; --gold2:#ffe27a; --ok:#2fd58a; --err:#ff6b7a; --warn:#ffc15e;
+  }
+  * { box-sizing:border-box }
+  [hidden] { display:none !important }
+  html, body { height:100% }
+  body { margin:0; color:var(--text); font:14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+         background: radial-gradient(1200px 500px at 10% -10%, #3a1a78 0%, transparent 60%),
+                     radial-gradient(900px 500px at 110% 120%, #2a1459 0%, transparent 55%), var(--bg);
+         /* One glow for the whole window: without this it tiles down long pages (e.g. in an OBS dock). */
+         background-repeat:no-repeat; background-attachment:fixed; min-height:100% }
+  html { background:var(--bg) }
+
+  /* Drifting achievement icons behind everything, tilted and faded out */
+  .drift { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; opacity:.09;
+           -webkit-mask-image:linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+           mask-image:linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent) }
+  .drift-in { position:absolute; left:50%; top:50%; width:max(180vw, 180vh); height:max(180vw, 180vh);
+              transform:translate(-50%, -50%) rotate(-16deg); display:flex; flex-direction:column; justify-content:center; gap:34px }
+  .drift-row { display:flex; gap:34px; width:max-content; animation:drift var(--t, 90s) linear infinite }
+  .drift-row:nth-child(even) { animation-direction:reverse }
+  .drift-row > * { width:56px; height:56px; border-radius:12px; flex:none; object-fit:cover; display:grid; place-items:center;
+                   font-size:30px; background:rgba(255,255,255,.08); filter:grayscale(.2) }
+  @keyframes drift { to { transform:translateX(-50%) } }
+  @media (prefers-reduced-motion: reduce) { .drift-row { animation:none } }
+  body.bg-still .drift-row { animation:none } body.bg-off .drift { display:none }
+  .app { position:relative; z-index:1 }
+  .presets { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px }
+  .presets button { display:block; min-width:0; text-align:left; background:var(--field); border:1px solid var(--line2); padding:5px 10px; font-weight:600; font-size:12.5px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .presets button:hover { border-color:var(--accent) }
+  .presets button.sel { border-color:var(--accent); background:rgba(145,71,255,.22) }
+  .presets small { display:block; color:var(--muted); font-weight:400; font-size:11px; font-family:ui-monospace, monospace; overflow:hidden; text-overflow:ellipsis }
+  .pill-ico { width:14px; height:14px; flex:none; margin-right:-2px }
+  .tab-ico { width:1.05em; height:1.05em; vertical-align:-.15em }
+  .app { height:100vh; display:flex; flex-direction:column; max-width:1280px; margin:0 auto; padding:14px 20px 18px; gap:12px }
+
+  /* Header */
+  header { display:flex; align-items:center; gap:14px; flex-wrap:wrap }
+  .logo { width:40px; height:40px; flex:none; filter:drop-shadow(0 4px 14px rgba(145,71,255,.45)) }
+  .brand h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:-.3px }
+  .brand p { margin:0; color:var(--muted); font-size:12.5px }
+  .brand .ver { color:var(--accent2); font-weight:600 }
+  .pills { margin-left:auto; display:flex; gap:8px; flex-wrap:wrap }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; font-size:12.5px; font-weight:600;
+          background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--muted); white-space:nowrap }
+  .pill i { width:8px; height:8px; border-radius:50%; background:var(--dim) }
+  .pill.on { color:var(--text) } .pill.on i { background:var(--ok); box-shadow:0 0 8px var(--ok) }
+  .pill.bad { color:var(--text) } .pill.bad i { background:var(--err) }
+
+  /* Update banner */
+  .update { display:flex; align-items:center; gap:14px; padding:10px 14px; border-radius:12px;
+            background:linear-gradient(90deg, rgba(145,71,255,.28), rgba(245,180,0,.14)); border:1px solid rgba(191,148,255,.45) }
+  .update b { font-size:14px } .update span { color:var(--muted); font-size:13px }
+  .update .row { margin-left:auto }
+
+  /* Layout */
+  .main { flex:1; display:grid; grid-template-columns:380px 1fr; gap:16px; min-height:0 }
+  .card { background:linear-gradient(180deg, var(--panel2), var(--panel)); border:1px solid var(--line); border-radius:16px; min-height:0 }
+
+  /* Status card */
+  .status { padding:18px; display:flex; flex-direction:column; gap:14px; overflow:auto }
+  .now { display:flex; gap:14px; align-items:flex-start }
+  .art { width:84px; height:112px; border-radius:10px; flex:none; object-fit:cover; background:var(--field);
+         box-shadow:0 8px 24px rgba(0,0,0,.45); border:1px solid var(--line2) }
+  .art-empty { display:grid; place-items:center; font-size:34px }
+  .kicker { font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--accent2) }
+  .game { font-size:18px; font-weight:800; line-height:1.25; margin:2px 0 4px; word-break:break-word }
+  .meta { color:var(--muted); font-size:12.5px }
+  .meta b { color:var(--text); font-weight:600 }
+  .big { font-size:26px; font-weight:800; letter-spacing:-.5px }
+  .big small { font-size:14px; color:var(--muted); font-weight:600 }
+  .bar { height:10px; background:var(--field); border-radius:999px; overflow:hidden; border:1px solid var(--line) }
+  .bar > i { display:block; height:100%; width:0; background:linear-gradient(90deg, var(--accent), var(--accent2) 70%, var(--gold2)); transition:width .8s ease; border-radius:999px }
+  .label { font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--dim); margin-bottom:6px }
+  .titlebox { padding:12px 14px; background:var(--field); border:1px solid var(--line2); border-radius:12px; font-size:15.5px; font-weight:600; word-break:break-word; min-height:48px }
+  .count { display:inline-block; margin-top:8px; padding:2px 9px; border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:12px }
+  .count.full { color:var(--err); border-color:var(--err) }
+  .switch-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:12px; background:var(--field); border:1px solid var(--line) }
+  .switch-row b { font-size:13.5px } .switch-row span { display:block; color:var(--muted); font-size:12px }
+  .status .actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:auto }
+  .status .actions button { padding:9px 8px; white-space:nowrap }
+  .step { display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; margin:4px 0 8px }
+  .num { width:20px; height:20px; border-radius:50%; background:var(--accent); display:grid; place-items:center; font-size:11.5px; flex:none }
+  .acct { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; background:var(--field); border:1px solid var(--line2) }
+  .acct img { width:36px; height:36px; border-radius:8px }
+  .acct-ph { width:36px; height:36px; border-radius:8px; background:#9146ff; flex:none }
+  .acct-sm { padding:6px 8px; margin-top:6px } .acct-sm img, .acct-sm .acct-ph { width:24px; height:24px; border-radius:6px } .acct-sm span { color:var(--muted) }
+  .acct b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  .btn.steam-btn { background:linear-gradient(90deg,#1b2838,#2a475e); border:1px solid #66c0f4; color:#fff }
+  .done-line { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; font-size:13px }
+  .done-line a { margin-left:auto; font-size:12.5px }
+  .bars { display:flex; flex-wrap:wrap; gap:6px }
+  .bars button { background:var(--field); border:1px solid var(--line2); padding:4px 7px; font-size:11.5px; letter-spacing:-1px; font-weight:400 }
+  .bars button.sel { border-color:var(--accent); background:rgba(145,71,255,.18) }
+  .inline input.barchar { width:58px; text-align:center; font-size:16px } .inline input#bar_filled { width:76px; font-size:12px }
+  .barbox .inline { flex-wrap:nowrap } .barbox #bar_length { width:64px }
+  .inline input#bar_length { width:70px }
+  .barpreview { display:flex; align-items:center; gap:10px; margin-top:10px; padding:9px 12px; border-radius:9px; background:var(--field); border:1px solid var(--line2); font-size:17px; letter-spacing:-.5px }
+  .barpreview small { margin-left:auto; letter-spacing:0; font-size:12px }
+  .seg { display:flex; flex-wrap:wrap; gap:6px }
+  .seg button { background:var(--field); border:1px solid var(--line2); padding:7px 11px; font-weight:600; font-size:13px }
+  .seg button.sel { border-color:var(--accent); background:rgba(145,71,255,.22) }
+  #ovAnim button, #ovBar button, #ovSound button { padding:5px 9px; font-size:12.5px }
+  #ovAnim, #ovBar, #ovSound { gap:5px }
+  .stage { position:relative; aspect-ratio:616/176; border-radius:10px; overflow:hidden; border:1px solid var(--line2);
+           background:linear-gradient(120deg,#2b6a3f,#8a7a2a 35%,#6d2f8f 70%,#1d3d7a) }
+  .stage iframe { position:absolute; left:0; top:0; width:600px; height:160px; border:0; transform-origin:0 0; background:transparent }
+  .steps { margin:0; padding-left:20px; display:grid; gap:7px; font-size:13px; color:var(--text) }
+  .steps .copy { margin-top:5px }
+  .barbox { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start }
+  .steps-row { display:grid; grid-template-columns:1fr 1.7fr 1fr 1fr; gap:14px; padding-left:18px }
+  .chase { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; background:linear-gradient(90deg, rgba(245,180,0,.12), rgba(145,71,255,.08)); border:1px solid rgba(245,180,0,.35) }
+  .chase-icon { font-size:22px; display:flex }
+  img.ach { width:28px; height:28px; border-radius:6px; flex:none; object-fit:cover; box-shadow:0 2px 6px rgba(0,0,0,.4) }
+  .chase-icon img.ach, .chase-item img.ach { width:40px; height:40px; border-radius:8px }
+  .ach-emoji { width:28px; text-align:center; flex:none } .chase b { font-size:14px } .chase button { padding:6px 10px }
+  .modal { position:fixed; inset:0; background:rgba(5,4,10,.7); display:grid; place-items:center; z-index:10; padding:20px }
+  .modal-box { width:min(620px, 100%); max-height:80vh; display:flex; flex-direction:column; gap:10px; padding:18px; border-radius:16px; background:var(--panel2); border:1px solid var(--line2) }
+  .chase-list { overflow:auto; display:grid; gap:6px }
+  .chase-item { display:flex; gap:10px; align-items:center; text-align:left; background:var(--field); border:1px solid var(--line); border-radius:10px; padding:8px 11px; font-weight:400 }
+  .chase-item:hover, .chase-item.sel { border-color:var(--gold); filter:none }
+  .chase-item b { display:block; font-size:13.5px } .chase-item small { display:block }
+  .chase-item .pct { margin-left:auto; white-space:nowrap; font-weight:700; color:var(--muted) } .chase-item .pct.rare { color:var(--gold2) }
+  details summary { cursor:pointer; color:var(--accent2); font-size:12.5px; font-weight:600 }
+  .inline { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap } .inline label { margin:0; white-space:nowrap } .inline input[type=number] { width:90px } .inline input { width:90px }
+  .status .msg { font-size:12.5px }
+  .recent { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:minmax(0,1fr); gap:6px }
+  .recent li { min-width:0; display:flex; align-items:center; gap:10px; padding:5px 10px 5px 6px; border-radius:10px; background:var(--field); border:1px solid var(--line); font-size:13px }
+  .recent li b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600 }
+  .recent li span { color:var(--muted); font-size:12px; white-space:nowrap }
+  .rare { color:var(--gold2) !important; font-weight:700 }
+
+  /* Switch */
+  .switch { position:relative; width:42px; height:24px; flex:none }
+  .switch input { opacity:0; width:0; height:0 }
+  .switch span { position:absolute; inset:0; background:var(--line2); border-radius:999px; cursor:pointer; transition:.2s }
+  .switch span::after { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s }
+  .switch input:checked + span { background:var(--accent) }
+  .switch input:checked + span::after { transform:translateX(18px) }
+  .switch input:focus-visible + span { outline:2px solid var(--accent2); outline-offset:2px }
+
+  /* Settings panel */
+  .settings { display:grid; grid-template-rows:auto 1fr auto; overflow:hidden }
+  .tabs { display:flex; gap:4px; padding:10px 10px 0; border-bottom:1px solid var(--line); overflow-x:auto }
+  .tab { background:none; border:0; color:var(--muted); font:inherit; font-weight:600; padding:9px 13px 11px; cursor:pointer;
+         border-bottom:2px solid transparent; white-space:nowrap; border-radius:8px 8px 0 0 }
+  .tab:hover { color:var(--text); background:rgba(255,255,255,.03) }
+  .tab.active { color:var(--text); border-bottom-color:var(--accent) }
+  .panes { overflow:auto; padding:18px 20px }
+  .pane { display:none } .pane.active { display:block }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px 22px }
+  .box { background:rgba(255,255,255,.02); border:1px solid var(--line); border-radius:12px; padding:14px }
+  .box h3 { margin:0 0 10px; font-size:14px; display:flex; align-items:center; gap:8px }
+  .savebar { display:flex; align-items:center; gap:12px; padding:12px 20px; border-top:1px solid var(--line); background:rgba(0,0,0,.18) }
+  .savebar .hint { margin-left:auto }
+
+  /* Forms */
+  label { display:block; font-weight:600; font-size:13px; margin:12px 0 5px }
+  .box > label:first-of-type, .pane > label:first-child { margin-top:0 }
+  input[type=text], input[type=password], input[type=number] { width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--line2);
+    background:var(--field); color:var(--text); font:inherit; transition:border-color .15s }
+  input:focus { outline:none; border-color:var(--accent) }
+  .hint { color:var(--muted); font-size:12.5px; font-weight:400 }
+  p.hint { margin:6px 0 0 }
+  code { background:#26222f; padding:1px 6px; border-radius:5px; font-size:12.5px }
+  .chips code { display:inline-block; margin:2px; cursor:pointer } .chips code:hover { background:var(--accent) }
+  .check { display:flex; gap:9px; align-items:flex-start; font-weight:600; margin:10px 0 0; cursor:pointer }
+  .check input { margin-top:3px; accent-color:var(--accent) }
+  .radio { display:flex; gap:8px; align-items:center; font-weight:500; margin:8px 0 0; cursor:pointer }
+  .radio input { accent-color:var(--accent) }
+  .sub { margin-left:24px }
+
+  button, .btn { background:var(--accent); color:#fff; border:0; border-radius:9px; padding:9px 15px; font:inherit; font-weight:700;
+                 cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:filter .15s }
+  button:hover, .btn:hover { filter:brightness(1.12) }
+  button:disabled { opacity:.6; cursor:default }
+  .ghost { background:rgba(255,255,255,.06); border:1px solid var(--line2) }
+  .primary { background:linear-gradient(90deg, var(--accent), #a970ff); box-shadow:0 6px 18px rgba(145,71,255,.35) }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+  .ok { color:var(--ok) } .err { color:var(--err) } .warn { color:var(--warn) }
+  a { color:var(--accent2) }
+  small { color:var(--muted) }
+
+  /* Category picker */
+  .cats { display:grid; grid-template-columns:repeat(auto-fill, minmax(84px, 1fr)); gap:8px; margin-top:10px; max-height:230px; overflow:auto; padding:2px }
+  .cat { background:var(--field); border:1px solid var(--line); border-radius:10px; padding:5px; cursor:pointer; text-align:center; font-size:11.5px; color:var(--text); display:block; font-weight:600 }
+  .cat:hover, .cat.sel { border-color:var(--accent); filter:none }
+  .cat img { width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:6px; display:block; margin-bottom:4px; background:var(--panel) }
+  .picked { display:flex; gap:10px; align-items:center; margin-top:10px }
+  .picked img { width:45px; height:60px; border-radius:6px; object-fit:cover }
+
+  /* Chat commands */
+  .cmd { display:grid; grid-template-columns:auto 130px 1fr; gap:8px; align-items:center; margin-top:8px }
+  .cmd input[type=text] { padding:7px 9px }
+  .cmd input[type=checkbox] { accent-color:var(--accent); width:16px; height:16px }
+
+  /* OBS */
+  .copy { display:flex; gap:8px; align-items:center; margin-top:6px }
+  .copy code { flex:1; padding:9px 11px; background:var(--field); border:1px solid var(--line2); border-radius:9px; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+
+  .stopped { height:100vh; display:grid; place-items:center; text-align:center }
+
+  /* Short laptop screens: tighten spacing so every tab still fits without scrolling. */
+  @media (max-height:800px) and (min-width:981px) {
+    .app { padding:10px 18px 12px; gap:10px }
+    .logo { width:34px; height:34px } .brand h1 { font-size:19px }
+    .update { padding:7px 12px }
+    .status { padding:14px; gap:10px } .art { width:66px; height:88px } .big { font-size:22px }
+    .titlebox { padding:9px 12px; font-size:14.5px; min-height:0 } .switch-row { padding:8px 11px }
+    .panes { padding:12px 16px } .box { padding:11px 12px } .grid2 { gap:10px 18px }
+    label { margin:8px 0 4px } .check, .radio { margin-top:6px }
+    input[type=text], input[type=password], input[type=number] { padding:7px 10px }
+    .cmd { margin-top:6px } .cmd input[type=text] { padding:6px 9px }
+    .savebar { padding:9px 16px } .tab { padding:8px 12px 9px }
+  }
+  @media (max-width:980px) {
+    .app { height:auto; min-height:100vh }
+    .main { grid-template-columns:1fr }
+    .settings { overflow:visible } .panes { overflow:visible }
+    .grid2, .barbox, .steps-row { grid-template-columns:1fr }
+  }
+  @media (max-width:560px) {
+    .app { padding:12px 16px }
+    .pills { margin-left:0 }
+    .cmd { grid-template-columns:auto 1fr } .cmd .reply { grid-column:1 / -1 }
+    .status .actions { grid-template-columns:1fr }
+    .update { flex-wrap:wrap } .update .row { margin-left:0 }
+  }
+
+  /* Optional progress bar animation: a light sweeping along it, or its colours flowing */
+  .bar > i, .bar i { position:relative; overflow:hidden }
+  body.bar-shimmer .bar i::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+                                   transform:translateX(-100%); animation:barshim 2.6s ease-in-out infinite }
+  body.bar-flow .bar i { background:linear-gradient(90deg, var(--ba1), var(--ba2), var(--ba3), var(--ba2), var(--ba1)) !important; background-size:200% 100% !important; animation:barflow 3s linear infinite }
+  @keyframes barshim { to { transform:translateX(100%) } }
+  @keyframes barflow { to { background-position:-200% 0 } }
+  @media (prefers-reduced-motion: reduce) { body.bar-shimmer .bar i::after, body.bar-flow .bar i { animation:none } }
+  body { --ba1:#9147ff; --ba2:#bf94ff; --ba3:#ffe27a }
+</style>
+</head>
+<body>
+<div class="drift" id="drift" aria-hidden="true"></div>
+<div class="app" id="app">
+
+  <header>
+    <svg class="logo" viewBox="0 0 150 150" aria-hidden="true">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f5b400"/></linearGradient></defs>
+      <rect width="150" height="150" rx="34" fill="#9147ff"/>
+      <path d="M47 33h56v21c0 19-12 33-28 33S47 73 47 54z" fill="url(#g)"/>
+      <path d="M47 40H30c0 16 8 26 21 28M103 40h17c0 16-8 26-21 28" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round"/>
+      <rect x="68" y="85" width="14" height="19" fill="#f5b400"/><rect x="52" y="104" width="46" height="14" rx="4" fill="url(#g)"/>
+    </svg>
+    <div class="brand">
+      <h1>AchieveTitle</h1>
+      <p>Live Steam achievements in your Twitch title · <span class="ver" id="ver"></span></p>
+    </div>
+    <div class="pills">
+      <span class="pill" id="pillTwitch"><i></i><svg class="pill-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="#a970ff" d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg><span>Twitch</span></span>
+      <span class="pill" id="pillSteam"><i></i><svg class="pill-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/></svg><span>Steam</span></span>
+      <span class="pill" id="pillChat"><i></i><svg class="pill-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a1.5 1.5 0 0 1 .75 2.8V6H17a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4.25V4.8A1.5 1.5 0 0 1 12 2zM9 10.5a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zm6 0a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5zM9 16.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM1.5 11A1.5 1.5 0 0 1 3 12.5v2a1.5 1.5 0 0 1-3 0v-2A1.5 1.5 0 0 1 1.5 11zm21 0a1.5 1.5 0 0 1 1.5 1.5v2a1.5 1.5 0 0 1-3 0v-2a1.5 1.5 0 0 1 1.5-1.5z"/></svg><span>Chat bot</span></span>
+    </div>
+  </header>
+
+  <div class="update" id="update" hidden>
+    <div><b id="updTitle"></b><br><span id="updText"></span></div>
+    <div class="row">
+      <button id="updBtn" class="primary" onclick="installUpdate()">Update now</button>
+      <a class="btn ghost" id="updLink" target="_blank" rel="noopener">What's new</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Live status -->
+    <section class="card status" aria-label="Status">
+      <div class="now">
+        <img class="art" id="art" alt="" hidden>
+        <div class="art art-empty" id="artEmpty">🏆</div>
+        <div style="min-width:0">
+          <div class="kicker" id="kicker">Now</div>
+          <div class="game" id="game">Loading…</div>
+          <div class="meta" id="meta"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="row" style="justify-content:space-between; align-items:baseline">
+          <div class="big" id="progress">–</div>
+          <div class="meta" id="latest"></div>
+        </div>
+        <div class="bar" style="margin-top:8px"><i id="bar"></i></div>
+      </div>
+
+      <div class="chase" id="chaseRow" hidden>
+        <span class="chase-icon" id="chaseIcon">🎯</span>
+        <div style="flex:1; min-width:0"><div class="label" style="margin:0">Chasing</div><b id="chaseName"></b> <small id="chaseRare"></small></div>
+        <button class="ghost" id="chaseBtn" onclick="openChase()">Pick</button>
+        <button class="ghost" id="chaseClear" title="Stop chasing" onclick="setChase('')" hidden>✕</button>
+      </div>
+
+      <div>
+        <div class="label">Current Twitch title</div>
+        <div class="titlebox" id="preview">—</div>
+        <div class="count" id="chars" hidden></div>
+      </div>
+
+      <div id="recentBox" hidden>
+        <div class="label">Recent unlocks</div>
+        <ul class="recent" id="recent"></ul>
+      </div>
+
+      <div class="switch-row">
+        <div><b>Update my Twitch title automatically</b><span id="checked">Not checked yet</span></div>
+        <label class="switch" style="margin:0"><input type="checkbox" id="enabled" onchange="toggleAuto()"><span></span></label>
+      </div>
+
+      <div class="msg" id="status"></div>
+
+      <div class="actions">
+        <button class="ghost" title="Check Steam now" onclick="post('/api/refresh').then(()=>setTimeout(poll,1500))">↻ Check</button>
+        <button class="ghost" title="Put back your original title" onclick="post('/api/restore')">↩ Restore</button>
+        <button class="ghost" title="Stop AchieveTitle" onclick="quitApp()">⏻ Quit</button>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="card settings" aria-label="Settings">
+      <nav class="tabs" role="tablist">
+        <button class="tab" data-tab="connect">🔗 Connections</button>
+        <button class="tab" data-tab="title">✏️ Title</button>
+        <button class="tab" data-tab="category">🎮 Category &amp; tags</button>
+        <button class="tab" data-tab="chat">💬 Chat</button>
+        <button class="tab" data-tab="obs"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12,24C5.383,24,0,18.617,0,12S5.383,0,12,0s12,5.383,12,12S18.617,24,12,24z M12,1.109 C5.995,1.109,1.11,5.995,1.11,12C1.11,18.005,5.995,22.89,12,22.89S22.89,18.005,22.89,12C22.89,5.995,18.005,1.109,12,1.109z M6.182,5.99c0.352-1.698,1.503-3.229,3.05-3.996c-0.269,0.273-0.595,0.483-0.844,0.78c-1.02,1.1-1.48,2.692-1.199,4.156 c0.355,2.235,2.455,4.06,4.732,4.028c1.765,0.079,3.485-0.937,4.348-2.468c1.848,0.063,3.645,1.017,4.7,2.548 c0.54,0.799,0.962,1.736,0.991,2.711c-0.342-1.295-1.202-2.446-2.375-3.095c-1.135-0.639-2.529-0.802-3.772-0.425 c-1.56,0.448-2.849,1.723-3.293,3.293c-0.377,1.25-0.216,2.628,0.377,3.772c-0.825,1.429-2.315,2.449-3.932,2.756 c-1.244,0.261-2.551,0.059-3.709-0.464c1.036,0.302,2.161,0.355,3.191-0.011c1.381-0.457,2.522-1.567,3.024-2.935 c0.556-1.49,0.345-3.261-0.591-4.54c-0.7-1.007-1.803-1.717-3.002-1.969c-0.38-0.068-0.764-0.098-1.148-0.134 c-0.611-1.231-0.834-2.66-0.528-3.996L6.182,5.99z"/></svg> OBS</button>
+        <button class="tab" data-tab="app">⚙️ App</button>
+      </nav>
+
+      <div class="panes">
+        <!-- Connections -->
+        <div class="pane" data-pane="connect">
+          <div class="grid2">
+            <div class="box">
+              <h3><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="#9146ff" d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg> Twitch</h3>
+              <div id="twitch"></div>
+              <p class="hint">AchieveTitle changes your title, category and tags. It never posts anything as you unless you choose to in the Chat tab.</p>
+            </div>
+            <div class="box">
+              <h3><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/></svg> Steam</h3>
+              <div class="step"><span class="num">1</span>Your Steam account</div>
+              <div id="steamAccount"></div>
+              <details id="steamManual" style="margin-top:8px"><summary>or type your Steam profile link or name</summary>
+                <input type="text" id="steam_id" placeholder="steamcommunity.com/id/yourname" style="margin-top:6px">
+              </details>
+              <div class="step" style="margin-top:14px"><span class="num">2</span>Your Steam Web API key</div>
+              <div class="row" style="flex-wrap:nowrap; align-items:flex-start">
+                <a class="btn ghost" style="white-space:nowrap" href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener">Get my key ↗</a>
+                <span class="hint">On that page type <code>localhost</code> as the domain, tick the box, click <b>Register</b> and copy the key.</span>
+              </div>
+              <input type="password" id="steam_api_key" autocomplete="off" placeholder="Paste your key here" style="margin-top:8px">
+              <div class="hint" id="steamKeyStatus" style="margin-top:6px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div class="pane" data-pane="title">
+          <div class="grid2">
+            <div>
+              <label>Custom text <span class="hint">· used as <code>{custom}</code></span></label>
+              <input type="text" id="custom_title" maxlength="140" placeholder="Chill stream">
+              <label>Title template <span class="hint">· when the game has achievements</span></label>
+              <input type="text" id="template">
+              <label>Fallback template <span class="hint">· no game, or no achievements</span></label>
+              <input type="text" id="fallback_template">
+
+            </div>
+            <div>
+              <div class="box">
+              <h3>🧩 Placeholders</h3>
+              <p class="hint" style="margin:0 0 6px">Click one to add it to the template you last clicked in.</p>
+              <div class="chips" id="vars"></div>
+              <p class="hint">Titles longer than Twitch's 140-character limit are shortened automatically, achievement names first.</p>
+              </div>
+            </div>
+          </div>
+          <div class="box barbox" style="margin-top:14px">
+            <div>
+              <h3>📊 Progress bar style <span class="hint" style="font-weight:400">· how <code>{bar}</code> looks</span></h3>
+              <div class="bars" id="barPresets"></div>
+            </div>
+            <div>
+              <div class="inline" style="margin-top:0">
+                <label for="bar_filled">Filled</label><input type="text" id="bar_filled" class="barchar" maxlength="40">
+                <label for="bar_empty">Empty</label><input type="text" id="bar_empty" class="barchar" maxlength="12">
+                <label for="bar_length">Length</label><input type="number" id="bar_length" min="5" max="20">
+              </div>
+              <div class="barpreview"><span id="barPreview"></span><small id="barChars"></small></div>
+              <p class="hint">Titles are plain text on Twitch, so colour comes from emoji squares (each counts as 2 characters).</p>
+            </div>
+          </div>
+          <div class="box" style="margin-top:14px">
+            <h3>✨ Ready-made titles <span class="hint" style="font-weight:400">· click one to use it as your title template, then Save</span></h3>
+            <div class="presets" id="titlePresets"></div>
+          </div>
+        </div>
+
+        <!-- Category & tags -->
+        <div class="pane" data-pane="category">
+          <div class="grid2">
+            <div class="box">
+              <label class="check" style="margin:0"><input type="checkbox" id="set_category"> Set my Twitch category</label>
+              <div id="catBox" class="sub">
+                <label class="radio"><input type="radio" name="category_mode" value="auto"> Match the Steam game I'm playing</label>
+                <label class="radio"><input type="radio" name="category_mode" value="manual"> Let me choose the game</label>
+                <p class="hint">Outside a Steam game your category is left as it is.</p>
+                <div id="manualBox">
+                  <div class="picked" id="picked"></div>
+                  <input type="text" id="catSearch" placeholder="Search Twitch categories, e.g. Minecraft" autocomplete="off" style="margin-top:10px">
+                  <div class="cats" id="catResults"></div>
+                </div>
+              </div>
+            </div>
+            <div class="box">
+              <label class="check" style="margin:0"><input type="checkbox" id="manage_tags"> Set my stream tags</label>
+              <div id="tagsBox" class="sub">
+                <input type="text" id="tags" placeholder="chillstream, English, AchievementHunting" style="margin-top:10px">
+                <p class="hint">Separate with commas. Up to 10 tags of 25 letters or numbers each.
+                  <a href="#" id="copyTags" hidden>Use my current Twitch tags</a></p>
+                <div id="tagPreview" class="chips" style="margin-top:6px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="pane" data-pane="chat">
+          <div class="switch-row" style="margin-bottom:14px">
+            <div><b>Answer chat commands like <code>!achievements</code></b><span id="chatStatus">Chat commands are off.</span></div>
+            <label class="switch" style="margin:0"><input type="checkbox" id="chat_enabled"><span></span></label>
+          </div>
+          <div id="chatBox" class="grid2">
+            <div>
+              <div class="box">
+                <h3>🤖 Who replies?</h3>
+                <label class="radio" style="margin-top:0"><input type="radio" name="reply_as" value="bot"> My bot account <span class="hint">(recommended)</span></label>
+                <div class="sub" id="botArea" style="margin-top:6px"></div>
+                <label class="radio" style="margin-top:10px"><input type="radio" name="reply_as" value="channel"> My own channel account</label>
+                <div class="sub" id="chanArea"></div>
+              </div>
+              <label class="check" style="margin-top:12px"><input type="checkbox" id="chat_announce"> Announce new achievements in chat</label>
+              <input type="text" id="chat_announce_template" style="margin-top:6px">
+              <label>Reply when you're not in a game with achievements</label>
+              <input type="text" id="chat_no_game">
+            </div>
+            <div>
+              <h3 style="margin:0 0 2px; font-size:14px">⌨️ Commands</h3>
+              <p class="hint" style="margin:0">Tick to turn on · rename the command · write your own reply.</p>
+              <div id="cmds"></div>
+              <div class="inline"><label for="chat_cooldown">Cooldown (seconds)</label><input type="number" id="chat_cooldown" min="5" step="5"><span class="hint">you and your mods skip it</span></div>
+              <details style="margin-top:12px"><summary>Placeholders you can use</summary>
+                <p class="hint chips" style="margin-top:6px"><span id="chatVars"></span></p>
+                <p class="hint">A part in brackets, like <code>(only {next_rarity} of players)</code>, is left out when its placeholder is empty.</p>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <!-- OBS -->
+        <div class="pane" data-pane="obs">
+          <div class="done-line" id="obsDone" hidden>
+            <span class="ok">✔ OBS is set up.</span> <span class="hint">The AchieveTitle panel is under View → Docks in OBS.</span>
+            <a href="#" onclick="event.preventDefault(); $('obsDone').hidden = true; $('obsSetup').hidden = false">Set up again</a>
+          </div>
+          <div class="box" id="obsSetup" style="margin-bottom:14px; border-color:rgba(191,148,255,.45); background:linear-gradient(90deg, rgba(145,71,255,.14), rgba(245,180,0,.05))">
+            <div class="row" style="flex-wrap:nowrap; align-items:center; gap:14px">
+              <div style="flex:1; min-width:0">
+                <h3 style="margin:0 0 3px">⚡ One-click OBS setup</h3>
+                <p class="hint" style="margin:0">Adds the AchieveTitle script and control panel to OBS (settings backed up first). <span id="obsMsg"></span></p>
+              </div>
+              <button class="primary" id="obsBtn" onclick="setupOBS()" style="white-space:nowrap">Set up OBS for me</button>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="box">
+                <h3>✨ Overlay preview <span class="hint" style="font-weight:400">· what viewers see</span></h3>
+                <div class="stage" id="stage"><iframe id="ovPreview" title="Overlay preview" src="/overlay?preview=1" scrolling="no"></iframe></div>
+                <div class="row" style="margin-top:10px">
+                  <button class="primary" onclick="testOverlay(this)">🏆 Test popup</button>
+                  <label class="check" style="margin:0"><input type="checkbox" id="overlayHideIdle"> Hide it when I'm not in a Steam game</label>
+              <div style="margin-top:14px"><b>🕒 Recent unlocks list</b> <span class="hint" style="margin:0">· its own Browser source, 480 × 420</span>
+                <div class="copy" style="margin-top:6px"><code id="recentUrl"></code><button class="ghost" onclick="copy('recentUrl', this)">Copy</button></div></div>
+                </div>
+              </div>
+            <div class="box">
+              <h3>🎉 Unlock celebration</h3>
+              <label style="margin-top:0">Animation</label>
+              <div class="seg" id="ovAnim">
+                <button type="button" data-v="confetti">🎊 Confetti</button><button type="button" data-v="glow">✨ Glow</button><button type="button" data-v="simple">▫️ Simple</button>
+              </div>
+              <label>Progress bar</label>
+              <div class="seg" id="ovBar">
+                <button type="button" data-v="none">▬ Still</button><button type="button" data-v="shimmer">💫 Shimmer</button><button type="button" data-v="flow">🌊 Flowing</button>
+              </div>
+              <label>Sound</label>
+              <div class="seg" id="ovSound">
+                <button type="button" data-v="none">🔇 None</button><button type="button" data-v="chime">🔔 Chime</button><button type="button" data-v="fanfare">🎺 Fanfare</button><button type="button" data-v="custom">🎵 My own</button>
+              </div>
+              <div id="customSoundRow" class="row" style="margin-top:8px">
+                <label class="btn ghost" style="margin:0; cursor:pointer">Choose a sound file…<input type="file" id="soundFile" accept=".mp3,.wav,.ogg,.m4a,audio/*" hidden></label>
+                <span class="hint" id="soundName">MP3, WAV, OGG or M4A, up to 3 MB</span>
+              </div>
+              <div class="inline" style="margin-top:10px">
+                <label for="ovVolume">Volume</label><input type="range" id="ovVolume" min="0" max="100" style="width:160px; accent-color:var(--accent)">
+                <span class="hint" id="ovVolumeVal"></span>
+                <button type="button" class="ghost" onclick="previewSound()">▶ Preview</button>
+              </div>
+            </div>
+          </div>
+          <div class="box guide" style="margin-top:14px">
+                <h3>📋 Add it to OBS</h3>
+                <ol class="steps steps-row">
+                  <li><b>Sources → + → Browser</b>, name it <i>AchieveTitle overlay</i>.</li>
+                  <li>Paste this <b>URL</b>: <div class="copy"><code id="overlayUrl"></code><button class="ghost" onclick="copy('overlayUrl', this)">Copy</button></div></li>
+                  <li><b>Width 600</b>, <b>Height 160</b>, tick <b>Control audio via OBS</b>, click <b>OK</b>.</li>
+                  <li>Drag it into place, then click <b>Test popup</b>.</li>
+                </ol>
+              </div>
+        </div>
+
+        <!-- App -->
+        <div class="pane" data-pane="app">
+          <div class="grid2">
+            <div class="box" style="grid-column:1 / -1">
+              <h3>⬆️ Updates</h3>
+              <div class="row">
+                <span>You have <b id="appVer"></b>.</span>
+                <button class="ghost" id="checkBtn" onclick="checkNow()">Check for updates</button>
+                <button class="primary" id="appUpdBtn" onclick="installUpdate()" hidden>Update now</button>
+                <span id="checkMsg" class="hint"></span>
+              </div>
+            </div>
+            <div class="box">
+              <h3>⏱️ Behaviour</h3>
+              <label>Check Steam every (seconds)</label>
+              <input type="number" id="interval_seconds" min="30" step="10">
+              <label class="check"><input type="checkbox" id="restore_on_exit"> Restore my original title, category and tags when I stop or quit</label>
+              <label class="check"><input type="checkbox" id="check_updates"> Tell me when a new version is available</label>
+              <label style="margin-top:10px">Background</label>
+              <div class="seg" id="bgSeg">
+                <button type="button" data-bg="moving">✨ Moving icons</button>
+                <button type="button" data-bg="still">🖼️ Still icons</button>
+                <button type="button" data-bg="off">⬛ Plain</button>
+              </div>
+            </div>
+            <div class="box">
+              <h3>🔒 Privacy</h3>
+              <p class="hint" style="margin:0">Everything stays on this computer. AchieveTitle only talks to Steam, Twitch and GitHub (for updates).</p>
+              <details id="clientIdBox" style="margin-top:10px">
+                <summary class="hint" style="cursor:pointer">Use my own Twitch app instead</summary>
+                <p class="hint" style="margin:6px 0">Register a free app at <a href="https://dev.twitch.tv/console" target="_blank" rel="noopener">dev.twitch.tv/console</a> (Client Type <b>Public</b>, redirect <code id="redir"></code>), paste its Client ID here, save, then connect Twitch again.</p>
+                <input type="text" id="twitch_client_id" autocomplete="off" placeholder="Leave empty to use AchieveTitle's app">
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="savebar">
+        <button class="primary" onclick="save()">Save changes</button>
+        <span id="saved"></span>
+        <span class="hint">Changes apply within a minute</span>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal" id="chaseModal" hidden onclick="if (event.target === this) closeChase()">
+  <div class="modal-box">
+    <div class="row" style="justify-content:space-between"><h3 style="margin:0">🎯 Which achievement are you chasing?</h3><button class="ghost" onclick="closeChase()">Close</button></div>
+    <p class="hint">Your locked achievements for this game, rarest first. It shows on your overlay, in <code>{chasing}</code> and in <code>!chasing</code>, and clears itself once you unlock it.</p>
+    <input type="text" id="chaseSearch" placeholder="Search achievements…" autocomplete="off">
+    <div class="chase-list" id="chaseList"></div>
+  </div>
+</div>
+<script src="/sounds.js"></script>
+<script>
+// Progress bar animation (none, shimmer or flow), from the overlay settings.
+function setBarAnim(v) { document.body.classList.toggle('bar-shimmer', v === 'shimmer'); document.body.classList.toggle('bar-flow', v === 'flow'); }
+
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fields = ['steam_id','custom_title','template','fallback_template','interval_seconds','twitch_client_id'];
+const checks = ['enabled','restore_on_exit','set_category','manage_tags','check_updates'];
+let currentTags = [], manualCat = null, lastFocus = 'template', chatCfg = {}, keySaved = false;
+
+function post(url, body) {
+  return fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : undefined})
+    .then(async r => { if (!r.ok) throw new Error(await r.text()); return r; });
+}
+
+// Tabs (the last one used is remembered on this computer)
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.dataset.pane === name));
+  try { localStorage.setItem('tab', name); } catch (e) {}
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
+let startTab = 'connect';
+try { startTab = localStorage.getItem('tab') || 'connect'; } catch (e) {}
+showTab(startTab);
+
+function setPill(id, state, text) {
+  const p = $(id); p.className = 'pill' + (state ? ' ' + state : ''); p.querySelector('span').textContent = text;
+}
+
+async function load() {
+  const c = await (await fetch('/api/config')).json();
+  fields.forEach(f => $(f).value = c[f] ?? '');
+  showPresets();
+  checks.forEach(f => $(f).checked = !!c[f]);
+  $('tags').value = (c.tags || []).join(', ');
+  if (c.overlay) { overlayCfg = c.overlay; showOverlayCfg(); }
+  const bar = c.bar || {filled:'▰', empty:'▱', length:10};
+  $('bar_filled').value = bar.filled; $('bar_empty').value = bar.empty; $('bar_length').value = bar.length; showBar();
+  manualCat = c.manual_category;
+  document.querySelector(`[name=category_mode][value=${c.category_mode === 'manual' ? 'manual' : 'auto'}]`).checked = true;
+  showCategory(); showTags();
+  keySaved = c.has_steam_key;
+  $('steam_api_key').placeholder = c.has_steam_key ? '•••••••• saved (paste a new one to replace it)' : 'Paste your key here';
+  steamCheck();
+  $('redir').textContent = c.redirect_uri;
+  $('ver').textContent = c.version; $('appVer').textContent = c.version;
+  if (c.twitch_client_id || !c.has_builtin_client_id) $('clientIdBox').open = true;
+  showOverlayUrl();
+  $('twitch').innerHTML = c.twitch_login
+    ? `<div class="acct">${twitchPic(c.twitch_avatar)}<b>${esc(c.twitch_login)}</b>
+       <button class="ghost" onclick="post('/api/twitch/logout').then(load)">Disconnect</button></div>`
+    : `<a class="btn primary" href="/api/twitch/login" onclick="return saveFirst(event)">Connect Twitch</a>`;
+  setPill('pillTwitch', c.twitch_login ? 'on' : 'bad', c.twitch_login ? 'Twitch · ' + c.twitch_login : 'Twitch not connected');
+  renderChat(c);
+  $('vars').innerHTML = c.vars.map(v => `<code data-v="${v}">{${v}}</code>`).join('');
+  document.querySelectorAll('#vars [data-v]').forEach(el => el.onclick = () => { const i = $(lastFocus); i.value += '{' + el.dataset.v + '}'; i.focus(); });
+}
+['template','fallback_template'].forEach(f => $(f).addEventListener('focus', () => lastFocus = f));
+
+async function saveFirst(e) { e.preventDefault(); await save(); location.href = '/api/twitch/login'; }
+
+async function save() {
+  const out = $('saved'); out.innerHTML = '';
+  const body = {steam_api_key: $('steam_api_key').value.trim()};
+  fields.forEach(f => body[f] = $(f).value.trim());
+  body.interval_seconds = parseInt(body.interval_seconds) || 60;
+  checks.forEach(f => body[f] = $(f).checked);
+  body.tags = cleanTags($('tags').value);
+  body.bar = readBar();
+  body.overlay = overlayCfg;
+  body.category_mode = document.querySelector('[name=category_mode]:checked').value;
+  body.manual_category = manualCat;
+  if (body.set_category && body.category_mode === 'manual' && !manualCat) {
+    showTab('category'); out.innerHTML = '<span class="err">Pick a game for your category first.</span>'; return;
+  }
+  body.chat = readChat();
+  const warn = body.chat.enabled && body.chat.reply_as === 'bot' && !chatCfg.bot_login
+    ? 'Saved, but chat needs a bot account (or choose your own channel).' : '';
+  try {
+    await post('/api/config', body);
+    out.innerHTML = warn ? `<span class="warn">${warn}</span>` : '<span class="ok">✔ Saved</span>';
+    $('steam_api_key').value = ''; load(); setTimeout(poll, 2000);
+  } catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
+
+// The status card's switch applies straight away, no Save needed.
+async function toggleAuto() {
+  try { await post('/api/enabled', {enabled: $('enabled').checked}); setTimeout(poll, 800); }
+  catch (e) { $('enabled').checked = !$('enabled').checked; }
+}
+
+async function poll() {
+  let s;
+  try { s = await (await fetch('/api/status')).json(); } catch (e) { $('status').innerHTML = '<span class="err">AchieveTitle isn\'t responding.</span>'; return; }
+  $('art').hidden = !s.category_art; $('artEmpty').hidden = !!s.category_art;
+  if (s.category_art && $('art').src !== s.category_art) { $('art').src = s.category_art; $('art').alt = s.category; }
+  $('kicker').textContent = s.game ? 'Now playing' : 'Not in a Steam game';
+  $('game').textContent = s.game || (s.category ? s.category : 'Start a game on Steam');
+  $('meta').innerHTML = s.category ? `Twitch category: <b>${esc(s.category)}</b>${s.category_mode === 'manual' ? ' <small>(your pick)</small>' : ''}` : '';
+  $('progress').innerHTML = s.total ? `${s.unlocked}<small> / ${s.total} achievements · ${Math.floor(100 * s.unlocked / s.total)}%</small>` : '<small>No achievements to track</small>';
+  $('latest').innerHTML = s.latest ? `Latest: <b>${esc(s.latest.name)}</b>` : '';
+  $('chaseRow').hidden = !s.total;
+  const ch = s.chasing;
+  $('chaseName').textContent = ch ? ch.name : 'Nothing yet';
+  $('chaseIcon').innerHTML = achIcon(ch, '🎯');
+  $('chaseRare').textContent = ch && ch.global_percent ? (ch.global_percent < 10 ? ch.global_percent.toFixed(1) : Math.round(ch.global_percent)) + '% of players' : '';
+  $('chaseBtn').textContent = ch ? 'Change' : 'Pick'; $('chaseClear').hidden = !ch;
+  $('bar').style.width = s.total ? (100 * s.unlocked / s.total) + '%' : '0';
+  if (s.total) { barProgress = [s.unlocked, s.total]; showBar(); }
+  $('enabled').checked = s.running;
+  $('checked').textContent = s.last_check && !s.last_check.startsWith('0001') ? 'Last checked ' + new Date(s.last_check).toLocaleTimeString() : 'Not checked yet';
+  $('status').innerHTML = s.error ? `<span class="err">⚠ ${esc(s.error)}</span>` : '';
+  const recent = (s.recent || []).slice(0, 6);
+  loadDriftIcons(s.app_id);
+  $('recentBox').hidden = !recent.length;
+  $('recent').innerHTML = recent.map(a => {
+    const pct = a.global_percent ? (a.global_percent < 10 ? a.global_percent.toFixed(1) : Math.round(a.global_percent)) + '% of players' : '';
+    const when = a.unlock_time ? new Date(a.unlock_time * 1000).toLocaleDateString(undefined, {day:'numeric', month:'short'}) : '';
+    return `<li>${achIcon(a)} <b title="${esc(a.name)}">${esc(a.name)}</b><span class="${a.global_percent && a.global_percent < 5 ? 'rare' : ''}">${pct}</span><span>${when}</span></li>`;
+  }).join('');
+  currentTags = s.tags || [];
+  $('copyTags').hidden = !currentTags.length;
+  showChatStatus(s.chat);
+  $('preview').textContent = s.title || '—';
+  const n = s.title ? s.title.length : 0; // UTF-16 units, the way Twitch counts (🏆 = 2)
+  $('chars').hidden = !n;
+  $('chars').textContent = `${n} / 140 characters`;
+  $('chars').className = 'count' + (n >= 140 ? ' full' : '');
+  $('chars').title = "Twitch titles can be at most 140 characters. Longer titles are shortened automatically.";
+  // Last, once everything above is filled in: show as many recent unlocks as fit without the card scrolling.
+  const card = document.querySelector('.status'), list = $('recent');
+  while (list.children.length > 1 && card.scrollHeight > card.clientHeight + 1) list.lastElementChild.remove();
+}
+
+// Chat commands
+function renderChat(c) {
+  chatCfg = c;
+  const ch = c.chat;
+  $('chat_enabled').checked = ch.enabled;
+  document.querySelector(`[name=reply_as][value=${ch.reply_as === 'channel' ? 'channel' : 'bot'}]`).checked = true;
+  showChatStatus(lastChatSt);
+  $('chat_cooldown').value = ch.cooldown_seconds;
+  $('chat_announce').checked = ch.announce_unlocks;
+  $('chat_announce_template').value = ch.announce_template;
+  $('chat_no_game').value = ch.no_game_reply;
+  $('chatVars').innerHTML = [...c.vars, ...c.chat_vars].map(v => `<code>{${v}}</code>`).join('');
+  $('cmds').innerHTML = '';
+  ch.commands.forEach(cmd => {
+    const row = document.createElement('div');
+    row.className = 'cmd'; row.dataset.id = cmd.id;
+    row.innerHTML = `<input type="checkbox" ${cmd.enabled ? 'checked' : ''} aria-label="Turn on">
+      <input type="text" class="trigger" value="${esc(cmd.trigger)}" aria-label="Command">
+      <input type="text" class="reply" value="${esc(cmd.reply)}" aria-label="Reply">`;
+    $('cmds').appendChild(row);
+  });
+  $('botArea').innerHTML = c.bot_login
+    ? `<div class="acct">${twitchPic(c.bot_avatar)}<b>${esc(c.bot_login)}</b><button class="ghost" onclick="post('/api/bot/logout').then(load)">Disconnect</button></div>`
+    : `<a class="btn primary" href="/api/bot/login" onclick="return connectBot(event)">Connect bot account</a>
+       <p class="hint">Make a free Twitch account for it (e.g. <i>${esc(c.twitch_login || 'yourname')}bot</i>), click <b>Not you?</b> on Twitch to log in as it, then <code>/mod</code> it.</p>`;
+  $('chanArea').innerHTML = c.channel_can_chat
+    ? `<div class="acct acct-sm">${twitchPic(c.twitch_avatar)}<span>Replies would come from <b>${esc(c.twitch_login)}</b></span></div>`
+    : `<p class="hint">Needs one extra Twitch permission: <a href="/api/twitch/login" onclick="return saveFirst(event)">reconnect your channel</a>.</p>`;
+  showChatBox();
+}
+function readChat() {
+  return {
+    enabled: $('chat_enabled').checked,
+    reply_as: document.querySelector('[name=reply_as]:checked').value,
+    cooldown_seconds: parseInt($('chat_cooldown').value) || 30,
+    announce_unlocks: $('chat_announce').checked,
+    announce_template: $('chat_announce_template').value.trim(),
+    no_game_reply: $('chat_no_game').value.trim(),
+    commands: [...document.querySelectorAll('.cmd')].map(r => ({
+      id: r.dataset.id, enabled: r.querySelector('input[type=checkbox]').checked,
+      trigger: r.querySelector('.trigger').value.trim(), reply: r.querySelector('.reply').value.trim(),
+    })),
+  };
+}
+function showChatBox() { $('chatBox').style.opacity = $('chat_enabled').checked ? 1 : .45; }
+$('chat_enabled').addEventListener('change', showChatBox);
+async function connectBot(e) { e.preventDefault(); await save(); location.href = '/api/bot/login'; }
+let lastChatSt;
+function showChatStatus(st) {
+  if (!st) return;
+  lastChatSt = st;
+  const good = st.startsWith('connected'), bad = st.startsWith('error') || st.startsWith('needs');
+  const text = st === 'off' ? 'Chat commands are off.' : st.charAt(0).toUpperCase() + st.slice(1);
+  $('chatStatus').innerHTML = `<span class="${good ? 'ok' : bad ? 'err' : ''}">${esc(text)}</span>`;
+  // Name the badge after who replies, and say exactly what's missing.
+  const asChannel = (document.querySelector('[name=reply_as]:checked') || {}).value === 'channel';
+  const who = asChannel ? 'Chat' : 'Chat bot';
+  let label = st === 'off' ? who + ' off' : good ? (asChannel ? 'Chat · ' + st.replace(/^connected as /, '') : 'Chat bot on')
+    : /reconnect your Twitch/.test(st) ? 'Chat: reconnect Twitch'
+    : /connect your Twitch channel/.test(st) ? 'Chat: connect Twitch'
+    : /connect a bot account/.test(st) ? 'Chat bot: not connected'
+    : bad ? who + ': problem' : who + ' connecting…';
+  setPill('pillChat', good ? 'on' : bad ? 'bad' : '', label);
+}
+
+// Category picker
+const catCard = c => `<img src="${esc(c.box_art)}" alt="" loading="lazy">${esc(c.name)}`;
+function showCategory() {
+  const manual = document.querySelector('[name=category_mode]:checked')?.value === 'manual';
+  $('catBox').style.opacity = $('set_category').checked ? 1 : .45;
+  $('manualBox').hidden = !manual;
+  $('picked').innerHTML = manualCat
+    ? `<img src="${esc(manualCat.box_art)}" alt=""><div><b>${esc(manualCat.name)}</b><br><small>Save to apply.</small></div>`
+    : '<small>No game chosen yet: search below and click one.</small>';
+}
+document.querySelectorAll('[name=category_mode]').forEach(r => r.addEventListener('change', showCategory));
+$('set_category').addEventListener('change', showCategory);
+let searchTimer;
+$('catSearch').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    const q = $('catSearch').value.trim();
+    if (!q) { $('catResults').innerHTML = ''; return; }
+    const r = await fetch('/api/categories?q=' + encodeURIComponent(q));
+    if (!r.ok) { $('catResults').innerHTML = `<span class="err">${esc(await r.text())}</span>`; return; }
+    const list = await r.json();
+    $('catResults').innerHTML = list.length ? '' : '<small>No categories found.</small>';
+    list.forEach(c => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'cat' + (manualCat && manualCat.id === c.id ? ' sel' : '');
+      b.innerHTML = catCard(c);
+      b.onclick = () => { manualCat = c; showCategory(); document.querySelectorAll('.cat').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); };
+      $('catResults').appendChild(b);
+    });
+  }, 300);
+});
+
+// Mirrors Twitch's rules (and CleanTags on the server) so the preview matches what gets saved.
+const cleanTags = v => [...new Set(v.split(',').map(t => t.replace(/[^\p{L}\p{N}]/gu, '').slice(0, 25)).filter(Boolean))].slice(0, 10);
+function showTags() {
+  $('tagsBox').style.opacity = $('manage_tags').checked ? 1 : .45;
+  $('tagPreview').innerHTML = cleanTags($('tags').value).map(t => `<code>${esc(t)}</code>`).join('');
+}
+$('tags').addEventListener('input', showTags);
+$('manage_tags').addEventListener('change', showTags);
+$('copyTags').onclick = e => { e.preventDefault(); $('tags').value = currentTags.join(', '); showTags(); };
+
+// Steam: sign-in button, linked account card and a live check of the API key
+let steamTimer;
+async function steamCheck() {
+  const key = $('steam_api_key').value.trim(), id = $('steam_id').value.trim();
+  const signIn = `<a class="btn steam-btn" href="/api/steam/login" onclick="return steamSignIn(event)"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/></svg> Sign in with Steam</a>
+    <p class="hint">Steam only tells AchieveTitle which account is yours. Your password stays with Steam.</p>`;
+  let r = {};
+  try { r = await (await fetch('/api/steam/check', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key, steam_id: id})})).json(); } catch (e) {}
+  const p = r.profile;
+  $('steamAccount').innerHTML = p
+    ? `<div class="acct"><img src="${esc(p.avatar)}" alt=""><b>${esc(p.name)}</b>
+         <a class="btn ghost" href="/api/steam/login" onclick="return steamSignIn(event)">Change</a></div>
+       ${p.public ? '' : '<p class="hint warn">⚠ Your Steam profile is private. Set it and <b>Game details</b> to Public in Steam → Profile → Edit Profile → Privacy Settings.</p>'}`
+    : id ? `<p class="hint">Account set to <b>${esc(id)}</b>. Add your key below to check it.</p>` + signIn : signIn;
+  $('steamKeyStatus').innerHTML = r.key_ok ? '<span class="ok">✔ Key works</span>'
+    : (key || keySaved) && r.error ? `<span class="err">✖ ${esc(r.error)}</span>` : '';
+  setPill('pillSteam', r.key_ok && (p || id) ? 'on' : 'bad', r.key_ok && p ? 'Steam · ' + p.name : 'Steam not set up');
+}
+['steam_api_key','steam_id'].forEach(f => $(f).addEventListener('input', () => { clearTimeout(steamTimer); steamTimer = setTimeout(steamCheck, 600); }));
+async function steamSignIn(e) { e.preventDefault(); await save(); location.href = '/api/steam/login'; }
+if (location.hash === '#steam-linked') { showTab('connect'); history.replaceState(null, '', '/'); }
+
+// Unlock celebration: animation, sound and volume (saved with the other settings)
+let overlayCfg = {animation:'confetti', sound:'chime', volume:70, custom_sound:''};
+function showOverlayCfg() {
+  document.querySelectorAll('#ovAnim button').forEach(b => b.classList.toggle('sel', b.dataset.v === overlayCfg.animation));
+  document.querySelectorAll('#ovSound button').forEach(b => b.classList.toggle('sel', b.dataset.v === overlayCfg.sound));
+  document.querySelectorAll('#ovBar button').forEach(b => b.classList.toggle('sel', b.dataset.v === (overlayCfg.bar_anim || 'shimmer')));
+  setBarAnim(overlayCfg.bar_anim);
+  $('customSoundRow').hidden = overlayCfg.sound !== 'custom';
+  $('soundName').textContent = overlayCfg.custom_sound ? '🎵 ' + overlayCfg.custom_sound : 'MP3, WAV, OGG or M4A, up to 3 MB';
+  $('ovVolume').value = overlayCfg.volume; $('ovVolumeVal').textContent = overlayCfg.volume + '%';
+}
+// These apply straight away, so "Test popup" always shows the current choice.
+const saveOverlay = () => post('/api/quick', {overlay: overlayCfg}).catch(() => {});
+document.querySelectorAll('#ovAnim button').forEach(b => b.onclick = () => { overlayCfg.animation = b.dataset.v; showOverlayCfg(); saveOverlay(); });
+document.querySelectorAll('#ovBar button').forEach(b => b.onclick = () => { overlayCfg.bar_anim = b.dataset.v; showOverlayCfg(); saveOverlay(); });
+document.querySelectorAll('#ovSound button').forEach(b => b.onclick = () => {
+  overlayCfg.sound = b.dataset.v; showOverlayCfg();
+  if (b.dataset.v === 'custom' && !overlayCfg.custom_sound) $('soundFile').click();
+  else { saveOverlay(); previewSound(); }
+});
+$('ovVolume').addEventListener('input', () => { overlayCfg.volume = +$('ovVolume').value; $('ovVolumeVal').textContent = overlayCfg.volume + '%'; });
+$('ovVolume').addEventListener('change', saveOverlay);
+$('soundFile').addEventListener('change', async () => {
+  const f = $('soundFile').files[0]; if (!f) return;
+  const fd = new FormData(); fd.append('file', f);
+  $('soundName').textContent = 'Uploading…';
+  try {
+    const r = await fetch('/api/overlay/sound', {method:'POST', body:fd});
+    if (!r.ok) throw new Error(await r.text());
+    overlayCfg.custom_sound = (await r.json()).name; overlayCfg.sound = 'custom';
+    showOverlayCfg(); previewSound();
+  } catch (e) { $('soundName').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  $('soundFile').value = '';
+});
+function previewSound() { playUnlockSound(overlayCfg.sound, overlayCfg.volume, '/overlay/sound?t=' + Date.now()); }
+
+// Overlay URL (the "hide when idle" choice is part of the URL OBS loads) and test popup
+function showOverlayUrl() {
+  const idle = $('overlayHideIdle').checked;
+  $('overlayUrl').textContent = location.origin + '/overlay' + (idle ? '?hideidle=1' : '');
+  $('recentUrl').textContent = location.origin + '/overlay/recent?count=5' + (idle ? '&hideidle=1' : '');
+  const src = '/overlay?preview=1' + (idle ? '&hideidle=1' : '');
+  if (!$('ovPreview').src.endsWith(src)) $('ovPreview').src = src;
+}
+// Scale the 600 × 160 overlay to fit the preview box, like OBS would show it.
+function fitPreview() { const w = $('stage').clientWidth; if (w) $('ovPreview').style.transform = `translate(${w * 8 / 616}px, ${w * 8 / 616}px) scale(${w / 616})`; }
+new ResizeObserver(fitPreview).observe($('stage'));
+try { $('overlayHideIdle').checked = localStorage.getItem('overlayHideIdle') === '1'; } catch (e) {}
+$('overlayHideIdle').addEventListener('change', () => {
+  try { localStorage.setItem('overlayHideIdle', $('overlayHideIdle').checked ? '1' : '0'); } catch (e) {}
+  showOverlayUrl();
+});
+async function testOverlay(btn) {
+  await post('/api/quick', {overlay: overlayCfg}).catch(() => {});
+  await post('/api/overlay/test').catch(() => {});
+  previewSound(); // the preview itself stays silent, so play the sound here
+  btn.textContent = '🏆 Sent!'; setTimeout(() => btn.textContent = '🏆 Test popup', 2000);
+}
+
+// Steam's achievement art, with the old emoji as a fallback.
+const achIcon = (a, fallback = '🏆') => a && a.icon ? `<img class="ach" src="${esc(a.icon)}" alt="">` : `<span class="ach-emoji">${fallback}</span>`;
+
+// 🎯 Chasing: the achievement the streamer is going for right now
+let chaseAll = [], chaseCurrent = '';
+async function openChase() {
+  $('chaseModal').hidden = false; $('chaseSearch').value = ''; $('chaseList').innerHTML = '<small>Loading…</small>';
+  try {
+    const r = await (await fetch('/api/achievements')).json();
+    chaseAll = r.locked || []; chaseCurrent = r.chasing || '';
+    drawChase();
+    $('chaseSearch').focus();
+  } catch (e) { $('chaseList').innerHTML = '<span class="err">Couldn\'t load your achievements.</span>'; }
+}
+function closeChase() { $('chaseModal').hidden = true; }
+function drawChase() {
+  const q = $('chaseSearch').value.trim().toLowerCase();
+  const list = chaseAll.filter(a => !q || (a.name + ' ' + a.description).toLowerCase().includes(q));
+  $('chaseList').innerHTML = !chaseAll.length ? '<small>No locked achievements in this game. Nice!</small>'
+    : !list.length ? '<small>No achievements match.</small>' : '';
+  list.forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chase-item' + (a.api_name === chaseCurrent ? ' sel' : '');
+    const p = a.global_percent, pct = p ? (p < 10 ? p.toFixed(1) : Math.round(p)) + '%' : '';
+    b.innerHTML = `${achIcon(a, '🎯')}<span style="min-width:0"><b>${esc(a.name)}</b><small>${esc(a.description || '')}</small></span><span class="pct ${p && p < 5 ? 'rare' : ''}">${pct}</span>`;
+    b.onclick = () => { setChase(a.api_name); closeChase(); };
+    $('chaseList').appendChild(b);
+  });
+}
+$('chaseSearch').addEventListener('input', drawChase);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeChase(); });
+async function setChase(apiName) { await post('/api/quick', {chasing: apiName}).catch(() => {}); setTimeout(poll, 1200); }
+
+// Ready-made title templates, each shown with an example of how it reads.
+const TITLE_PRESETS = [
+  ['{game} [{unlocked}/{total} Achievements] {bar} 🏆 {latest}', 'ELDEN RING [30/42 Achievements] 🟩🟩🟩🟩⬛ 🏆 Elden Lord'],
+  ['{custom} | {game} {percent} complete 🏆', 'Cozy farming | Stardew Valley 61% complete 🏆'],
+  ['🏆 {unlocked}/{total} in {game} | Next: {next} ({next_rarity})', "🏆 38/54 in Baldur's Gate 3 | Next: Foehammer (4.1%)"],
+  ['{custom} 🎯 Chasing {chasing} (only {chasing_rarity} have it)', 'Blind run 🎯 Chasing Void (only 2.3% have it)'],
+  ['{game} 100% run: {remaining} achievements to go! {bar}', 'Hades 100% run: 7 achievements to go! 🟩🟩🟩🟩⬛'],
+  ['{custom} | Just unlocked {latest} (only {latest_rarity}!)', 'Late night grind | Just unlocked Is There No Escape? (only 34%!)'],
+  ['{game} achievement hunt {unlocked}/{total} 🏅 Rarest: {rarest} ({rarest_rarity})', 'Terraria achievement hunt 71/115 🏅 Rarest: Rainbows and Unicorns (1.9%)'],
+  ['{custom} [{unlocked}/{total}]', 'Chill stream [45/179]'],
+  ['{custom} | {game} {bar} {percent}', 'Road to platinum | Sekiro 🟩🟩🟩⬛⬛ 62%'],
+];
+function showPresets() {
+  const cur = $('template').value;
+  $('titlePresets').innerHTML = TITLE_PRESETS.map(([t, ex], i) =>
+    `<button type="button" data-i="${i}" class="${t === cur ? 'sel' : ''}" title="${esc(ex + "\n" + t)}">${esc(ex)}<small>${esc(t)}</small></button>`).join('');
+  document.querySelectorAll('#titlePresets button').forEach(b => b.onclick = () => {
+    $('template').value = TITLE_PRESETS[b.dataset.i][0];
+    $('template').dispatchEvent(new Event('input', {bubbles: true}));
+    showPresets();
+  });
+}
+$('template').addEventListener('input', () => document.querySelectorAll('#titlePresets button').forEach(b => b.classList.toggle('sel', TITLE_PRESETS[b.dataset.i][0] === $('template').value)));
+
+// Progress bar style for {bar}
+const BAR_PRESETS = [['🟥🟧🟨🟩🟦🟪','⬛'],['❤️🧡💛💚💙💜','🖤'],['▰','▱'],['🟪','⬛'],['🟩','⬛'],['🟨','⬛'],['🟦','⬜'],['🟥','⬛'],['█','░'],['●','○'],['★','☆'],['■','□']];
+let barProgress = [45, 179];
+const chars = (v, max) => { v = v.trim(); if (!v) return []; let a; try { a = [...new Intl.Segmenter().segment(v)].map(x => x.segment); } catch (e) { a = [...v]; } return a.filter(c => c.trim()).slice(0, max); };
+const firstChar = v => { v = v.trim(); if (!v) return ''; try { return [...new Intl.Segmenter().segment(v)][0].segment; } catch (e) { return [...v][0]; } };
+function readBar() {
+  return { filled: chars($('bar_filled').value, 8).join('') || '▰', empty: firstChar($('bar_empty').value) || '▱',
+           length: Math.min(20, Math.max(5, parseInt($('bar_length').value) || 10)) };
+}
+function drawBar(b, done, total) {
+  const n = Math.floor(done * b.length / total), cols = chars(b.filled, 8);
+  let out = ''; for (let i = 0; i < n; i++) out += cols[i % cols.length];
+  return out + b.empty.repeat(b.length - n);
+}
+function showBar() {
+  const b = readBar(), text = drawBar(b, barProgress[0], barProgress[1]);
+  $('barPreview').textContent = text;
+  $('barChars').textContent = `${text.length} characters · ${barProgress[0]}/${barProgress[1]}`;
+  document.querySelectorAll('#barPresets button').forEach(x => x.classList.toggle('sel', x.dataset.f === b.filled && x.dataset.e === b.empty));
+}
+$('barPresets').innerHTML = BAR_PRESETS.map(([f, e]) => `<button type="button" data-f="${f}" data-e="${e}" title="Use this style">${drawBar({filled: f, empty: e, length: 5}, 3, 5)}</button>`).join('');
+document.querySelectorAll('#barPresets button').forEach(btn => btn.onclick = () => {
+  $('bar_filled').value = btn.dataset.f; $('bar_empty').value = btn.dataset.e;
+  // Emoji are wide: a shorter bar keeps the title readable.
+  if (/\p{Extended_Pictographic}/u.test(btn.dataset.f) && parseInt($('bar_length').value) > 8) $('bar_length').value = 8;
+  showBar();
+});
+['bar_filled','bar_empty','bar_length'].forEach(f => $(f).addEventListener('input', showBar));
+
+// One-click OBS setup
+async function obsStatus() {
+  let st;
+  try { st = await (await fetch('/api/obs')).json(); } catch (e) { return; }
+  const done = st.script_added && st.dock_added;
+  // Once it's done, the setup box shrinks to one line.
+  $('obsDone').hidden = !done; $('obsSetup').hidden = done;
+  $('obsBtn').textContent = done ? 'Set up again' : 'Set up OBS for me';
+  $('obsBtn').className = done ? 'ghost' : 'primary';
+  $('obsMsg').innerHTML = !st.found ? '<span class="warn">OBS wasn\'t found. Open OBS once and close it, then try.</span>'
+    : done ? '<span class="ok">✔ Set up. Open OBS and the AchieveTitle panel is under Docks.</span>'
+    : st.running ? '<span class="warn">Close OBS first, then click the button.</span>'
+    : 'OBS found' + (st.scene_collection ? ` (scene collection "${esc(st.scene_collection)}")` : '') + '.';
+}
+async function setupOBS() {
+  $('obsBtn').disabled = true; $('obsMsg').textContent = 'Setting up…';
+  try {
+    await post('/api/obs/setup');
+    $('obsMsg').innerHTML = '<span class="ok">✔ Done! Open OBS: the script is loaded and the AchieveTitle panel is under View → Docks.</span>';
+    setTimeout(obsStatus, 4000);
+  } catch (e) {
+    $('obsMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`;
+  }
+  $('obsBtn').disabled = false;
+}
+document.querySelector('.tab[data-tab=obs]').addEventListener('click', obsStatus);
+if (startTab === 'obs') obsStatus();
+
+function copy(id, btn) {
+  navigator.clipboard?.writeText($(id).textContent).then(() => { btn.textContent = 'Copied ✔'; setTimeout(() => btn.textContent = 'Copy', 1500); });
+}
+
+async function quitApp() {
+  if (!confirm('Stop AchieveTitle? Your original title will be restored if that option is on.')) return;
+  await post('/api/quit').catch(() => {});
+  $('app').innerHTML = '<div class="stopped"><div><h1>AchieveTitle has stopped.</h1><p class="hint">You can close this tab.</p></div></div>';
+}
+
+async function checkUpdate() {
+  const u = await (await fetch('/api/update')).json();
+  const was = $('update').hidden;
+  $('update').hidden = !u.available;
+  if (was !== $('update').hidden) poll(); // the banner changes how much room the status card has
+  if (!u.available) return;
+  $('updTitle').textContent = `🎉 AchieveTitle ${u.latest} is available`;
+  $('updLink').href = u.page_url;
+  $('updBtn').hidden = !u.can_install;
+  $('updText').textContent = u.can_install
+    ? `You have ${u.current}. Updating keeps your settings and restarts AchieveTitle.`
+    : `You have ${u.current}. Automatic update isn't possible here (${u.cant_install}).`;
+  if (!u.can_install) $('updLink').textContent = 'Download';
+  if (u.error) $('updText').innerHTML += ` <span class="err">${esc(u.error)}</span>`;
+}
+
+// "Check for updates" button (App tab): asks GitHub right now instead of waiting for the daily check.
+async function checkNow() {
+  $('checkBtn').disabled = true; $('checkMsg').textContent = 'Checking…';
+  try {
+    const u = await (await post('/api/update/check')).json();
+    $('appUpdBtn').hidden = !(u.available && u.can_install);
+    $('checkMsg').innerHTML = u.error ? `<span class="err">Couldn't check: ${esc(u.error)}</span>`
+      : u.available ? `<span class="warn">🎉 ${esc(u.latest)} is available.</span>` + (u.can_install ? '' : ` <a href="${esc(u.page_url)}" target="_blank" rel="noopener">Download it</a> (${esc(u.cant_install)})`)
+      : `<span class="ok">✔ You're up to date.</span>`;
+    checkUpdate();
+  } catch (e) { $('checkMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  $('checkBtn').disabled = false;
+}
+if (location.hash === '#updates') { showTab('app'); history.replaceState(null, '', '/'); setTimeout(checkNow, 300); }
+
+async function installUpdate() {
+  const from = (await (await fetch('/api/config')).json()).version;
+  $('updBtn').disabled = true; $('appUpdBtn').disabled = true;
+  $('update').hidden = false;
+  $('updText').textContent = 'Downloading and checking the update…'; $('checkMsg').textContent = 'Downloading and checking the update…';
+  try { await post('/api/update/install'); }
+  catch (e) { $('updText').innerHTML = $('checkMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; $('updBtn').disabled = $('appUpdBtn').disabled = false; return; }
+  $('updText').textContent = $('checkMsg').textContent = 'Restarting AchieveTitle…';
+  // Wait for the new version to come back up, then reload the page.
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    try { const c = await (await fetch('/api/config')).json(); if (c.version !== from) { location.reload(); return; } } catch (e) {}
+  }
+  $('updText').textContent = "AchieveTitle didn't come back up by itself. Please start it again.";
+}
+
+
+// Background: rows of achievement icons drifting past. Uses the current game's
+// unlocked art, or trophies when there's none yet. Rebuilt only when the icons change.
+let driftKey = null;
+function drawDrift(icons) {
+  const key = icons.join('|');
+  if (key === driftKey) return;
+  driftKey = key;
+  const tile = i => icons.length ? `<img src="${esc(icons[i % icons.length])}" alt="">` : '<div>🏆</div>';
+  $('drift').innerHTML = '<div class="drift-in">' + Array.from({length: 20}, (_, r) => {
+    // Each row is its tiles twice over, so sliding by half loops seamlessly.
+    const tiles = Array.from({length: 40}, (_, i) => tile(i + r * 17)).join('');
+    return `<div class="drift-row" style="--t:${360 + r % 4 * 60}s">${tiles}${tiles}</div>`;
+  }).join('') + '</div>';
+}
+drawDrift([]);
+// Background choice (moving, still or plain), remembered in this browser.
+function setBg(v) {
+  document.body.classList.toggle('bg-still', v === 'still');
+  document.body.classList.toggle('bg-off', v === 'off');
+  document.querySelectorAll('#bgSeg button').forEach(b => b.classList.toggle('sel', b.dataset.bg === v));
+  try { localStorage.setItem('bg', v); } catch (e) {}
+}
+document.querySelectorAll('#bgSeg button').forEach(b => b.onclick = () => setBg(b.dataset.bg));
+let bgPref = 'moving';
+try { bgPref = localStorage.getItem('bg') || 'moving'; } catch (e) {}
+setBg(bgPref);
+// Fetch every achievement's art for the current game (once per game), shuffled.
+let driftApp;
+async function loadDriftIcons(appID) {
+  if ((appID || '') === driftApp) return;
+  driftApp = appID || '';
+  let icons = [];
+  if (appID) try { icons = (await (await fetch('/api/icons')).json()).icons || []; } catch (e) { driftApp = undefined; return; }
+  for (let i = icons.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [icons[i], icons[j]] = [icons[j], icons[i]]; }
+  drawDrift(icons.slice(0, 112));
+}
+
+// A connected Twitch account's profile picture (a Twitch-purple square until it loads).
+const twitchPic = url => url ? `<img src="${esc(url)}" alt="">` : '<span class="acct-ph"></span>';
+
+addEventListener('resize', () => { clearTimeout(window.rt); window.rt = setTimeout(poll, 200); });
+load(); poll(); checkUpdate(); setInterval(poll, 5000); setInterval(checkUpdate, 10 * 60 * 1000);
+</script>
+</body>
+</html>

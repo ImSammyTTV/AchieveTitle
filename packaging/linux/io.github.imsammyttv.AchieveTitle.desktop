@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=AchieveTitle
+GenericName=Twitch Title Updater
+Comment=Show live Steam achievement progress in your Twitch stream title
+Exec=achievetitle
+Icon=io.github.imsammyttv.AchieveTitle
+Terminal=false
+Categories=Game;Utility;Network;
+Keywords=twitch;steam;achievements;stream;obs;
+StartupNotify=false
