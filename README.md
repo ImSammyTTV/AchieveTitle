@@ -140,6 +140,7 @@ Build your title from any text plus these placeholders:
 | `{percent}` | Completion | `76%` |
 | `{latest}` · `{latest_rarity}` | Your latest unlock and how rare it is | `Dragon Slayer` · `4.2%` |
 | `{next}` · `{next_rarity}` | Rarest achievement you're still missing | `Speedrunner` · `0.8%` |
+| `{easiest}` · `{easiest_rarity}` | Easiest achievement you're still missing | `Lord of Frenzied Flame` · `9%` |
 | `{rarest}` · `{rarest_rarity}` | Rarest achievement you've unlocked | `Dragon Slayer` · `4.2%` |
 | `{chasing}` · `{chasing_rarity}` | The achievement you're [chasing](#-chasing) | `Speedrunner` · `0.8%` |
 | `{bar}` | A progress bar, in the style you pick | `🟩🟩🟩🟩🟩🟩⬛⬛` or `▰▰▰▰▰▰▰▱▱▱` |
@@ -185,6 +186,7 @@ Let viewers check your progress in chat. Switch it on in the **Chat** tab (or fr
 | `!rarest` | Rarest unlock so far: Dragon Slayer (only 4.2% of players have it) |
 | `!progress` | Elden Ring: ▰▰▰▰▰▰▰▱▱▱ 76% (38/50) |
 | `!chasing` | 🎯 Currently chasing Speedrunner (only 0.8% of players have it). Win a run in under 10 minutes |
+| `!remaining` | 🎯 12 achievements left in Elden Ring. Easiest one left: Lord of Frenzied Flame (9% of players have it) |
 
 - Turn each command **on or off**, **rename** it (e.g. `!ach`) and **write your own reply** with placeholders.
 - Optional **unlock announcements**: *"🎉 yourchannel just unlocked Dragon Slayer (only 4.2% of players have it)!"*

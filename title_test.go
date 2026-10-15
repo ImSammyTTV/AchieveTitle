@@ -55,6 +55,42 @@ func TestNormalizeName(t *testing.T) {
 	}
 }
 
+func TestBuildVarsEasiest(t *testing.T) {
+	cfg := defaultConfig()
+	p := &Progress{
+		Unlocked: 1,
+		Total:    4,
+		Achievements: []Achievement{
+			{Name: "Hard Boss", Achieved: false, Percent: 12.5},
+			{Name: "Done Already", Achieved: true, Percent: 3.2},
+			{Name: "Tricky Bit", Achieved: false, Percent: 40.7},
+			{Name: "Easy Start", Achieved: false, Percent: 7.8},
+		},
+	}
+	v := buildVars(cfg, "Game", p)
+	if v["easiest"] != "Tricky Bit" {
+		t.Fatalf("easiest = %q, want Tricky Bit", v["easiest"])
+	}
+	if v["easiest_rarity"] != "41%" {
+		t.Fatalf("easiest_rarity = %q, want 41%%", v["easiest_rarity"])
+	}
+	all := &Progress{
+		Unlocked: 2,
+		Total:    2,
+		Achievements: []Achievement{
+			{Name: "A", Achieved: true, Percent: 5.0},
+			{Name: "B", Achieved: true, Percent: 9.0},
+		},
+	}
+	v = buildVars(cfg, "Game", all)
+	if _, ok := v["easiest"]; ok {
+		t.Fatal("easiest should be unset when every achievement is unlocked")
+	}
+	if _, ok := v["easiest_rarity"]; ok {
+		t.Fatal("easiest_rarity should be unset when every achievement is unlocked")
+	}
+}
+
 func TestRainbowBar(t *testing.T) {
 	st := BarStyle{Filled: "🟥🟧🟨🟩🟦🟪", Empty: "⬛", Length: 6}
 	if got := progressBar(6, 6, st); got != "🟥🟧🟨🟩🟦🟪" {

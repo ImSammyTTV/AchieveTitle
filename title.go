@@ -17,7 +17,7 @@ func titleLen(s string) int { return len(utf16.Encode([]rune(s))) }
 var placeholderRe = regexp.MustCompile(`\{(\w+)\}`)
 
 // TemplateVars documents the placeholders shown in the settings page.
-var TemplateVars = []string{"custom", "game", "unlocked", "total", "percent", "remaining", "latest", "latest_rarity", "next", "next_rarity", "rarest", "rarest_rarity", "bar", "chasing", "chasing_rarity"}
+var TemplateVars = []string{"custom", "game", "unlocked", "total", "percent", "remaining", "latest", "latest_rarity", "next", "next_rarity", "easiest", "easiest_rarity", "rarest", "rarest_rarity", "bar", "chasing", "chasing_rarity"}
 
 // ChatVars are the extra placeholders only chat replies can use.
 var ChatVars = []string{"channel", "user", "recent", "chasing_desc"}
@@ -39,6 +39,17 @@ func buildVars(cfg Config, game string, p *Progress) map[string]string {
 	if p.RarestLocked != nil {
 		v["next"] = p.RarestLocked.Name
 		v["next_rarity"] = rarity(p.RarestLocked.Percent)
+	}
+	var easiest *Achievement // highest global % still locked
+	for i := range p.Achievements {
+		a := &p.Achievements[i]
+		if !a.Achieved && (easiest == nil || a.Percent > easiest.Percent) {
+			easiest = a
+		}
+	}
+	if easiest != nil {
+		v["easiest"] = easiest.Name
+		v["easiest_rarity"] = rarity(easiest.Percent)
 	}
 	if p.RarestUnlocked != nil {
 		v["rarest"] = p.RarestUnlocked.Name

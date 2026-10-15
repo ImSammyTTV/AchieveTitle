@@ -29,6 +29,53 @@ func TestRenderChatDropsEmptyGroups(t *testing.T) {
 	}
 }
 
+func TestDefaultRemainingCommand(t *testing.T) {
+	var cmd *ChatCommand
+	for i := range defaultChatCommands {
+		if defaultChatCommands[i].ID == "remaining" {
+			cmd = &defaultChatCommands[i]
+		}
+	}
+	if cmd == nil {
+		t.Fatalf("no command with ID remaining in defaults")
+	}
+	if !cmd.Enabled || cmd.Trigger != "!remaining" {
+		t.Fatalf("remaining default: %+v", cmd)
+	}
+}
+
+func TestFillDefaultsAddsRemaining(t *testing.T) {
+	old := ChatConfig{
+		Commands: []ChatCommand{
+			{ID: "achievements", Enabled: true, Trigger: "!achievements", Reply: "custom reply"},
+		},
+	}
+	old.fillDefaults()
+	var added *ChatCommand
+	for i := range old.Commands {
+		if old.Commands[i].ID == "remaining" {
+			added = &old.Commands[i]
+		}
+	}
+	if added == nil || added.Trigger != "!remaining" || !added.Enabled {
+		t.Fatalf("fillDefaults did not add remaining: %+v", old.Commands)
+	}
+	if first := old.Commands[0]; first.ID != "achievements" || first.Reply != "custom reply" {
+		t.Fatalf("existing command changed: %+v", first)
+	}
+	if len(old.Commands) != len(defaultChatCommands) {
+		t.Fatalf("expected %d commands after fillDefaults, got %d", len(defaultChatCommands), len(old.Commands))
+	}
+}
+
+func TestRenderRemainingReply(t *testing.T) {
+	vars := map[string]string{"remaining": "134", "game": "Brotato", "easiest": "Speedrunner", "easiest_rarity": "0.8%"}
+	got := renderChat("🎯 {remaining} achievements left in {game}. Easiest one left: {easiest} ({easiest_rarity} of players have it)", vars)
+	if want := "🎯 134 achievements left in Brotato. Easiest one left: Speedrunner (0.8% of players have it)"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
 func TestProgressBar(t *testing.T) {
 	if got := progressBar(45, 179, BarStyle{}); got != "▰▰▱▱▱▱▱▱▱▱" {
 		t.Fatalf("default: got %q", got)

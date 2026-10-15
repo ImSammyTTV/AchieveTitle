@@ -79,6 +79,7 @@ var defaultChatCommands = []ChatCommand{
 	{ID: "rarest", Enabled: true, Trigger: "!rarest", Reply: "Rarest unlock so far: {rarest} (only {rarest_rarity} of players have it)"},
 	{ID: "progress", Enabled: true, Trigger: "!progress", Reply: "{game}: {bar} {percent} ({unlocked}/{total})"},
 	{ID: "chasing", Enabled: true, Trigger: "!chasing", Reply: "🎯 Currently chasing {chasing} (only {chasing_rarity} of players have it). {chasing_desc}"},
+	{ID: "remaining", Enabled: true, Trigger: "!remaining", Reply: "🎯 {remaining} achievements left in {game}. Easiest one left: {easiest} ({easiest_rarity} of players have it)"},
 }
 
 func defaultChat() ChatConfig {
