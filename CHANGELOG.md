@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- 💬 New `!remaining` chat command: how many achievements are left, plus the easiest one still locked (e.g. "🎯 12 achievements left in Elden Ring. Easiest one left: Lord of Frenzied Flame (9% of players have it)")
+- ✏️ New `{easiest}` and `{easiest_rarity}` title placeholders: the easiest achievement you're still missing and how rare it is
+
 ## v0.7.14
 - The chat badge at the top no longer says *"Chat bot: needs setup"* when replies come from your own channel. It shows *Chat · yourname*, or exactly what's missing (e.g. *Chat: reconnect Twitch*)
 

@@ -283,6 +283,8 @@ func (c *Chat) handle(ctx context.Context, cfg Config, acc chatAccount, ev chatE
 		tmpl = cfg.Chat.NoGameReply
 	case cmd.ID == "chasing" && vars["chasing"] == "":
 		tmpl = "{channel} isn't chasing a particular achievement right now."
+	case cmd.ID == "remaining" && vars["easiest"] == "":
+		tmpl = "🏆 {channel} has unlocked every achievement in {game}!"
 	}
 	if msg := renderChat(tmpl, vars); msg != "" {
 		c.send(ctx, cfg, acc, msg, ev.MessageID)
